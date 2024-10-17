@@ -1,27 +1,28 @@
+import React from 'react';
 import FormInput from "../FormInput";
 
-export default function CreateExpenseForm() {
+const CreateExpenseForm: React.FC = () => {
     return (
         <>
             <div className="px-5 py-2 flex flex-col font-semibold text-xs text-gray-700 border-b">
                 <div className="flex flex-row">
                     <div className="flex flex-col">
-                        Description
-                        <FormInput className="ml-0"></FormInput>
+                        <label>Description</label>
+                        <FormInput className="ml-0" />
                     </div>
                     <div className="flex flex-col">
-                        Amount
-                        <FormInput className="ml-0"></FormInput>
+                        <label>Amount</label>
+                        <FormInput className="ml-0" />
                     </div>
                 </div>
                 <div className="flex flex-row">
                     <div className="flex flex-col">
-                        Date
-                        <FormInput className="ml-0"></FormInput>
+                        <label>Date</label>
+                        <FormInput className="ml-0" />
                     </div>
                     <div className="flex flex-col">
-                        Category
-                        <FormInput className="ml-0"></FormInput>
+                        <label>Category</label>
+                        <FormInput className="ml-0" />
                     </div>
                 </div>
             </div>
@@ -29,5 +30,7 @@ export default function CreateExpenseForm() {
                 pay by who
             </div>
         </>
-    )
+    );
 }
+
+export default CreateExpenseForm;

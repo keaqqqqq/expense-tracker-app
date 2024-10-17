@@ -1,4 +1,6 @@
-export default function ExpensesList() {
+import React from 'react';
+
+const ExpensesList: React.FC = () => {
     return (
         <div className='border rounded-lg'>
             <div className='bg-gray-100 px-2 font-semibold text-gray-600 border rounded-t-lg'>OCT 10, 2024 . 2</div>
@@ -7,5 +9,7 @@ export default function ExpensesList() {
                 <div>chu paid you rm399</div>
             </div>
         </div>
-    )
-}
+    );
+};
+
+export default ExpensesList;
