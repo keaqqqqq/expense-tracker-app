@@ -4,6 +4,9 @@ import Button from "./Button";
 import FormInput from "../FormInput";
 import SplitTab from "./SplitTab";
 import CreateExpenseForm from "./CreateExpensesForm";
+import { createExpenseAPI } from '@/api/expenses';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
 
 interface ExpenseModalProps {
     isOpen: boolean;
@@ -11,6 +14,8 @@ interface ExpenseModalProps {
 }
 
 const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, closeModal }) => {
+    const expense = useSelector((state: RootState) => state.expenses.expense);
+
     return (
         <Dialog open={isOpen} onClose={closeModal} className="relative z-10">
             <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
@@ -28,7 +33,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, closeModal }) => {
                     </div>
                     <div className="bg-gray-100 rounded-b-lg text-xs font-semibold flex justify-end px-2">
                         <Button className="border rounded bg-white mx-1" onClick={closeModal}>Cancel</Button>
-                        <Button primary className="mx-1" onClick={closeModal}>Create</Button>
+                        <Button primary className="mx-1" onClick={()=>{createExpenseAPI(expense); closeModal()}}>Create</Button>
                     </div>
                 </DialogPanel>
             </div>
