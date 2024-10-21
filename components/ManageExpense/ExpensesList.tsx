@@ -14,11 +14,11 @@ const ExpensesList: React.FC = () => {
     const renderList = expenses.map((expense, index) => {
         // Check if the date is the same as the previous expense
         const showDate = index === 0 || expense.date !== expenses[index - 1].date;
-
+        
         return (
             <div key={expense.id}>
                 {showDate && (
-                    <div className='bg-gray-100 px-2 font-semibold text-gray-600 border rounded-t-lg'>
+                    <div className={`bg-gray-100 px-2 font-semibold text-gray-600 border ${index == 0 ? 'rounded-t-lg' : ''}`}>
                         {`${expense.date}`}
                     </div>
                 )}
