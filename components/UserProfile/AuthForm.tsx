@@ -1,13 +1,14 @@
 'use client';
 import { Fugaz_One } from 'next/font/google';
 import React, { useState } from 'react';
-import Button from './Button';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation'; // Import useRouter
+import { useRouter } from 'next/navigation'; 
+import Button from './Button';
+import Cookies from 'js-cookie'; 
 
 const fugaz = Fugaz_One({ subsets: ['latin'], weight: ['400'] });
 
-export default function Login() {
+export default function AuthForm() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isRegister, setIsRegister] = useState(false);
@@ -24,18 +25,23 @@ export default function Login() {
             if (isRegister) {
                 console.log('Signing up a new user');
                 await signup(email, password);
-                router.push('/profile'); // Redirect to /profile after signup
+                Cookies.set("loggedin", String(true));
+                router.push('/profile'); 
             } else {
                 console.log('Logging in existing user');
                 await login(email, password);
-                router.push('/dashboard'); // Redirect to /dashboard after login
+                Cookies.set("loggedin", String(true));
+                router.push('/dashboard'); 
             }
         } catch (err) {
-            console.log(err.message);
-        } finally {
-            setAuthenticating(false);
+            if (err instanceof Error) {
+                console.log(err.message);
+            } else {
+                console.log('An unexpected error occurred:', err);
+            }
         }
     }
+    
 
     return (
         <div className='flex flex-col flex-1 justify-center items-center gap-4 '>
@@ -57,7 +63,25 @@ export default function Login() {
                 type='password'
             />
             <div className='max-w-[400px] w-full mx-auto'>
-                <Button clickHandler={handleSubmit} text={authenticating ? 'Submitting' : 'Submit'} full />
+            <Button 
+                clickHandler={handleSubmit} 
+                text={
+                    authenticating ? (
+                        <span className="flex justify-center">
+                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Loading
+                        </span>
+                    ) : (
+                        'Submit'
+                    )
+                }
+            >
+            </Button>
+
+
             </div>
             <p className='text-center'>
                 {isRegister ? 'Already have an account? ' : 'Don\'t have an account? '}

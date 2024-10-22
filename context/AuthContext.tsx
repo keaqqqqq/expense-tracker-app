@@ -1,78 +1,97 @@
-'use client'
-import { auth, db } from '@/firebase/config'
-import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth'
-import { doc, getDoc } from 'firebase/firestore'
-import React, { useContext, useState, useEffect } from 'react'
+'use client';
+import { auth, db } from '@/firebase/config';
+import { User, createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { DocumentData, doc, getDoc } from 'firebase/firestore';
+import React, { useContext, useState, useEffect, ReactNode } from 'react';
 
-const AuthContext = React.createContext()
-
-export function useAuth() {
-    return useContext(AuthContext)
+interface AuthContextType {
+  currentUser: User | null;
+  userDataObj: DocumentData | null;
+  setUserDataObj: React.Dispatch<React.SetStateAction<DocumentData | null>>;
+  signup: (email: string, password: string) => Promise<any>;
+  logout: () => Promise<void>;
+  login: (email: string, password: string) => Promise<any>;
+  loading: boolean;
+  isProfileComplete: boolean; 
+  setIsProfileComplete: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-export function AuthProvider({ children }) {
-    const [currentUser, setCurrentUser] = useState(null)
-    const [userDataObj, setUserDataObj] = useState(null)
-    const [loading, setLoading] = useState(true)
+const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
-    // AUTH HANDLERS
-    function signup(email, password) {
-        return createUserWithEmailAndPassword(auth, email, password)
-    }
+export function useAuth(): AuthContextType {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}
 
-    function login(email, password) {
-        return signInWithEmailAndPassword(auth, email, password)
-    }
+interface AuthProviderProps {
+  children: ReactNode;
+}
 
-    function logout() {
-        setUserDataObj(null)
-        setCurrentUser(null)
-        return signOut(auth)
-    }
+export function AuthProvider({ children }: AuthProviderProps) {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [userDataObj, setUserDataObj] = useState<DocumentData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [isProfileComplete, setIsProfileComplete] = useState<boolean>(false);
 
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async user => {
-            try {
-                // Set the user to our local context state
-                setLoading(true)
-                setCurrentUser(user)
-                if (!user) {
-                    console.log('No User Found')
-                    return
-                }
+  const signup = (email: string, password: string) => {
+    return createUserWithEmailAndPassword(auth, email, password);
+  };
 
-                // if user exists, fetch data from firestore database
-                console.log('Fetching User Data')
-                const docRef = doc(db, 'Users', user.uid)
-                const docSnap = await getDoc(docRef)
-                let firebaseData = {}
-                if (docSnap.exists()) {
-                    console.log('Found User Data')
-                    firebaseData = docSnap.data()
-                }
-                setUserDataObj(firebaseData)
-            } catch (err) {
-                console.log(err.message)
-            } finally {
-                setLoading(false)
-            }
-        })
-        return unsubscribe
-    }, [])
+  const login = (email: string, password: string) => {
+    return signInWithEmailAndPassword(auth, email, password);
+  };
 
-    const value = {
-        currentUser,
-        userDataObj,
-        setUserDataObj,
-        signup,
-        logout,
-        login,
-        loading
-    }
+  const logout = async (): Promise<void> => {
+    setUserDataObj(null);
+    setCurrentUser(null);
+    await signOut(auth);
+  };
 
-    return (
-        <AuthContext.Provider value={value}>
-            {children}
-        </AuthContext.Provider>
-    )
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
+      setLoading(true);
+      setCurrentUser(user);
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const docRef = doc(db, 'Users', user.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const firebaseData: DocumentData = docSnap.data();
+          setUserDataObj(firebaseData);
+          setIsProfileComplete(!!firebaseData.name && !!firebaseData.image);
+        }
+      } catch (err) {
+        console.error((err as Error).message);
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    return unsubscribe;
+  }, []);
+
+  const value: AuthContextType = {
+    currentUser,
+    userDataObj,
+    setUserDataObj,
+    signup,
+    logout,
+    login,
+    loading,
+    isProfileComplete,
+    setIsProfileComplete
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
