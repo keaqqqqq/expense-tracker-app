@@ -1,6 +1,10 @@
 import React from 'react';
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from '@headlessui/react';
 import EqualSplit from './EqualSplit';
+import PercentageSplit from './PercentageSplit';
+import WeightSplit from './WeightSplit';
+import ExtraSplit from './ExtraSplit';
+import ManualSplit from './ManualSplit';
 
 const SplitTab: React.FC = () => {
     const tabClass = "px-3 py-1 border focus:bg-blue-100 focus:outline-none focus:text-indigo-800";
@@ -20,9 +24,10 @@ const SplitTab: React.FC = () => {
             </div>
             <TabPanels>
                 <TabPanel><EqualSplit /></TabPanel>
-                <TabPanel>Content 2</TabPanel>
-                <TabPanel>Content 3</TabPanel>
-                <TabPanel>Manual 3</TabPanel>
+                <TabPanel><PercentageSplit/></TabPanel>
+                <TabPanel><WeightSplit/></TabPanel>
+                <TabPanel><ExtraSplit/></TabPanel>
+                <TabPanel><ManualSplit/></TabPanel>
             </TabPanels>
         </TabGroup>
     );

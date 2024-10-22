@@ -22,9 +22,9 @@ const ExpensesList: React.FC = () => {
                         {`${expense.date}`}
                     </div>
                 )}
-                <div className='flex flex-row justify-between font-semibold content-center px-2 py-3 border-t'>
-                    <div>{expense.description}</div>
-                    <div>{`RM ${expense.amount}`} <Button primary onClick={()=>{console.log(expense.id)}}>Edit</Button></div>
+                <div className='flex flex-row justify-between font-bold content-center px-2 py-3 border-t'>
+                    <div className='text-black'>{expense.description}</div>
+                    <div className='text-black'>{`RM ${expense.amount}`} <Button primary onClick={()=>{console.log(expense.id)}}>Edit</Button></div>
                     
                 </div>
             </div>
