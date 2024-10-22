@@ -28,8 +28,8 @@
       "**/*.tsx",
       ".next/types/**/*.ts",
       "frontend/*",
-      "app/dashboard/page.js",  
-      "components/FormInput.tsx"  
+      "app/dashboard/page.js",
+      "components/FormInput.tsx"
     ],
     "exclude": ["node_modules"]
   }
