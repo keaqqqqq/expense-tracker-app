@@ -1,9 +1,9 @@
-import Login from "@/components/Login";
+import AuthForm from "@/components/UserProfile/AuthForm";
 import Main from "@/components/Main";
 export default function Home() {
   return(
     <Main className="">
-      <Login />
+      <AuthForm />
     </Main>
   )
 }
