@@ -1,16 +1,28 @@
 import { editExpenseAPI, fetchExpensesAPI } from '@/api/expenses';
 import { fetchExpenses } from '@/store/expensesSlice';
-import { RootState } from '@/store/store';
+import { AppDispatch, RootState } from '@/store/store';
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import Button from './Button';
 
 const ExpensesList: React.FC = () => {
     const {expenses, loading, error} = useSelector((state: RootState) => state.expenses);
-    const dispatch = useDispatch();
-    useEffect(()=>{
-        dispatch(fetchExpenses());
-    },[dispatch])
+    const dispatch:AppDispatch = useDispatch();
+    // useEffect(()=>{
+    //     dispatch(fetchExpenses());
+    // },[dispatch])
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                await dispatch(fetchExpenses()).unwrap(); // Handle successful response
+            } catch (err) {
+                console.error('Failed to fetch expenses:', err); // Handle error if needed
+            }
+        };
+
+        fetchData();
+    }, [dispatch]);
     const renderList = expenses.map((expense, index) => {
         // Check if the date is the same as the previous expense
         const showDate = index === 0 || expense.date !== expenses[index - 1].date;

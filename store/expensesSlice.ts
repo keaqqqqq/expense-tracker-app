@@ -5,7 +5,7 @@ import { Expense } from '@/types/Expense';
 
 
 interface ExpensesState {
-    expense: Expense;
+    expense: Omit<Expense, 'id'>;
     expenses: Expense[];
     loading: boolean;
     error: string | null;
@@ -25,7 +25,7 @@ const initialState: ExpensesState = {
 
     },
     expenses: [],
-    loading: false,
+    loading: true,
     error: null,
 };
 
@@ -60,7 +60,7 @@ const expensesSlice = createSlice({
     reducers: {
         setUserId(state, action: PayloadAction<string>) {
             if (state.expense) {
-                state.expense.id = action.payload;
+                state.expense.paid_by = action.payload;
             }
         },
         setDescription(state, action: PayloadAction<string>) {

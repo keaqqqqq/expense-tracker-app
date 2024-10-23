@@ -1,5 +1,5 @@
 export interface Expense {
-    id?: string; // Document ID from Firestore
+    id: string; // Document ID from Firestore
     amount: number;
     category: string;
     created_at: string; // Timestamp or date string
