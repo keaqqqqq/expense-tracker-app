@@ -15,22 +15,24 @@ export default async function RootLayout({
   let userData: UserData | null = null;
 
   if (uid) {
-    try {
-      userData = await fetchUserData(uid);
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-    }
+      try {
+          userData = await fetchUserData(uid);
+      } catch (error) {
+          console.error("Error fetching user data:", error);
+      }
   }
 
   return (
-    <main className="flex h-screen w-full font-inter">
-      <Sidebar />
-      <div className="flex flex-col flex-1 ml-64">
-        <TopBar name={userData?.name || null} image={userData?.image || null} />
-        <div className="p-4 flex-1 sm:p-8">
-          {children}
-        </div>
-      </div>
-    </main>
+      <main className="flex h-screen w-full font-inter">
+          <Sidebar  name={userData?.name || null} image={userData?.image || null}/>
+          <div className="flex flex-col flex-1 md:ml-64">
+              <div className="hidden md:block">
+                  <TopBar name={userData?.name || null} image={userData?.image || null} />
+              </div>
+              <div className="p-4 flex-1 sm:p-8 mt-16 md:mt-0">
+                  {children}
+              </div>
+          </div>
+      </main>
   );
 }
