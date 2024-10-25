@@ -1,6 +1,5 @@
 'use client'
 import React, { useState } from 'react';
-import ProtectedRoute from '../ProtectedRoute';
 import ManageExpensesHeader from './ManageExpensesHeader';
 import Button from './Button';
 import ExpensesList from './ExpensesList';

@@ -6,16 +6,18 @@ import { useRouter } from 'next/navigation';
 import Button from './Button';
 import Cookies from 'js-cookie'; 
 
+
 const fugaz = Fugaz_One({ subsets: ['latin'], weight: ['400'] });
+
 
 export default function AuthForm() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isRegister, setIsRegister] = useState(false);
     const [authenticating, setAuthenticating] = useState(false);
-    const { signup, login } = useAuth();
-    const router = useRouter(); // Initialize the router
-
+    const { signup, login, currentUser} = useAuth();
+    const router = useRouter(); 
+    
     async function handleSubmit() {
         if (!email || !password || password.length < 6) {
             return;
@@ -24,14 +26,21 @@ export default function AuthForm() {
         try {
             if (isRegister) {
                 console.log('Signing up a new user');
-                await signup(email, password);
+                const userCredential = await signup(email, password);
                 Cookies.set("loggedin", String(true));
+                Cookies.set("currentUserUid", userCredential.user.uid, { path: '/' });
                 router.push('/profile'); 
             } else {
                 console.log('Logging in existing user');
-                await login(email, password);
+                const userCredential = await login(email, password);
                 Cookies.set("loggedin", String(true));
-                router.push('/dashboard'); 
+                if (userCredential.user) { 
+                    Cookies.set("currentUserUid", userCredential.user.uid, { path: '/' }); 
+                    router.push(`/`);
+                } else {
+                    console.error('No current user found after login');
+                    alert('An error occurred. Please try logging in again.');
+                }
             }
         } catch (err) {
             if (err instanceof Error) {
@@ -41,6 +50,8 @@ export default function AuthForm() {
             }
         }
     }
+    
+    
     
 
     return (
