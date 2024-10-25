@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { updateUserProfile, handleImageChange } from '@/lib/actions/user.action';
+import { updateUserProfile, handleImageChange } from '@/lib/actions/file.action';
 import { useAuth } from '@/context/AuthContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import Button from './Button';
 import { User, Camera } from 'lucide-react';
-import Toast from '../Toast'; 
+import Toast from '../Toast';
 
 interface PersonalInformationProps {
   onComplete: () => void;
@@ -14,6 +14,7 @@ export default function PersonalInformation({ onComplete }: PersonalInformationP
   const { currentUser, userDataObj } = useAuth();
   const [name, setName] = useState(userDataObj?.name || '');
   const [image, setImage] = useState(userDataObj?.image || null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', content: '' });
   const [showToast, setShowToast] = useState(false);
@@ -25,16 +26,19 @@ export default function PersonalInformation({ onComplete }: PersonalInformationP
     setIsLoading(true);
 
     try {
-      await updateUserProfile(currentUser, name, image);
-      setShowToast(true); 
+      await updateUserProfile(currentUser, name, image, imageFile);
+      setShowToast(true);
       setTimeout(() => {
         onComplete();
-      }, 2000); 
+      }, 2000);
     } catch (error) {
       console.error("Error updating profile:", error);
       setMessage({ type: 'error', content: 'Error updating profile' });
+    } finally {
+      setIsLoading(false);
     }
   };
+
 
   if (!currentUser) {
     return (
@@ -70,8 +74,8 @@ export default function PersonalInformation({ onComplete }: PersonalInformationP
                     type="file"
                     className="sr-only"
                     accept="image/*"
-                    onChange={(e) => handleImageChange(e, setImage)}
-                  />
+                    onChange={(e) => handleImageChange(e, setImage, setImageFile)}
+                    />
                 </label>
               </div>
             </div>

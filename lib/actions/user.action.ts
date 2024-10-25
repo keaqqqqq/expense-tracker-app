@@ -1,6 +1,8 @@
-import { doc, setDoc } from 'firebase/firestore';
+'use server'
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { User } from 'firebase/auth';
+
 
 export const updateUserProfile = async (
   currentUser: User | null,
@@ -43,4 +45,15 @@ export const saveMemberList = async (
   };
 
   await setDoc(doc(db, 'Users', currentUser.uid), userData, { merge: true }); 
+};
+
+export const fetchUserData = async (uid: string) => {
+  const userDoc = doc(db, 'Users', uid);
+  const userSnapshot = await getDoc(userDoc);
+
+  if (userSnapshot.exists()) {
+    return userSnapshot.data();
+  } else {
+    throw new Error("User not found");
+  }
 };
