@@ -40,7 +40,7 @@ const ExtraSplit: React.FC = () => {
                 </div>
                 <div><b className='font-bold'>Total adjustments:</b> {"RM 0.00%"}</div>
             </div>
-            <div className="grid grid-cols-2 gap-2 my-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 my-2">
                 {renderUsers}
             </div>
         </div>

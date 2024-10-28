@@ -41,7 +41,7 @@ const PercentageSplit: React.FC = () => {
                 <div>Total percentage: {"0%"}</div>
                 <div className='text-red-500 font-bold'>Under by: {"100%"}</div>
             </div>
-            <div className="grid grid-cols-2 gap-2 my-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 my-2">
                 {renderUsers}
             </div>
         </div>

@@ -30,7 +30,7 @@ const EqualSplit: React.FC = () => {
             <div className="border bg-gray-100 rounded p-1 text-center">
                 Select which people owe an equal share
             </div>
-            <div className="grid grid-cols-2 gap-2 my-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 my-2">
                 {renderUsers}
             </div>
         </div>
