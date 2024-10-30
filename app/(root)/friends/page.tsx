@@ -1,8 +1,8 @@
-import React from 'react'
-
+import FriendsContainer from "@/components/Friends/FriendsContainer"
 const Friends = () => {
+
   return (
-    <div>Friends</div>
+    <FriendsContainer />
   )
 }
 

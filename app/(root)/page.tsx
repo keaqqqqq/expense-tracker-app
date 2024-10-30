@@ -1,5 +1,5 @@
 import React from 'react'
-import Cookies from "js-cookie"; // Import js-cookie
+
 
 const HomePage = () => {
   return (

@@ -1,9 +1,8 @@
 'use client';
-import { auth, db } from '@/firebase/config';
 import { User, createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { DocumentData, doc, getDoc } from 'firebase/firestore';
 import React, { useContext, useState, useEffect, ReactNode } from 'react';
-
+import { auth , db} from '../firebase/config';
 interface AuthContextType {
   currentUser: User | null;
   userDataObj: DocumentData | null;
