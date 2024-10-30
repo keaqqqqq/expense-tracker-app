@@ -12,17 +12,6 @@ interface InvitationData {
   status: string;
 }
 
-// const transporter = nodemailer.createTransport({
-//   service: 'gmail',
-//   host: 'smtp.gmail.com',
-//   port: 465,
-//   secure: true,
-//   auth: {
-//     user: 'keaqiuynwa@gmail.com',
-//     pass: 'gzjg cohk hqys srzw'
-//   }
-// });
-
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
   port: 465,
