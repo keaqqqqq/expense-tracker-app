@@ -68,7 +68,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         <h1>You've Been Invited to Join Expense Tracker!</h1>
         <p>${requesterName} has invited you to join their expense tracking group.</p>
         <p>Click the link below to join:</p>
-        <a href="https://expense-tracker.vercel.app/invite?token=${invitation.invitation_token}" style="
+        <a href="https://Expense Tracker App.vercel.app/invite?token=${invitation.invitation_token}" style="
           background-color: #4CAF50;
           border: none;
           color: white;
