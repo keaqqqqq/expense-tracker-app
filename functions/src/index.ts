@@ -24,15 +24,12 @@ interface InvitationData {
 // });
 
 const transporter = nodemailer.createTransport({
-  host: 'mail.keaqqqqq.com',
+  host: process.env.EMAIL_HOST,
   port: 465,
   secure: true,
   auth: {
-    user: 'expensetracker@keaqqqqq.com',
-    pass: 'expensetracker'
-  },
-  tls: {
-    rejectUnauthorized: false
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
   }
 });
 
