@@ -47,7 +47,7 @@ exports.sendInvitationEmail = onDocumentCreated({
       requesterSnapshot.data()?.name || 'Someone' : 
       'Someone';
 
-    const inviteUrl = `https://expense-tracker.vercel.app/invite?token=${invitation.invitation_token}`;
+    const inviteUrl = `https://keaqqqqq.com/invite?token=${invitation.invitation_token}`;
 
     // Type-safe mail options
     const mailOptions = {
