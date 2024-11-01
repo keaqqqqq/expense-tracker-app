@@ -29,7 +29,6 @@
     "redux": "^5.0.1",
     "tailwind-merge": "^2.5.4"
   },
-  "type": "module",
   "devDependencies": {
     "@types/js-cookie": "^3.0.6",
     "@types/node": "^20.17.3",
