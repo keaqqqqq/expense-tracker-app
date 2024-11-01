@@ -114,3 +114,38 @@ export const saveFriendship = async (requesterId: string, addresseeEmail: string
 const generateInviteToken = () => {
   return Math.random().toString(36).substr(2) + Date.now().toString(36);
 };
+
+export const validateInvitation = async (token: string) => {
+  try {
+    const invitationsRef = collection(db, 'Invitations');
+    const q = query(invitationsRef, where('invitation_token', '==', token));
+    const invitationSnapshot = await getDocs(q);
+
+    if (invitationSnapshot.empty) {
+      return { valid: false, message: 'Invitation not found' };
+    }
+
+    const invitation = invitationSnapshot.docs[0].data();
+    
+    // Check if invitation has expired
+    if (invitation.expires_at.toDate() < new Date()) {
+      return { valid: false, message: 'Invitation has expired' };
+    }
+
+    // Check if invitation has already been accepted
+    if (invitation.status === 'ACCEPTED') {
+      return { valid: false, message: 'Invitation has already been used' };
+    }
+
+    return {
+      valid: true,
+      data: {
+        email: invitation.addressee_email,
+        requesterId: invitation.requester_id
+      }
+    };
+  } catch (error) {
+    console.error('Error validating invitation:', error);
+    throw error;
+  }
+};
