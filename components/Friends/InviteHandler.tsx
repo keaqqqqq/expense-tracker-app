@@ -1,4 +1,4 @@
-// app/invite/InviteHandler.tsx
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -16,28 +16,28 @@ export default function InviteHandler({ token }: InviteHandlerProps) {
     const handleInvitation = async () => {
       if (!token) {
         console.error('No token provided');
-        router.push('/');
         return;
       }
 
       try {
         const result = await validateInvitation(token);
-        
+        console.log(token)
         if (result.valid && result.data) {
           localStorage.setItem('invitationData', JSON.stringify({
             token,
             email: result.data.email,
             requesterId: result.data.requesterId
           }));
+          console.log("User is authenticated");
           
-          router.push('https://expense-tracker-qam2d5big-keaqqqqqs-projects.vercel.app/auth');
+          router.push('https://keaqqqqq.com/auth');
         } else {
           console.error('Invalid invitation:', result.message);
-          router.push('/');
+          return;
         }
       } catch (error) {
         console.error('Error processing invitation:', error);
-        router.push('/');
+        return;
       } finally {
         setIsProcessing(false);
       }
