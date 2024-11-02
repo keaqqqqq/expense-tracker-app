@@ -1,5 +1,5 @@
 'use server'
-import { doc, setDoc, getDoc, addDoc, collection, query, where, getDocs, serverTimestamp  } from 'firebase/firestore';
+import { doc, setDoc, getDoc, addDoc, collection, query, where, getDocs, serverTimestamp, updateDoc  } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { User } from 'firebase/auth';
 import { sendEmailInvitation } from './email';
@@ -149,3 +149,100 @@ export const validateInvitation = async (token: string) => {
     throw error;
   }
 };
+
+
+
+export interface Relationship {
+  id: string;
+  type: 'friendship' | 'invitation';
+  role: 'requester' | 'addressee';
+  status: 'PENDING' | 'ACCEPTED';
+  requester_id: string;
+  addressee_id?: string;
+  addressee_email?: string;
+  created_at: Date;
+}
+
+export async function getFriendships(userId: string): Promise<Relationship[]> {
+  try {
+    const relationships: Relationship[] = [];
+
+    // Get friendships where user is requester
+    const sentFriendshipsQuery = query(
+      collection(db, 'Friendships'),
+      where('requester_id', '==', userId)
+    );
+    const sentFriendships = await getDocs(sentFriendshipsQuery);
+    sentFriendships.forEach(doc => {
+      relationships.push({
+        ...doc.data(),
+        id: doc.id,
+        type: 'friendship',
+        role: 'requester'
+      } as Relationship);
+    });
+
+    // Get friendships where user is addressee
+    const receivedFriendshipsQuery = query(
+      collection(db, 'Friendships'),
+      where('addressee_id', '==', userId)
+    );
+    const receivedFriendships = await getDocs(receivedFriendshipsQuery);
+    receivedFriendships.forEach(doc => {
+      relationships.push({
+        ...doc.data(),
+        id: doc.id,
+        type: 'friendship',
+        role: 'addressee'
+      } as Relationship);
+    });
+
+    // Get invitations sent by user
+    const sentInvitationsQuery = query(
+      collection(db, 'Invitations'),
+      where('requester_id', '==', userId)
+    );
+    const sentInvitations = await getDocs(sentInvitationsQuery);
+    sentInvitations.forEach(doc => {
+      relationships.push({
+        ...doc.data(),
+        id: doc.id,
+        type: 'invitation',
+        role: 'requester'
+      } as Relationship);
+    });
+
+    // Get invitations received by user's email
+    const receivedInvitationsQuery = query(
+      collection(db, 'Invitations'),
+      where('addressee_email', '==', userId)
+    );
+    const receivedInvitations = await getDocs(receivedInvitationsQuery);
+    receivedInvitations.forEach(doc => {
+      relationships.push({
+        ...doc.data(),
+        id: doc.id,
+        type: 'invitation',
+        role: 'addressee'
+      } as Relationship);
+    });
+
+    return relationships;
+
+  } catch (error) {
+    console.error('Error fetching friendships:', error);
+    throw error;
+  }
+}
+
+export async function acceptFriendship(relationshipId: string) {
+  try {
+    await updateDoc(doc(db, 'Friendships', relationshipId), {
+      status: 'ACCEPTED'
+    });
+    return { success: true };
+  } catch (error) {
+    console.error('Error accepting friendship:', error);
+    throw error;
+  }
+}

@@ -12,7 +12,7 @@ export default function InviteHandler({ token }: InviteHandlerProps) {
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(true);
 
-  useEffect(() => {
+  useEffect(() => { 
     const handleInvitation = async () => {
       if (!token) {
         console.error('No token provided');
