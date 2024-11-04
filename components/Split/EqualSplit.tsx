@@ -1,16 +1,17 @@
+import { SplitInterface } from '@/types/SplitInterface';
 import React from 'react';
 
 interface User {
     name: string;
-    amount: string;
 }
 
-const EqualSplit: React.FC = () => {
+
+const EqualSplit: React.FC<SplitInterface> = ({expense}) => {
     const users: User[] = [
-        { name: 'chua', amount: '4.60' },
-        { name: 'isyraf', amount: '4.60' },
-        { name: 'kiachua', amount: '4.60' },
-        { name: 'keachu', amount: '4.60' },
+        { name: 'chua'},
+        { name: 'isyraf'},
+        { name: 'kiachua'},
+        { name: 'keachu'},
     ];
 
     const renderUsers = users.map((user) => {
@@ -18,7 +19,7 @@ const EqualSplit: React.FC = () => {
             <div className="flex flex-row border rounded" key={user.name}>
                 <div className="flex flex-row w-full justify-around content-center">
                     <p className="my-auto">{user.name}</p>
-                    <p className="my-auto">{user.amount}</p>
+                    <p className="my-auto">{expense.amount/users.length}</p>
                 </div>
                 <p className="w-8 border-l py-2 m-0 text-center hover:bg-gray-100">x</p>
             </div>
