@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { updateUserProfile, handleImageChange } from '@/lib/actions/file.action';
 import { useAuth } from '@/context/AuthContext';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import Button from './Button';
 import { User, Camera } from 'lucide-react';
 import Toast from '../Toast';
+import Button from './Button';
 
 interface PersonalInformationProps {
   onComplete: () => void;

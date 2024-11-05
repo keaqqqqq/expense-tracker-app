@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-
+import Button from './UserProfile/Button';
 interface SideBarProps {
     name: string | null; 
     image: string | null; 
@@ -30,7 +30,7 @@ const Sidebar: React.FC<SideBarProps> = ({ name, image }) => {
             case '/friends':
                 return 'Friends';
             default:
-                return 'Chu2aExpenseTracker';
+                return <div className="logo">ExpenseTracker</div>;
         }
     };
 
@@ -49,7 +49,6 @@ const Sidebar: React.FC<SideBarProps> = ({ name, image }) => {
 
     return (
         <>
-            {/* Mobile Header - Only visible when sidebar is closed */}
             <div className={`fixed top-0 left-0 w-full h-16 bg-white border-b md:hidden z-20 flex items-center px-4 transition-transform duration-300 ${isOpen ? '-translate-x-full' : 'translate-x-0'}`}>
                 <button
                     onClick={() => setIsOpen(!isOpen)}
@@ -77,11 +76,11 @@ const Sidebar: React.FC<SideBarProps> = ({ name, image }) => {
                         </div>
                     ) : (
                         <div className="w-8 h-8 mr-2 rounded-full bg-gray-200 flex items-center justify-center">
-                            <span className="text-gray-500 text-sm">
-                                {name?.[0] || '?'}
-                            </span>
+                          <span className="text-gray-500 text-sm">
+                            {name?.[0] || "?" }
+                          </span>
                         </div>
-                    )}
+                      )}
                     <span className="font-semibold">
                         {name}
                     </span>
@@ -93,7 +92,6 @@ const Sidebar: React.FC<SideBarProps> = ({ name, image }) => {
                 className={`fixed top-0 left-0 h-full bg-white w-64 border-r transform transition-transform duration-300 ease-in-out z-30
                     ${isMobile ? (isOpen ? 'translate-x-0' : '-translate-x-full') : 'translate-x-0'}`}
             >
-                {/* Sidebar Header with Close Button */}
                 {isMobile && (
                     <div className="h-16 border-b flex items-center px-4 justify-between">
                         <h2 className="text-xl font-semibold text-black">
@@ -108,10 +106,9 @@ const Sidebar: React.FC<SideBarProps> = ({ name, image }) => {
                     </div>
                 )}
 
-                {/* Sidebar Content */}
                 <div className="h-full">
-                    <h2 className={`text-xl font-semibold text-black px-4 py-4 ${isMobile ? 'hidden' : 'block'}`}>
-                        Chu2aExpenseTracker
+                    <h2 className={`text-xl font-semibold text-black px-4 py-4 logo ${isMobile ? 'hidden' : 'block'}`}>
+                        ExpenseTracker
                     </h2>
                     <ul>
                         <li>
@@ -145,7 +142,6 @@ const Sidebar: React.FC<SideBarProps> = ({ name, image }) => {
                 </div>
             </div>
 
-            {/* Overlay for mobile */}
             {isMobile && isOpen && (
                 <div
                     className="fixed inset-0 bg-black bg-opacity-50 z-20"

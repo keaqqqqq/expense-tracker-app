@@ -1,10 +1,10 @@
 'use client';
 import React, { useState } from 'react';
-import Button from './Button';
 import { useAuth } from '@/context/AuthContext'; 
-import { saveMemberList } from '@/lib/actions/user.action';
+import { saveFriendship } from '@/lib/actions/user.action';
 import { useRouter } from 'next/navigation';
 import Toast from '../Toast';
+import Button from './Button';
 const AddFriend: React.FC = () => {
     const router = useRouter();
     const { currentUser } = useAuth(); 
@@ -23,21 +23,29 @@ const AddFriend: React.FC = () => {
     };
 
     const handleInviteFriends = async () => {
-        const membersToSave = friendEmails
-            .filter(email => email) 
-            .map(email => ({ email })); 
-
+        const validEmails = friendEmails.filter(email => email);
         setIsLoading(true);
 
+        if (!currentUser) {
+            console.error("User not authenticated");
+            return; 
+        }
+
         try {
-            await saveMemberList(currentUser, membersToSave); 
-            console.log("Friends invited:", membersToSave);
+        
+            for (const email of validEmails) {
+                await saveFriendship(currentUser.uid, email); 
+            }
+            
+            console.log("Friends invited:", validEmails);
             setShowToast(true); 
             setTimeout(() => {
-                router.push('/')
-              }, 2000); 
+                router.push('/');
+            }, 2000); 
         } catch (error) {
             console.error("Error saving member list:", error);
+        } finally {
+            setIsLoading(false); 
         }
     };
 

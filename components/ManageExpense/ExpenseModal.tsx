@@ -4,9 +4,9 @@ import Button from "./Button";
 import FormInput from "../FormInput";
 import SplitTab from "../Split/SplitTab";
 import CreateExpenseForm from "./CreateExpensesForm";
-import { createExpenseAPI } from '@/api/expenses';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
+import { createExpenseAPI } from '@/api/expenses';
 
 interface ExpenseModalProps {
     isOpen: boolean;
@@ -21,8 +21,8 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, closeModal }) => {
             <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
             <div className="fixed inset-0 overflow-y-auto">
                 <div className="flex items-start justify-center p-4 h-full">
-                    <div className="flex flex-col justify-start max-w-3xl w-full"> {/* Wrapper for spacing */}
-                        <DialogPanel className="rounded bg-white my-4 mx-4"> {/* Only margin at top/bottom */}
+                    <div className="flex flex-col justify-start max-w-3xl w-full"> 
+                        <DialogPanel className="rounded bg-white my-4 mx-4"> 
                             <DialogTitle className="font-semibold text-sm border-b px-5 py-3">New Expense</DialogTitle>
                             <CreateExpenseForm />
 
