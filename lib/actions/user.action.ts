@@ -5,8 +5,6 @@ import { User } from 'firebase/auth';
 import { Group } from '@/types/Group'
 import { Friend } from '@/types/Friend';
 import { serializeFirebaseData } from '../utils';
-import { getAuth } from 'firebase-admin/auth';
-import { getFirebaseAdminApp } from '../firebase-admin-config';
 
 export const updateUserProfile = async (
   currentUser: User | null,
@@ -152,7 +150,9 @@ export interface Relationship {
 export async function getFriendships(userId: string): Promise<Relationship[]> {
   try {
     const relationships: Relationship[] = [];
+    const existingFriendships = new Set(); // Track existing friendships
 
+    // First get all friendships
     const sentFriendshipsQuery = query(
       collection(db, 'Friendships'),
       where('requester_id', '==', userId)
@@ -167,6 +167,8 @@ export async function getFriendships(userId: string): Promise<Relationship[]> {
         role: 'requester',
         created_at: data.created_at || Date.now(),
       } as Relationship);
+      // Store addressee_id to track existing friendship
+      existingFriendships.add(data.addressee_id);
     });
 
     const receivedFriendshipsQuery = query(
@@ -183,24 +185,52 @@ export async function getFriendships(userId: string): Promise<Relationship[]> {
         role: 'addressee',
         created_at: data.created_at || Date.now(),
       } as Relationship);
+      // Store requester_id to track existing friendship
+      existingFriendships.add(data.requester_id);
     });
 
+    // Get sent invitations but filter out those where the user has already registered
     const sentInvitationsQuery = query(
       collection(db, 'Invitations'),
       where('requester_id', '==', userId)
     );
     const sentInvitations = await getDocs(sentInvitationsQuery);
-    sentInvitations.forEach(doc => {
+    
+    for (const doc of sentInvitations.docs) {
       const data = serializeFirebaseData(doc.data());
-      relationships.push({
-        ...data,
-        id: doc.id,
-        type: 'invitation',
-        role: 'requester',
-        created_at: data.created_at || Date.now(),
-      } as Relationship);
-    });
+      
+      // Check if this invited user has already registered and friendship exists
+      const usersQuery = query(
+        collection(db, 'Users'),
+        where('email', '==', data.addressee_email)
+      );
+      const userSnapshot = await getDocs(usersQuery);
+      
+      if (userSnapshot.empty || !userSnapshot.docs[0]) {
+        // User hasn't registered yet, show the invitation
+        relationships.push({
+          ...data,
+          id: doc.id,
+          type: 'invitation',
+          role: 'requester',
+          created_at: data.created_at || Date.now(),
+        } as Relationship);
+      } else {
+        const registeredUserId = userSnapshot.docs[0].id;
+        // Only add if there isn't already a friendship with this user
+        if (!existingFriendships.has(registeredUserId)) {
+          relationships.push({
+            ...data,
+            id: doc.id,
+            type: 'invitation',
+            role: 'requester',
+            created_at: data.created_at || Date.now(),
+          } as Relationship);
+        }
+      }
+    }
 
+    // Get received invitations
     const receivedInvitationsQuery = query(
       collection(db, 'Invitations'),
       where('addressee_email', '==', userId)
@@ -208,13 +238,16 @@ export async function getFriendships(userId: string): Promise<Relationship[]> {
     const receivedInvitations = await getDocs(receivedInvitationsQuery);
     receivedInvitations.forEach(doc => {
       const data = serializeFirebaseData(doc.data());
-      relationships.push({
-        ...data,
-        id: doc.id,
-        type: 'invitation',
-        role: 'addressee',
-        created_at: data.created_at || Date.now(),
-      } as Relationship);
+      // Only add received invitations if there isn't already a friendship
+      if (!existingFriendships.has(data.requester_id)) {
+        relationships.push({
+          ...data,
+          id: doc.id,
+          type: 'invitation',
+          role: 'addressee',
+          created_at: data.created_at || Date.now(),
+        } as Relationship);
+      }
     });
 
     return relationships;
@@ -237,37 +270,6 @@ export async function acceptFriendship(relationshipId: string) {
   }
 }
 
-export async function acceptInvitationAndFriendship(addressedEmail: string, requesterId: string) {
-  try {
-    const adminAuth = getAuth(getFirebaseAdminApp());
-    
-    const userRecord = await adminAuth.getUserByEmail(addressedEmail);
-    
-    if (!userRecord) {
-      throw new Error('User not found in authentication');
-    }
-
-    const addresseeId = userRecord.uid;
-
-    const friendshipData = {
-      addressee_id: addresseeId,
-      requester_id: requesterId,
-      created_at: serverTimestamp(),
-      status: 'ACCEPTED'
-    };
-
-    const newFriendshipRef = await addDoc(collection(db, 'Friendships'), friendshipData);
-
-    return {
-      success: true,
-      friendshipId: newFriendshipRef.id
-    };
-
-  } catch (error) {
-    console.error('Error in acceptInvitationAndFriendship:', error);
-    throw error;
-  }
-}
 export const saveGroup = async (groupData: Omit<Group, 'id'>, requesterId: string) => {
   try {
     const processedMembers = await Promise.all(
