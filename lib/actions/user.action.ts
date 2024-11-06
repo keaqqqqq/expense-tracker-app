@@ -244,45 +244,36 @@ export async function acceptFriendship(relationshipId: string) {
   }
 }
 
-// export const saveGroup = async (groupData: Omit<Group, 'id'>) => {
-//   try {
-//     const processedMembers = await Promise.all(
-//       groupData.members.map(async (member) => {
-//         if (member.email) {
-//           const userQuery = query(
-//             collection(db, 'Users'),
-//             where('email', '==', member.email)
-//           );
-//           const userSnapshot = await getDocs(userQuery);
-          
-//           if (!userSnapshot.empty) {
-//             const userData = userSnapshot.docs[0].data();
-//             return {
-//               id: userSnapshot.docs[0].id,
-//               name: userData.name,
-//               email: member.email
-//             };
-//           } else {
-//             await sendInvitationEmail(member.email, groupData.name);
-//             return { email: member.email };
-//           }
-//         }
-//         return member;
-//       })
-//     );
+export async function acceptInvitationAndFriendship(addressedEmail: string, requesterId: string) {
+  try {
+    const usersRef = collection(db, 'Users');
+    const q = query(usersRef, where('email', '==', addressedEmail));
+    const userSnapshot = await getDocs(q);
 
-//     const groupRef = await addDoc(collection(db, 'Groups'), {
-//       ...groupData,
-//       members: processedMembers,
-//       createdAt: new Date(),s
-//     });
+    if (userSnapshot.empty) {
+      throw new Error('User not found');
+    }
+    const addresseeId = userSnapshot.docs[0].id;
 
-//     return groupRef.id;
-//   } catch (error) {
-//     console.error('Error saving group:', error);
-//     throw error;
-//   }
-// };
+    const friendshipData = {
+      addressee_id: addresseeId,
+      requester_id: requesterId,
+      created_at: serverTimestamp(),
+      status: 'ACCEPTED'
+    };
+
+    const newFriendshipRef = await addDoc(collection(db, 'Friendships'), friendshipData);
+
+    return {
+      success: true,
+      friendshipId: newFriendshipRef.id
+    };
+
+  } catch (error) {
+    console.error('Error in acceptInvitationAndFriendship:', error);
+    throw error;
+  }
+}
 
 export const saveGroup = async (groupData: Omit<Group, 'id'>, requesterId: string) => {
   try {

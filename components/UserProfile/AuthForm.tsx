@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation'; 
 import Button from './Button';
 import Cookies from 'js-cookie'; 
+import { acceptInvitationAndFriendship } from '@/lib/actions/user.action';
 
 const fugaz = Fugaz_One({ subsets: ['latin'], weight: ['400'] });
 
@@ -19,13 +20,13 @@ export default function AuthForm() {
     const router = useRouter(); 
     
     useEffect(() => {
-        // Check for invitation data in localStorage
         const storedInvitation = localStorage.getItem('invitationData');
         if (storedInvitation) {
             const parsedData = JSON.parse(storedInvitation);
             setInvitationData(parsedData);
             setEmail(parsedData.email);
-            setIsRegister(true); // Force register mode for invited users
+            setIsRegister(true); 
+            acceptInvitationAndFriendship(parsedData.email, parsedData.requesterId)
         }
     }, []);
     
@@ -95,7 +96,7 @@ export default function AuthForm() {
                 onChange={(e) => setEmail(e.target.value)}
                 className='w-full max-w-[400px] mx-auto px-3 duration-200 hover:border-indigo-600 focus:border-indigo-600 py-2 sm:py-3 border border-solid border-indigo-400 rounded-full outline-none'
                 placeholder='Email'
-                disabled={invitationData !== null} // Disable email field if user was invited
+                disabled={invitationData !== null} 
             />
             <input
                 value={password}
