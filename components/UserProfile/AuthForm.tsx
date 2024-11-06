@@ -44,8 +44,13 @@ export default function AuthForm() {
                 Cookies.set("currentUserUid", userCredential.user.uid, { path: '/' });
                 
                 if (invitationData) {
-                    acceptInvitationAndFriendship(email, requesterId);
-                    localStorage.removeItem('invitationData');
+                    try {
+                        await acceptInvitationAndFriendship(email, requesterId);
+                        console.log('Friendship created successfully');
+                        localStorage.removeItem('invitationData');
+                    } catch (friendshipError) {
+                        console.error('Error creating friendship:', friendshipError);
+                    }
                 }
                 
                 router.push('/profile'); 
