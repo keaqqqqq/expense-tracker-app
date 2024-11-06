@@ -5,6 +5,9 @@ import { User } from 'firebase/auth';
 import { Group } from '@/types/Group'
 import { Friend } from '@/types/Friend';
 import { serializeFirebaseData } from '../utils';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirebaseAdminApp } from '../firebase-admin-config';
+
 export const updateUserProfile = async (
   currentUser: User | null,
   name: string,
@@ -58,16 +61,6 @@ export const fetchUserData = async (uid: string) => {
     throw new Error("User not found");
   }
 };
-
-// export const saveFriendship = async (requesterId: string, addresseeEmail: string) => {
-//   const friendshipData = {
-//     requester_id: requesterId,
-//     addressee_id: addresseeEmail, 
-//     status: 'PENDING',
-//   };
-
-//   await addDoc(collection(db, 'Friendships'), friendshipData);
-// };
 
 export const saveFriendship = async (requesterId: string, addresseeEmail: string) => {
   try {
@@ -246,14 +239,15 @@ export async function acceptFriendship(relationshipId: string) {
 
 export async function acceptInvitationAndFriendship(addressedEmail: string, requesterId: string) {
   try {
-    const usersRef = collection(db, 'Users');
-    const q = query(usersRef, where('email', '==', addressedEmail));
-    const userSnapshot = await getDocs(q);
-
-    if (userSnapshot.empty) {
-      throw new Error('User not found');
+    const adminAuth = getAuth(getFirebaseAdminApp());
+    
+    const userRecord = await adminAuth.getUserByEmail(addressedEmail);
+    
+    if (!userRecord) {
+      throw new Error('User not found in authentication');
     }
-    const addresseeId = userSnapshot.docs[0].id;
+
+    const addresseeId = userRecord.uid;
 
     const friendshipData = {
       addressee_id: addresseeId,
@@ -274,7 +268,6 @@ export async function acceptInvitationAndFriendship(addressedEmail: string, requ
     throw error;
   }
 }
-
 export const saveGroup = async (groupData: Omit<Group, 'id'>, requesterId: string) => {
   try {
     const processedMembers = await Promise.all(
