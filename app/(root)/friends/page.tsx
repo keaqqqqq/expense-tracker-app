@@ -1,4 +1,3 @@
-// app/friends/page.tsx
 import { getFriendships, acceptFriendship, fetchUserData } from "@/lib/actions/user.action"
 import FriendList from "@/components/Friends/FriendList"
 import { cookies } from "next/headers";
