@@ -1,13 +1,12 @@
-// app/friends/page.tsx
 import { getFriendships, acceptFriendship, fetchUserData } from "@/lib/actions/user.action"
 import FriendList from "@/components/Friends/FriendList"
 import { cookies } from "next/headers";
 import { redirect } from 'next/navigation';
 import { DocumentData } from 'firebase/firestore';
-import { UserData, DisplayUserInfo } from "@/components/Friends/FriendList";
-import AddFriend from "@/components/UserProfile/AddFriend";
+import { DisplayUserInfo } from "@/components/Friends/FriendList";
 import FriendsContainer from "@/components/Friends/FriendsContainer";
-
+import FriendTabs from "@/components/Friends/FriendTabs";
+import { UserData } from "@/types/User";
 interface FirestoreUserData extends DocumentData {
   id: string;
   email: string;
@@ -83,7 +82,6 @@ export default async function Friends() {
         console.error('Error fetching user data:', error);
       }
 
-      // Determine which user's info to display based on role
       const displayData = relationship.role === 'addressee'
         ? { userData: requesterData, fallbackId: relationship.requester_id }
         : { userData: addresseeData, fallbackId: relationship.addressee_id || relationship.addressee_email || 'Unknown' };
@@ -100,9 +98,35 @@ export default async function Friends() {
   return (
     <div className="container mx-auto p-4">
       <FriendsContainer />
-      <FriendList 
-        relationships={enrichedRelationships}
-        onAcceptRequest={acceptFriendship}
+      <FriendTabs 
+        allContent={
+          <FriendList 
+          relationships={enrichedRelationships}
+          onAcceptRequest={acceptFriendship}
+          />
+        }
+        nonZeroContent={
+          <FriendList 
+          relationships={enrichedRelationships}
+            onAcceptRequest={acceptFriendship}
+          />
+        }
+        owesYouContent={
+          <FriendList 
+          relationships={enrichedRelationships}
+            onAcceptRequest={acceptFriendship}
+          />
+        }
+        youOweContent={
+          <FriendList 
+          relationships={enrichedRelationships}
+            onAcceptRequest={acceptFriendship}
+          />
+        }
+        allCount={enrichedRelationships.length}
+        nonZeroCount={enrichedRelationships.length}
+        owesYouCount={enrichedRelationships.length}
+        youOweCount={enrichedRelationships.length}
       />
     </div>
   );

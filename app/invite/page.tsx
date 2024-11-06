@@ -1,4 +1,3 @@
-// app/invite/page.tsx
 import InviteHandler from '@/components/Friends/InviteHandler';
 export default function InvitePage({
   searchParams,

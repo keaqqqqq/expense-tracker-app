@@ -48,7 +48,6 @@ exports.sendInvitationEmail = onDocumentCreated({
 
     const inviteUrl = `https://keaqqqqq.com/invite?token=${invitation.invitation_token}`;
 
-    // Type-safe mail options
     const mailOptions = {
       from: {
         name: 'Expense Tracker',

@@ -29,6 +29,8 @@ const Sidebar: React.FC<SideBarProps> = ({ name, image }) => {
                 return 'Profile';
             case '/friends':
                 return 'Friends';
+            case '/groups':
+                return 'Groups';  
             default:
                 return <div className="logo">ExpenseTracker</div>;
         }
@@ -136,6 +138,15 @@ const Sidebar: React.FC<SideBarProps> = ({ name, image }) => {
                                 onClick={() => isMobile && setIsOpen(false)}
                             >
                                 Friends
+                            </Link>
+                        </li>
+                        <li>
+                            <Link
+                                href="/groups"
+                                className={`block py-2 px-4 font-semibold text-gray-800 ${pathname === '/groups' ? 'bg-gray-100 text-indigo-600' : ''}`}
+                                onClick={() => isMobile && setIsOpen(false)}
+                            >
+                                Groups
                             </Link>
                         </li>
                     </ul>

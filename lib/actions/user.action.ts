@@ -1,9 +1,10 @@
 'use server'
-import { doc, setDoc, getDoc, addDoc, collection, query, where, getDocs, serverTimestamp, updateDoc  } from 'firebase/firestore';
+import { doc, setDoc, getDoc, addDoc, collection, query, where, getDocs, serverTimestamp, updateDoc, or  } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { User } from 'firebase/auth';
-import { sendEmailInvitation } from './email';
-
+import { Group } from '@/types/Group'
+import { Friend } from '@/types/Friend';
+import { serializeFirebaseData } from '../utils';
 export const updateUserProfile = async (
   currentUser: User | null,
   name: string,
@@ -70,7 +71,6 @@ export const fetchUserData = async (uid: string) => {
 
 export const saveFriendship = async (requesterId: string, addresseeEmail: string) => {
   try {
-    // Check if user exists
     const usersRef = collection(db, 'Users');
     const q = query(usersRef, where('email', '==', addresseeEmail));
     const userSnapshot = await getDocs(q);
@@ -78,7 +78,6 @@ export const saveFriendship = async (requesterId: string, addresseeEmail: string
     const invitationToken = generateInviteToken();
     
     if (!userSnapshot.empty) {
-      // User exists - create friendship request
       const existingUser = userSnapshot.docs[0];
       const friendshipData = {
         requester_id: requesterId,
@@ -90,18 +89,16 @@ export const saveFriendship = async (requesterId: string, addresseeEmail: string
       await addDoc(collection(db, 'Friendships'), friendshipData);
       return { success: true, type: 'friendship_request' };
     } else {
-      // User doesn't exist - create invitation
       const invitationData = {
         requester_id: requesterId,
         addressee_email: addresseeEmail,
         status: 'PENDING',
         invitation_token: invitationToken,
         created_at: serverTimestamp(),
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days expiry
-        email_sent: false // Will be updated by the Cloud Function
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 
+        email_sent: false 
       };
       
-      // Save invitation to Firestore - this will trigger the email send
       await addDoc(collection(db, 'Invitations'), invitationData);
       return { success: true, type: 'invitation_sent' };
     }
@@ -127,12 +124,10 @@ export const validateInvitation = async (token: string) => {
 
     const invitation = invitationSnapshot.docs[0].data();
     
-    // Check if invitation has expired
     if (invitation.expires_at.toDate() < new Date()) {
       return { valid: false, message: 'Invitation has expired' };
     }
 
-    // Check if invitation has already been accepted
     if (invitation.status === 'ACCEPTED') {
       return { valid: false, message: 'Invitation has already been used' };
     }
@@ -150,8 +145,6 @@ export const validateInvitation = async (token: string) => {
   }
 };
 
-
-
 export interface Relationship {
   id: string;
   type: 'friendship' | 'invitation';
@@ -167,63 +160,67 @@ export async function getFriendships(userId: string): Promise<Relationship[]> {
   try {
     const relationships: Relationship[] = [];
 
-    // Get friendships where user is requester
     const sentFriendshipsQuery = query(
       collection(db, 'Friendships'),
       where('requester_id', '==', userId)
     );
     const sentFriendships = await getDocs(sentFriendshipsQuery);
     sentFriendships.forEach(doc => {
+      const data = serializeFirebaseData(doc.data());
       relationships.push({
-        ...doc.data(),
+        ...data,
         id: doc.id,
         type: 'friendship',
-        role: 'requester'
+        role: 'requester',
+        created_at: data.created_at || Date.now(),
       } as Relationship);
     });
 
-    // Get friendships where user is addressee
     const receivedFriendshipsQuery = query(
       collection(db, 'Friendships'),
       where('addressee_id', '==', userId)
     );
     const receivedFriendships = await getDocs(receivedFriendshipsQuery);
     receivedFriendships.forEach(doc => {
+      const data = serializeFirebaseData(doc.data());
       relationships.push({
-        ...doc.data(),
+        ...data,
         id: doc.id,
         type: 'friendship',
-        role: 'addressee'
+        role: 'addressee',
+        created_at: data.created_at || Date.now(),
       } as Relationship);
     });
 
-    // Get invitations sent by user
     const sentInvitationsQuery = query(
       collection(db, 'Invitations'),
       where('requester_id', '==', userId)
     );
     const sentInvitations = await getDocs(sentInvitationsQuery);
     sentInvitations.forEach(doc => {
+      const data = serializeFirebaseData(doc.data());
       relationships.push({
-        ...doc.data(),
+        ...data,
         id: doc.id,
         type: 'invitation',
-        role: 'requester'
+        role: 'requester',
+        created_at: data.created_at || Date.now(),
       } as Relationship);
     });
 
-    // Get invitations received by user's email
     const receivedInvitationsQuery = query(
       collection(db, 'Invitations'),
       where('addressee_email', '==', userId)
     );
     const receivedInvitations = await getDocs(receivedInvitationsQuery);
     receivedInvitations.forEach(doc => {
+      const data = serializeFirebaseData(doc.data());
       relationships.push({
-        ...doc.data(),
+        ...data,
         id: doc.id,
         type: 'invitation',
-        role: 'addressee'
+        role: 'addressee',
+        created_at: data.created_at || Date.now(),
       } as Relationship);
     });
 
@@ -246,3 +243,166 @@ export async function acceptFriendship(relationshipId: string) {
     throw error;
   }
 }
+
+export async function acceptInvitationAndFriendship(addressedEmail: string, requesterId: string) {
+  try {
+    const usersRef = collection(db, 'Users');
+    const q = query(usersRef, where('email', '==', addressedEmail));
+    const userSnapshot = await getDocs(q);
+
+    if (userSnapshot.empty) {
+      throw new Error('User not found');
+    }
+    const addresseeId = userSnapshot.docs[0].id;
+
+    const friendshipData = {
+      addressee_id: addresseeId,
+      requester_id: requesterId,
+      created_at: serverTimestamp(),
+      status: 'ACCEPTED'
+    };
+
+    const newFriendshipRef = await addDoc(collection(db, 'Friendships'), friendshipData);
+
+    return {
+      success: true,
+      friendshipId: newFriendshipRef.id
+    };
+
+  } catch (error) {
+    console.error('Error in acceptInvitationAndFriendship:', error);
+    throw error;
+  }
+}
+
+export const saveGroup = async (groupData: Omit<Group, 'id'>, requesterId: string) => {
+  try {
+    const processedMembers = await Promise.all(
+      groupData.members.map(async (member) => {
+        if (!member.email) return member;
+
+        if (member.email === groupData.members[0].email) {
+          const creatorDoc = await getDoc(doc(db, 'Users', requesterId));
+          if (!creatorDoc.exists()) throw new Error('Creator user not found');
+          
+          const creatorData = creatorDoc.data();
+          return {
+            id: requesterId,
+            name: creatorData.name,
+            email: member.email
+          };
+        }
+
+        const userQuery = query(
+          collection(db, 'Users'),
+          where('email', '==', member.email)
+        );
+        const userSnapshot = await getDocs(userQuery);
+        
+        if (!userSnapshot.empty) {
+          const userData = userSnapshot.docs[0].data();
+          return {
+            id: userSnapshot.docs[0].id,
+            name: userData.name,
+            email: member.email
+          };
+        } else {
+          const invitationToken = generateInviteToken();
+          const invitationData = {
+            requester_id: requesterId,
+            addressee_email: member.email,
+            status: 'PENDING',
+            invitation_token: invitationToken,
+            created_at: serverTimestamp(),
+            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 
+            email_sent: false,
+            group_name: groupData.name 
+          };
+
+          await addDoc(collection(db, 'Invitations'), invitationData);
+          
+          return { 
+            email: member.email,
+            invitation_token: invitationToken,
+            status: 'PENDING'
+          };
+        }
+      })
+    );
+
+    const groupRef = await addDoc(collection(db, 'Groups'), {
+      ...groupData,
+      members: processedMembers,
+      created_at: serverTimestamp(),
+      creator_id: requesterId
+    });
+
+    const result = {
+      success: true,
+      group_id: groupRef.id,
+      pending_invitations: processedMembers.filter(member => 'status' in member && member.status === 'PENDING')
+    };
+
+    return serializeFirebaseData(result);
+  } catch (error) {
+    console.error('Error saving group:', error);
+    throw error;
+  }
+};
+
+
+export const loadFriends = async (uid: string): Promise<Friend[]> => {
+  try {
+    const [requesterSnapshot, addresseeSnapshot] = await Promise.all([
+      getDocs(query(
+        collection(db, 'Friendships'),
+        where('requester_id', '==', uid),
+        where('status', '==', 'ACCEPTED')
+      )),
+      getDocs(query(
+        collection(db, 'Friendships'),
+        where('addressee_id', '==', uid),
+        where('status', '==', 'ACCEPTED')
+      ))
+    ]);
+
+    const friendIds = new Set<string>();
+    [...requesterSnapshot.docs, ...addresseeSnapshot.docs].forEach(doc => {
+      const data = doc.data();
+      const friendId = data.requester_id === uid ? data.addressee_id : data.requester_id;
+      friendIds.add(friendId);
+    });
+
+    if (friendIds.size === 0) {
+      return [];
+    }
+
+    const friendPromises = Array.from(friendIds).map(async friendId => {
+      try {
+        const userDoc = doc(db, 'Users', friendId);
+        const userSnapshot = await getDoc(userDoc);
+
+        if (userSnapshot.exists()) {
+          const userData = userSnapshot.data();
+          return {
+            id: friendId,
+            name: userData.name || 'Unknown',
+            email: userData.email || '',
+            image: userData.image || ''
+          };
+        } else {
+          return null;
+        }
+      } catch (error) {
+        return null;
+      }
+    });
+
+    const friends = (await Promise.all(friendPromises))
+      .filter((friend): friend is Friend => friend !== null);
+    return friends;
+
+  } catch (error) {
+    throw error;
+  }
+};
