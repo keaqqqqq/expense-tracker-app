@@ -8,8 +8,7 @@ import Button from './Button';
 import Cookies from 'js-cookie'; 
 import { addDoc, collection } from 'firebase/firestore';
 import { db } from '@/firebase/config';
-import { getAuth } from 'firebase-admin/auth';
-import { getFirebaseAdminApp } from '@/lib/firebase-admin-config';
+
 const fugaz = Fugaz_One({ subsets: ['latin'], weight: ['400'] });
 
 export default function AuthForm() {
@@ -33,20 +32,10 @@ export default function AuthForm() {
         }
     }, []);
     
-    async function acceptInvitationAndFriendship() {
+    async function acceptInvitationAndFriendship(currentUserUid: string) {
         try {
-            const adminAuth = getAuth(getFirebaseAdminApp());
-    
-            const userRecord = await adminAuth.getUserByEmail(email);
-            
-            if (!userRecord) {
-            throw new Error('User not found in authentication');
-            }
-
-            const addresseeId = userRecord.uid;
-
             const friendshipData = {
-                addressee_id: addresseeId, 
+                addressee_id: currentUserUid, 
                 requester_id: requesterId,
                 created_at: Date.now(),
                 status: 'ACCEPTED'
@@ -77,7 +66,7 @@ export default function AuthForm() {
                 
                 if (invitationData) {
                     try {
-                        await acceptInvitationAndFriendship();
+                        await acceptInvitationAndFriendship(userCredential.user.uid);
                         console.log('Friendship created successfully');
                         localStorage.removeItem('invitationData');
                     } catch (friendshipError) {
