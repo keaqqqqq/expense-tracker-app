@@ -6,8 +6,10 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation'; 
 import Button from './Button';
 import Cookies from 'js-cookie'; 
-import { acceptInvitationAndFriendship } from '@/lib/actions/user.action';
-
+import { addDoc, collection } from 'firebase/firestore';
+import { db } from '@/firebase/config';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirebaseAdminApp } from '@/lib/firebase-admin-config';
 const fugaz = Fugaz_One({ subsets: ['latin'], weight: ['400'] });
 
 export default function AuthForm() {
@@ -31,6 +33,36 @@ export default function AuthForm() {
         }
     }, []);
     
+    async function acceptInvitationAndFriendship() {
+        try {
+            const adminAuth = getAuth(getFirebaseAdminApp());
+    
+            const userRecord = await adminAuth.getUserByEmail(email);
+            
+            if (!userRecord) {
+            throw new Error('User not found in authentication');
+            }
+
+            const addresseeId = userRecord.uid;
+
+            const friendshipData = {
+                addressee_id: addresseeId, 
+                requester_id: requesterId,
+                created_at: Date.now(),
+                status: 'ACCEPTED'
+            };
+
+            const newFriendshipRef = await addDoc(collection(db, 'Friendships'), friendshipData);
+            return {
+                success: true,
+                friendshipId: newFriendshipRef.id
+            };
+        } catch (error) {
+            console.error('Error in acceptInvitationAndFriendship:', error);
+            throw error;
+        }
+    }
+
     async function handleSubmit() {
         if (!email || !password || password.length < 6) {
             return;
@@ -45,7 +77,7 @@ export default function AuthForm() {
                 
                 if (invitationData) {
                     try {
-                        await acceptInvitationAndFriendship(email, requesterId);
+                        await acceptInvitationAndFriendship();
                         console.log('Friendship created successfully');
                         localStorage.removeItem('invitationData');
                     } catch (friendshipError) {
