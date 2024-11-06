@@ -12,6 +12,7 @@ const fugaz = Fugaz_One({ subsets: ['latin'], weight: ['400'] });
 
 export default function AuthForm() {
     const [email, setEmail] = useState('');
+    const [requesterId, setRequesterId] = useState('');
     const [password, setPassword] = useState('');
     const [isRegister, setIsRegister] = useState(false);
     const [authenticating, setAuthenticating] = useState(false);
@@ -25,8 +26,8 @@ export default function AuthForm() {
             const parsedData = JSON.parse(storedInvitation);
             setInvitationData(parsedData);
             setEmail(parsedData.email);
+            setRequesterId(parsedData.requesterId);
             setIsRegister(true); 
-            acceptInvitationAndFriendship(parsedData.email, parsedData.requesterId)
         }
     }, []);
     
@@ -42,11 +43,9 @@ export default function AuthForm() {
                 Cookies.set("loggedin", String(true));
                 Cookies.set("currentUserUid", userCredential.user.uid, { path: '/' });
                 
-                // If this was an invited user, clear the invitation data
                 if (invitationData) {
+                    acceptInvitationAndFriendship(email, requesterId);
                     localStorage.removeItem('invitationData');
-                    // Here you might want to make an API call to complete the friendship connection
-                    // using invitationData.requesterId
                 }
                 
                 router.push('/profile'); 
