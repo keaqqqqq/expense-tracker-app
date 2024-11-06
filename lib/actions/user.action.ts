@@ -4,7 +4,7 @@ import { db } from '@/firebase/config';
 import { User } from 'firebase/auth';
 import { Group } from '@/types/Group'
 import { Friend } from '@/types/Friend';
-
+import { serializeFirebaseData } from '../utils';
 export const updateUserProfile = async (
   currentUser: User | null,
   name: string,
@@ -166,13 +166,13 @@ export async function getFriendships(userId: string): Promise<Relationship[]> {
     );
     const sentFriendships = await getDocs(sentFriendshipsQuery);
     sentFriendships.forEach(doc => {
-      const data = doc.data();
+      const data = serializeFirebaseData(doc.data());
       relationships.push({
         ...data,
         id: doc.id,
         type: 'friendship',
         role: 'requester',
-        created_at: data.created_at?.toMillis() || Date.now(),
+        created_at: data.created_at || Date.now(),
       } as Relationship);
     });
 
@@ -182,13 +182,13 @@ export async function getFriendships(userId: string): Promise<Relationship[]> {
     );
     const receivedFriendships = await getDocs(receivedFriendshipsQuery);
     receivedFriendships.forEach(doc => {
-      const data = doc.data();
+      const data = serializeFirebaseData(doc.data());
       relationships.push({
         ...data,
         id: doc.id,
         type: 'friendship',
         role: 'addressee',
-        created_at: data.created_at?.toMillis() || Date.now(),
+        created_at: data.created_at || Date.now(),
       } as Relationship);
     });
 
@@ -198,13 +198,13 @@ export async function getFriendships(userId: string): Promise<Relationship[]> {
     );
     const sentInvitations = await getDocs(sentInvitationsQuery);
     sentInvitations.forEach(doc => {
-      const data = doc.data();
+      const data = serializeFirebaseData(doc.data());
       relationships.push({
         ...data,
         id: doc.id,
         type: 'invitation',
         role: 'requester',
-        created_at: data.created_at?.toMillis() || Date.now(), 
+        created_at: data.created_at || Date.now(),
       } as Relationship);
     });
 
@@ -214,13 +214,13 @@ export async function getFriendships(userId: string): Promise<Relationship[]> {
     );
     const receivedInvitations = await getDocs(receivedInvitationsQuery);
     receivedInvitations.forEach(doc => {
-      const data = doc.data();
+      const data = serializeFirebaseData(doc.data());
       relationships.push({
         ...data,
         id: doc.id,
         type: 'invitation',
         role: 'addressee',
-        created_at: data.created_at?.toMillis() || Date.now(), 
+        created_at: data.created_at || Date.now(),
       } as Relationship);
     });
 
@@ -346,11 +346,13 @@ export const saveGroup = async (groupData: Omit<Group, 'id'>, requesterId: strin
       creator_id: requesterId
     });
 
-    return {
+    const result = {
       success: true,
       group_id: groupRef.id,
       pending_invitations: processedMembers.filter(member => 'status' in member && member.status === 'PENDING')
     };
+
+    return serializeFirebaseData(result);
   } catch (error) {
     console.error('Error saving group:', error);
     throw error;
