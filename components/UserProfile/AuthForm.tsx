@@ -8,8 +8,7 @@ import Button from './Button';
 import Cookies from 'js-cookie'; 
 import { addDoc, collection } from 'firebase/firestore';
 import { db } from '@/firebase/config';
-import { Timestamp } from 'firebase-admin/firestore';
-
+import { Timestamp } from 'firebase/firestore';
 const fugaz = Fugaz_One({ subsets: ['latin'], weight: ['400'] });
 
 export default function AuthForm() {
