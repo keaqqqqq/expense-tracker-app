@@ -76,11 +76,17 @@ export default function AuthForm() {
     
                     // Get user data for member info
                     const userDoc = await getDoc(doc(db, 'Users', currentUserUid));
+                    if (!userDoc.exists()) throw new Error('User not found');
                     const userData = userDoc.data();
     
                     // Update group: remove from pending_members and add to members
                     const updatedPendingMembers = (groupData.pending_members || [])
-                        .filter((member: any) => member.email !== email);
+                    .filter((member: any) => {
+                      return (member.id !== currentUserUid && 
+                             member.email !== userData.email) || 
+                             (member.status !== 'PENDING_FRIENDSHIP' && 
+                              member.status !== 'PENDING_INVITATION');
+                    });
     
                     await updateDoc(groupDoc.ref, {
                         members: arrayUnion({
