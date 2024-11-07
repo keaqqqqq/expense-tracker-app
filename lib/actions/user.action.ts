@@ -2,12 +2,10 @@
 import { doc, setDoc, getDoc, addDoc, collection, query, where, getDocs, serverTimestamp, updateDoc, or  } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { User } from 'firebase/auth';
-import { Group } from '@/types/Group'
+import { Group, GroupMember } from '@/types/Group'
 import { Friend } from '@/types/Friend';
 import { serializeFirebaseData } from '../utils';
-import { getAuth } from 'firebase-admin/auth';
-import { getFirebaseAdminApp } from '../firebase-admin-config';
-
+import { FirestoreGroupData } from '@/types/Group';
 export const updateUserProfile = async (
   currentUser: User | null,
   name: string,
@@ -152,7 +150,9 @@ export interface Relationship {
 export async function getFriendships(userId: string): Promise<Relationship[]> {
   try {
     const relationships: Relationship[] = [];
+    const existingFriendships = new Set(); // Track existing friendships
 
+    // First get all friendships
     const sentFriendshipsQuery = query(
       collection(db, 'Friendships'),
       where('requester_id', '==', userId)
@@ -167,6 +167,8 @@ export async function getFriendships(userId: string): Promise<Relationship[]> {
         role: 'requester',
         created_at: data.created_at || Date.now(),
       } as Relationship);
+      // Store addressee_id to track existing friendship
+      existingFriendships.add(data.addressee_id);
     });
 
     const receivedFriendshipsQuery = query(
@@ -183,24 +185,52 @@ export async function getFriendships(userId: string): Promise<Relationship[]> {
         role: 'addressee',
         created_at: data.created_at || Date.now(),
       } as Relationship);
+      // Store requester_id to track existing friendship
+      existingFriendships.add(data.requester_id);
     });
 
+    // Get sent invitations but filter out those where the user has already registered
     const sentInvitationsQuery = query(
       collection(db, 'Invitations'),
       where('requester_id', '==', userId)
     );
     const sentInvitations = await getDocs(sentInvitationsQuery);
-    sentInvitations.forEach(doc => {
+    
+    for (const doc of sentInvitations.docs) {
       const data = serializeFirebaseData(doc.data());
-      relationships.push({
-        ...data,
-        id: doc.id,
-        type: 'invitation',
-        role: 'requester',
-        created_at: data.created_at || Date.now(),
-      } as Relationship);
-    });
+      
+      // Check if this invited user has already registered and friendship exists
+      const usersQuery = query(
+        collection(db, 'Users'),
+        where('email', '==', data.addressee_email)
+      );
+      const userSnapshot = await getDocs(usersQuery);
+      
+      if (userSnapshot.empty || !userSnapshot.docs[0]) {
+        // User hasn't registered yet, show the invitation
+        relationships.push({
+          ...data,
+          id: doc.id,
+          type: 'invitation',
+          role: 'requester',
+          created_at: data.created_at || Date.now(),
+        } as Relationship);
+      } else {
+        const registeredUserId = userSnapshot.docs[0].id;
+        // Only add if there isn't already a friendship with this user
+        if (!existingFriendships.has(registeredUserId)) {
+          relationships.push({
+            ...data,
+            id: doc.id,
+            type: 'invitation',
+            role: 'requester',
+            created_at: data.created_at || Date.now(),
+          } as Relationship);
+        }
+      }
+    }
 
+    // Get received invitations
     const receivedInvitationsQuery = query(
       collection(db, 'Invitations'),
       where('addressee_email', '==', userId)
@@ -208,13 +238,16 @@ export async function getFriendships(userId: string): Promise<Relationship[]> {
     const receivedInvitations = await getDocs(receivedInvitationsQuery);
     receivedInvitations.forEach(doc => {
       const data = serializeFirebaseData(doc.data());
-      relationships.push({
-        ...data,
-        id: doc.id,
-        type: 'invitation',
-        role: 'addressee',
-        created_at: data.created_at || Date.now(),
-      } as Relationship);
+      // Only add received invitations if there isn't already a friendship
+      if (!existingFriendships.has(data.requester_id)) {
+        relationships.push({
+          ...data,
+          id: doc.id,
+          type: 'invitation',
+          role: 'addressee',
+          created_at: data.created_at || Date.now(),
+        } as Relationship);
+      }
     });
 
     return relationships;
@@ -237,37 +270,6 @@ export async function acceptFriendship(relationshipId: string) {
   }
 }
 
-export async function acceptInvitationAndFriendship(addressedEmail: string, requesterId: string) {
-  try {
-    const adminAuth = getAuth(getFirebaseAdminApp());
-    
-    const userRecord = await adminAuth.getUserByEmail(addressedEmail);
-    
-    if (!userRecord) {
-      throw new Error('User not found in authentication');
-    }
-
-    const addresseeId = userRecord.uid;
-
-    const friendshipData = {
-      addressee_id: addresseeId,
-      requester_id: requesterId,
-      created_at: serverTimestamp(),
-      status: 'ACCEPTED'
-    };
-
-    const newFriendshipRef = await addDoc(collection(db, 'Friendships'), friendshipData);
-
-    return {
-      success: true,
-      friendshipId: newFriendshipRef.id
-    };
-
-  } catch (error) {
-    console.error('Error in acceptInvitationAndFriendship:', error);
-    throw error;
-  }
-}
 export const saveGroup = async (groupData: Omit<Group, 'id'>, requesterId: string) => {
   try {
     const processedMembers = await Promise.all(
@@ -399,3 +401,133 @@ export const loadFriends = async (uid: string): Promise<Friend[]> => {
     throw error;
   }
 };
+
+export async function getGroups(userEmail: string): Promise<Group[]> {
+  try {
+    const groupsRef = collection(db, 'Groups');
+    
+    const groupsSnapshot = await getDocs(groupsRef);
+    const groupsData = groupsSnapshot.docs
+      .filter(doc => {
+        const data = doc.data() as FirestoreGroupData;
+        return data.members?.some(member => member.email === userEmail);
+      })
+      .map(doc => ({
+        id: doc.id,
+        ...(doc.data() as FirestoreGroupData)
+      }));
+
+    const memberEmails = new Set<string>();
+    groupsData.forEach(group => {
+      group.members.forEach((member: GroupMember) => {
+        if (!member || typeof member.email !== 'string') {
+          throw new Error('Invalid member data: email is required');
+        }
+        memberEmails.add(member.email);
+      });
+    });
+
+    const usersRef = collection(db, 'Users');
+    const usersSnapshot = await getDocs(query(
+      usersRef, 
+      where('email', 'in', Array.from(memberEmails))
+    ));
+
+    const userDataMap = new Map<string, { name: string, image: string }>();
+    usersSnapshot.docs.forEach(doc => {
+      const userData = doc.data();
+      if (userData.email) {
+        userDataMap.set(userData.email, {
+          name: userData.name,
+          image: userData.image || ''
+        });
+      }
+    });
+
+    const groupsWithMembers: Group[] = groupsData.map(group => ({
+      id: group.id,
+      name: group.name,
+      type: group.type,
+      image: group.image || '',
+      members: group.members.map(member => {
+        if (!member || typeof member.email !== 'string') {
+          throw new Error('Invalid member data: email is required');
+        }
+        const userData = userDataMap.get(member.email);
+        return {        
+          email: member.email,
+          id: member.id,
+          name: userData?.name,
+          image: userData?.image
+        }
+      })
+    }));
+
+    return groupsWithMembers;
+  } catch (error) {
+    console.error('Error fetching groups:', error);
+    throw error;
+  }
+}
+
+export async function getGroupDetails(groupId: string): Promise<Group | null> {
+  try {
+    const groupRef = doc(db, 'Groups', groupId);
+    const groupSnap = await getDoc(groupRef);
+
+    if (!groupSnap.exists()) {
+      return null;
+    }
+
+    const groupData = groupSnap.data() as FirestoreGroupData;
+    
+    // Get all unique member emails
+    const memberEmails = new Set<string>();
+    groupData.members.forEach(member => {
+      if (member.email) memberEmails.add(member.email);
+    });
+
+    // Fetch user data for all members
+    const usersRef = collection(db, 'Users');
+    const usersQuery = query(
+      usersRef, 
+      where('email', 'in', Array.from(memberEmails))
+    );
+    
+    const usersSnapshot = await getDocs(usersQuery);
+    const userDataMap = new Map<string, { name: string, image: string }>();
+    
+    usersSnapshot.docs.forEach(doc => {
+      const userData = doc.data();
+      if (userData.email) {
+        userDataMap.set(userData.email, {
+          name: userData.name,
+          image: userData.image || ''
+        });
+      }
+    });
+
+    return {
+      id: groupSnap.id,
+      name: groupData.name,
+      type: groupData.type,
+      image: groupData.image || '',
+      members: groupData.members.map(member => {
+        if (!member || typeof member.email !== 'string') {
+          throw new Error('Invalid member data: email is required');
+        }
+        const userData = userDataMap.get(member.email);
+        return {
+          email: member.email,
+          id: member.id,
+          name: userData?.name,
+          image: userData?.image
+        };
+      })
+    };
+
+  } catch (error) {
+    console.error('Error fetching group details:', error);
+    throw error;
+  }
+}

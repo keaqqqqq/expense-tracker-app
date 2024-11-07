@@ -1,10 +1,13 @@
 import GroupsContainer from '@/components/Groups/GroupsContainer'
-import { loadFriends } from '@/lib/actions/user.action';
+import { loadFriends, getGroups } from '@/lib/actions/user.action';  // Add getGroups import
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { UserData } from '@/types/User';
 import { fetchUserData } from '@/lib/actions/user.action';
 import { Friend } from '@/types/Friend';
+import GroupList from '@/components/Groups/GroupList';
+import { Group } from '@/types/Group';
+
 export default async function Groups() {
   const cookieStore = cookies();
   const uid = cookieStore.get('currentUserUid')?.value;
@@ -15,24 +18,35 @@ export default async function Groups() {
 
   let userData: UserData | null = null;
   let friends: Friend[] = [];
+  let groups: Group[] = [];
 
   if (uid) {
     try {
-      [userData, friends] = await Promise.all([
-        fetchUserData(uid),
-        loadFriends(uid)
-      ]);
+      // First get user data to get the email
+      userData = await fetchUserData(uid);
+      
+      if (userData?.email) {
+        // Then fetch friends and groups in parallel
+        [friends, groups] = await Promise.all([
+          loadFriends(uid),
+          getGroups(userData.email)  // Add this to fetch groups
+        ]);
+
+      }
     } catch (error) {
       console.error("Error fetching data:", error);
     }
   }
 
   return (
-    <GroupsContainer 
-      currentUserId={uid} 
-      name={userData?.name} 
-      friends={friends} 
-      email={userData?.email}
-    />
+    <div>
+      <GroupsContainer 
+        currentUserId={uid} 
+        name={userData?.name} 
+        friends={friends} 
+        email={userData?.email}
+      />
+      <GroupList groups={groups} userEmail={userData?.email}/>
+    </div>
   );
 }
