@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation'; 
 import Button from './Button';
 import Cookies from 'js-cookie'; 
-import { addDoc, collection, query, where, getDocs, getDoc, doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { addDoc, collection, query, where, getDocs, getDoc, doc, updateDoc, arrayUnion, setDoc } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { Timestamp } from 'firebase/firestore';
 const fugaz = Fugaz_One({ subsets: ['latin'], weight: ['400'] });
@@ -145,6 +145,11 @@ export default function AuthForm() {
             if (isRegister) {
                 console.log('Signing up a new user');
                 const userCredential = await signup(email, password);
+                await setDoc(doc(db, 'Users', userCredential.user.uid), {
+                    name: email.split('@')[0], 
+                    email: email,
+                    image: null
+                });
                 Cookies.set("loggedin", String(true));
                 Cookies.set("currentUserUid", userCredential.user.uid, { path: '/' });
                 
