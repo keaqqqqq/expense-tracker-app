@@ -560,7 +560,6 @@ export async function getGroups(userEmail: string): Promise<Group[]> {
     const groupsData = groupsSnapshot.docs
       .filter(doc => {
         const data = doc.data() as FirestoreGroupData;
-        // Check both active members and pending members
         return data.members?.some(member => member.email === userEmail) ||
                data.pending_members?.some(member => member.email === userEmail);
       })
@@ -569,38 +568,42 @@ export async function getGroups(userEmail: string): Promise<Group[]> {
         ...(doc.data() as FirestoreGroupData)
       }));
 
-    // Collect all member emails (both active and pending)
+    // If no groups found, return empty array
+    if (groupsData.length === 0) {
+      return [];
+    }
+
     const memberEmails = new Set<string>();
     groupsData.forEach(group => {
-      // Add active members
       group.members?.forEach((member: GroupMember) => {
         if (member?.email) memberEmails.add(member.email);
       });
-      // Add pending members
       group.pending_members?.forEach((member: GroupMember) => {
         if (member?.email) memberEmails.add(member.email);
       });
     });
 
-    // Fetch user data for all members
-    const usersRef = collection(db, 'Users');
-    const usersSnapshot = await getDocs(query(
-      usersRef, 
-      where('email', 'in', Array.from(memberEmails))
-    ));
+    // Only fetch user data if there are member emails
+    let userDataMap = new Map<string, { name: string, image: string }>();
 
-    const userDataMap = new Map<string, { name: string, image: string }>();
-    usersSnapshot.docs.forEach(doc => {
-      const userData = doc.data();
-      if (userData.email) {
-        userDataMap.set(userData.email, {
-          name: userData.name,
-          image: userData.image || ''
-        });
-      }
-    });
+    if (memberEmails.size > 0) {
+      const usersRef = collection(db, 'Users');
+      const usersSnapshot = await getDocs(query(
+        usersRef, 
+        where('email', 'in', Array.from(memberEmails))
+      ));
 
-    // Process groups with both active and pending members
+      usersSnapshot.docs.forEach(doc => {
+        const userData = doc.data();
+        if (userData.email) {
+          userDataMap.set(userData.email, {
+            name: userData.name,
+            image: userData.image || ''
+          });
+        }
+      });
+    }
+
     const groupsWithMembers: Group[] = groupsData.map(group => ({
       id: group.id,
       name: group.name,

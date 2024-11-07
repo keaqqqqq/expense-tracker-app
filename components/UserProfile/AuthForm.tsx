@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation'; 
 import Button from './Button';
 import Cookies from 'js-cookie'; 
-import { addDoc, collection } from 'firebase/firestore';
+import { addDoc, collection, query, where, getDocs, getDoc, doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { Timestamp } from 'firebase/firestore';
 const fugaz = Fugaz_One({ subsets: ['latin'], weight: ['400'] });
@@ -34,14 +34,72 @@ export default function AuthForm() {
     
     async function acceptInvitationAndFriendship(currentUserUid: string) {
         try {
+            // First, check if this invitation is related to a group
+            const invitationsRef = collection(db, 'Invitations');
+            const invitationQuery = query(
+                invitationsRef,
+                where('addressee_email', '==', email),
+                where('status', '==', 'PENDING')
+            );
+            
+            const invitationSnapshot = await getDocs(invitationQuery);
+            const invitationDoc = invitationSnapshot.docs[0];
+            const invitationData = invitationDoc?.data();
+    
+            // Create friendship regardless of invitation type
             const friendshipData = {
                 addressee_id: currentUserUid, 
                 requester_id: requesterId,
                 created_at: Timestamp.now(),
                 status: 'ACCEPTED'
             };
-
+    
             const newFriendshipRef = await addDoc(collection(db, 'Friendships'), friendshipData);
+    
+            // If invitation exists and has a group_name, it's a group invitation
+            if (invitationData?.group_name) {
+                // Find the group where this user is in pending_members
+                const groupsRef = collection(db, 'Groups');
+                const groupQuery = query(
+                    groupsRef,
+                    where('pending_members', 'array-contains', { 
+                        email: email,
+                        status: 'PENDING_INVITATION'
+                    })
+                );
+                
+                const groupSnapshot = await getDocs(groupQuery);
+                
+                if (!groupSnapshot.empty) {
+                    const groupDoc = groupSnapshot.docs[0];
+                    const groupData = groupDoc.data();
+    
+                    // Get user data for member info
+                    const userDoc = await getDoc(doc(db, 'Users', currentUserUid));
+                    const userData = userDoc.data();
+    
+                    // Update group: remove from pending_members and add to members
+                    const updatedPendingMembers = (groupData.pending_members || [])
+                        .filter((member: any) => member.email !== email);
+    
+                    await updateDoc(groupDoc.ref, {
+                        members: arrayUnion({
+                            id: currentUserUid,
+                            name: userData?.name,
+                            email: email,
+                            image: userData?.image || ''
+                        }),
+                        pending_members: updatedPendingMembers
+                    });
+                }
+    
+                // Update invitation status
+                await updateDoc(invitationDoc.ref, {
+                    status: 'ACCEPTED',
+                    accepted_at: Timestamp.now()
+                });
+            }
+    
             return {
                 success: true,
                 friendshipId: newFriendshipRef.id

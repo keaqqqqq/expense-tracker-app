@@ -139,9 +139,7 @@ const FriendList = ({ relationships: initialRelationships, onAcceptRequest }: Fr
                 <Button
                   onClick={() => handleAcceptRequest(relationship)}
                   disabled={pendingAccepts.has(relationship.id)}
-                  className={`ml-4 shrink-0 shadow-sm hover:shadow-md transition-shadow duration-200 ${
-                    relationship.related_group_id ? 'bg-primary text-white hover:bg-primary/90' : ''
-                  }`}
+                  className={`ml-4 shrink-0 shadow-sm hover:shadow-md transition-shadow duration-200`}
                   variant={relationship.related_group_id ? "default" : "secondary"}
                   size="sm"
                 >
