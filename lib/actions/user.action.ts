@@ -260,10 +260,29 @@ export async function getFriendships(userId: string): Promise<Relationship[]> {
 
 export async function acceptFriendship(relationshipId: string) {
   try {
-    await updateDoc(doc(db, 'Friendships', relationshipId), {
-      status: 'ACCEPTED'
+    const friendshipRef = doc(db, 'Friendships', relationshipId);
+    const friendshipDoc = await getDoc(friendshipRef);
+
+    if (!friendshipDoc.exists()) {
+      throw new Error('Friendship not found');
+    }
+
+    const friendshipData = friendshipDoc.data();
+    const currentUserUid = friendshipData.addressee_id; 
+
+    if (friendshipData.related_group_id) {
+      return acceptFriendshipAndAddToGroup(relationshipId, currentUserUid);
+    }
+
+    await updateDoc(friendshipRef, {
+      status: 'ACCEPTED',
+      accepted_at: serverTimestamp()
     });
-    return { success: true };
+
+    return { 
+      success: true,
+      message: 'Successfully accepted friendship'
+    };
   } catch (error) {
     console.error('Error accepting friendship:', error);
     throw error;
@@ -276,7 +295,6 @@ export const saveGroup = async (groupData: Omit<Group, 'id'>, requesterId: strin
       groupData.members.map(async (member) => {
         if (!member.email) return member;
 
-        // Handle creator case
         if (member.email === groupData.members[0].email) {
           const creatorDoc = await getDoc(doc(db, 'Users', requesterId));
           if (!creatorDoc.exists()) throw new Error('Creator user not found');
@@ -289,7 +307,6 @@ export const saveGroup = async (groupData: Omit<Group, 'id'>, requesterId: strin
           };
         }
 
-        // Check if user exists
         const userQuery = query(
           collection(db, 'Users'),
           where('email', '==', member.email)
@@ -300,7 +317,6 @@ export const saveGroup = async (groupData: Omit<Group, 'id'>, requesterId: strin
           const userData = userSnapshot.docs[0].data();
           const userId = userSnapshot.docs[0].id;
 
-          // Check if they are friends
           const friendshipQuery = query(
             collection(db, 'Friendships'),
             where('requester_id', 'in', [requesterId, userId]),
@@ -310,19 +326,17 @@ export const saveGroup = async (groupData: Omit<Group, 'id'>, requesterId: strin
           const friendshipSnapshot = await getDocs(friendshipQuery);
 
           if (friendshipSnapshot.empty) {
-            // They are not friends, send a friendship request first
             const friendshipData = {
               requester_id: requesterId,
               addressee_id: userId,
               created_at: serverTimestamp(),
               status: 'PENDING',
-              related_group_id: null, // Will be updated after group creation
+              related_group_id: null, 
               related_group_name: groupData.name
             };
 
             await addDoc(collection(db, 'Friendships'), friendshipData);
 
-            // Return a special status for non-friend users
             return {
               email: member.email,
               id: userId,
@@ -332,14 +346,12 @@ export const saveGroup = async (groupData: Omit<Group, 'id'>, requesterId: strin
             };
           }
 
-          // They are friends, add them to the group
           return {
             id: userId,
             name: userData.name,
             email: member.email
           };
         } else {
-          // Handle non-existing user case (invitation)
           const invitationToken = generateInviteToken();
           const invitationData = {
             requester_id: requesterId,
@@ -363,7 +375,6 @@ export const saveGroup = async (groupData: Omit<Group, 'id'>, requesterId: strin
       })
     );
 
-    // Filter out members who are pending friendship
     const activeMembers = processedMembers.filter(
       member => !member.status || member.status === 'ACCEPTED'
     );
@@ -376,7 +387,6 @@ export const saveGroup = async (groupData: Omit<Group, 'id'>, requesterId: strin
       member => member.status === 'PENDING_INVITATION'
     );
 
-    // Only create group with active members
     const groupRef = await addDoc(collection(db, 'Groups'), {
       ...groupData,
       members: activeMembers,
@@ -385,7 +395,6 @@ export const saveGroup = async (groupData: Omit<Group, 'id'>, requesterId: strin
       pending_members: [...pendingFriendships, ...pendingInvitations]
     });
 
-    // Update friendship requests with group ID
     const friendshipUpdates = pendingFriendships.map(async (member) => {
       const friendshipQuery = query(
         collection(db, 'Friendships'),
@@ -418,7 +427,6 @@ export const saveGroup = async (groupData: Omit<Group, 'id'>, requesterId: strin
   }
 };
 
-// Add this function to handle accepting friendship and adding to group
 export const acceptFriendshipAndAddToGroup = async (
   friendshipId: string,
   currentUserId: string
@@ -434,20 +442,17 @@ export const acceptFriendshipAndAddToGroup = async (
     const friendshipData = friendshipDoc.data();
     const groupId = friendshipData.related_group_id;
 
-    // Update friendship status
     await updateDoc(friendshipRef, {
       status: 'ACCEPTED',
       accepted_at: serverTimestamp()
     });
 
     if (groupId) {
-      // Get user data
       const userDoc = await getDoc(doc(db, 'Users', currentUserId));
       if (!userDoc.exists()) throw new Error('User not found');
       
       const userData = userDoc.data();
 
-      // Add user to group
       const groupRef = doc(db, 'Groups', groupId);
       const groupDoc = await getDoc(groupRef);
 
@@ -455,16 +460,21 @@ export const acceptFriendshipAndAddToGroup = async (
 
       const groupData = groupDoc.data();
       
-      // Remove from pending members
       const updatedPendingMembers = (groupData.pending_members || [])
-        .filter((member: any) => member.id !== currentUserId);
+        .filter((member: any) => {
+          return (member.id !== currentUserId && 
+                 member.email !== userData.email) || 
+                 (member.status !== 'PENDING_FRIENDSHIP' && 
+                  member.status !== 'PENDING_INVITATION');
+        });
 
-      // Add to active members
       await updateDoc(groupRef, {
         members: arrayUnion({
           id: currentUserId,
           name: userData.name,
-          email: userData.email
+          email: userData.email,
+          image: userData.image || '' 
+
         }),
         pending_members: updatedPendingMembers
       });
