@@ -2,10 +2,10 @@
 import { doc, setDoc, getDoc, addDoc, collection, query, where, getDocs, serverTimestamp, updateDoc, or  } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { User } from 'firebase/auth';
-import { Group } from '@/types/Group'
+import { Group, GroupMember } from '@/types/Group'
 import { Friend } from '@/types/Friend';
 import { serializeFirebaseData } from '../utils';
-
+import { FirestoreGroupData } from '@/types/Group';
 export const updateUserProfile = async (
   currentUser: User | null,
   name: string,
@@ -401,3 +401,133 @@ export const loadFriends = async (uid: string): Promise<Friend[]> => {
     throw error;
   }
 };
+
+export async function getGroups(userEmail: string): Promise<Group[]> {
+  try {
+    const groupsRef = collection(db, 'Groups');
+    
+    const groupsSnapshot = await getDocs(groupsRef);
+    const groupsData = groupsSnapshot.docs
+      .filter(doc => {
+        const data = doc.data() as FirestoreGroupData;
+        return data.members?.some(member => member.email === userEmail);
+      })
+      .map(doc => ({
+        id: doc.id,
+        ...(doc.data() as FirestoreGroupData)
+      }));
+
+    const memberEmails = new Set<string>();
+    groupsData.forEach(group => {
+      group.members.forEach((member: GroupMember) => {
+        if (!member || typeof member.email !== 'string') {
+          throw new Error('Invalid member data: email is required');
+        }
+        memberEmails.add(member.email);
+      });
+    });
+
+    const usersRef = collection(db, 'Users');
+    const usersSnapshot = await getDocs(query(
+      usersRef, 
+      where('email', 'in', Array.from(memberEmails))
+    ));
+
+    const userDataMap = new Map<string, { name: string, image: string }>();
+    usersSnapshot.docs.forEach(doc => {
+      const userData = doc.data();
+      if (userData.email) {
+        userDataMap.set(userData.email, {
+          name: userData.name,
+          image: userData.image || ''
+        });
+      }
+    });
+
+    const groupsWithMembers: Group[] = groupsData.map(group => ({
+      id: group.id,
+      name: group.name,
+      type: group.type,
+      image: group.image || '',
+      members: group.members.map(member => {
+        if (!member || typeof member.email !== 'string') {
+          throw new Error('Invalid member data: email is required');
+        }
+        const userData = userDataMap.get(member.email);
+        return {        
+          email: member.email,
+          id: member.id,
+          name: userData?.name,
+          image: userData?.image
+        }
+      })
+    }));
+
+    return groupsWithMembers;
+  } catch (error) {
+    console.error('Error fetching groups:', error);
+    throw error;
+  }
+}
+
+export async function getGroupDetails(groupId: string): Promise<Group | null> {
+  try {
+    const groupRef = doc(db, 'Groups', groupId);
+    const groupSnap = await getDoc(groupRef);
+
+    if (!groupSnap.exists()) {
+      return null;
+    }
+
+    const groupData = groupSnap.data() as FirestoreGroupData;
+    
+    // Get all unique member emails
+    const memberEmails = new Set<string>();
+    groupData.members.forEach(member => {
+      if (member.email) memberEmails.add(member.email);
+    });
+
+    // Fetch user data for all members
+    const usersRef = collection(db, 'Users');
+    const usersQuery = query(
+      usersRef, 
+      where('email', 'in', Array.from(memberEmails))
+    );
+    
+    const usersSnapshot = await getDocs(usersQuery);
+    const userDataMap = new Map<string, { name: string, image: string }>();
+    
+    usersSnapshot.docs.forEach(doc => {
+      const userData = doc.data();
+      if (userData.email) {
+        userDataMap.set(userData.email, {
+          name: userData.name,
+          image: userData.image || ''
+        });
+      }
+    });
+
+    return {
+      id: groupSnap.id,
+      name: groupData.name,
+      type: groupData.type,
+      image: groupData.image || '',
+      members: groupData.members.map(member => {
+        if (!member || typeof member.email !== 'string') {
+          throw new Error('Invalid member data: email is required');
+        }
+        const userData = userDataMap.get(member.email);
+        return {
+          email: member.email,
+          id: member.id,
+          name: userData?.name,
+          image: userData?.image
+        };
+      })
+    };
+
+  } catch (error) {
+    console.error('Error fetching group details:', error);
+    throw error;
+  }
+}

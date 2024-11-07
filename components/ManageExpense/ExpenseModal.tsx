@@ -17,7 +17,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, closeModal }) => {
     const expense = useSelector((state: RootState) => state.expenses.expense);
 
     return (
-        <Dialog open={isOpen} onClose={closeModal} className="relative z-10">
+        <Dialog open={isOpen} onClose={closeModal} className="relative z-50">
             <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
             <div className="fixed inset-0 overflow-y-auto">
                 <div className="flex items-start justify-center p-4 h-full">

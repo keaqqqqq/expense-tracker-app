@@ -89,7 +89,7 @@
       name: '',
       image: '',
       members: [
-        { },
+        {  },
       ]
     });
     
@@ -234,9 +234,10 @@
 
     return (
       <Dialog>
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-5 w-full max-w-2xl">
-            <h2 className="text-xl font-bold mb-4">New Group</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto z-50">
+            <div className="min-h-full flex items-center justify-center p-4">
+              <div className="relative bg-white rounded-lg p-5 w-full max-w-2xl my-8">
+                <h2 className="text-xl font-bold mb-4">New Group</h2>
             
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Type Selection */}
@@ -381,8 +382,8 @@
                         setShowFriendsList(true);
                       }}
                       onFocus={() => setShowFriendsList(true)}
-                      placeholder="Search friends..."
-                      className="pr-8"
+                      placeholder="Search existing friends..."
+                      className="pr-8 mb-3"
                     />
                     <Search className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
                   </div>
@@ -418,7 +419,7 @@
                       setEmailError('');
                     }}
                     onKeyDown={handleEmailSubmit}
-                    placeholder="Invite through email (press Enter)"
+                    placeholder="Invite new friends through email (press Enter)"
                     className={emailError ? 'border-red-500' : ''}
                   />
                   {emailError && (
@@ -440,6 +441,7 @@
               </div>
             </form>
           </div>
+        </div>
         </div>
       </Dialog>
     );
