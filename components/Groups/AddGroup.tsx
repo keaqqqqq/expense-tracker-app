@@ -63,6 +63,7 @@
     name?: string;
     friends: Friend[];
     email?: string;
+    onSuccess?: () => void;  
   }
 
   const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -73,7 +74,8 @@
     currentUserId,
     name,
     friends, 
-    email
+    email, 
+    onSuccess
   }: AddGroupProps) {
     const [searchTerm, setSearchTerm] = useState('');
     const [emailInput, setEmailInput] = useState('');
@@ -218,7 +220,11 @@
       e.preventDefault();
       try {
         await saveGroup(formData, currentUserId);
-        closeModal();
+        if (onSuccess) {
+          onSuccess(); 
+        } else {
+          closeModal(); 
+        }
         setFormData({
           type: 'trip',
           name: '',

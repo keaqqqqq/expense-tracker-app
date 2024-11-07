@@ -44,9 +44,9 @@ export default async function Groups() {
         currentUserId={uid} 
         name={userData?.name} 
         friends={friends} 
-        email={userData?.email}
+        email={userData?.email}      
+        initialGroups={groups}
       />
-      <GroupList groups={groups} userEmail={userData?.email}/>
     </div>
   );
 }
