@@ -1,7 +1,7 @@
 'use client';
 import { Group } from '@/types/Group';
 import Image from 'next/image';
-import { Plane, Home, Heart, PartyPopper, Briefcase, MoreHorizontal, CircleUserRound } from 'lucide-react';
+import { Plane, Home, Heart, PartyPopper, Briefcase, MoreHorizontal, CircleUserRound, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
 
@@ -30,6 +30,17 @@ const GroupList: React.FC<GroupListProps> = ({ groups, userEmail }) => {
 
   const handleGroupClick = (groupId: string) => {
     router.push(`/groups/${groupId}`);
+  };
+
+  const getPendingStatusLabel = (status: string) => {
+    switch (status) {
+      case 'PENDING_FRIENDSHIP':
+        return 'Pending Friend Request';
+      case 'PENDING_INVITATION':
+        return 'Invitation Sent';
+      default:
+        return 'Pending';
+    }
   };
 
   return (
@@ -70,29 +81,62 @@ const GroupList: React.FC<GroupListProps> = ({ groups, userEmail }) => {
                 </div>
 
                 {/* Members List */}
-                <div className="flex flex-wrap items-center gap-2">
-                  {group.members.map((member) => (
-                    <div 
-                      key={member.email}
-                      className={`flex items-center gap-2 px-2 py-1 rounded-full text-sm
-                        ${member.email === userEmail ? 'bg-primary/10 text-primary' : 'bg-gray-50'}`}
-                    >
-                      {member.image ? (
-                        <div className="relative w-4 h-4 rounded-full overflow-hidden">
-                          <Image
-                            src={member.image}
-                            alt={member.name || 'User'}
-                            fill
-                            className="object-cover"
-                          />
+                <div className="space-y-2">
+                  {/* Active Members */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {group.members.map((member) => (
+                      <div 
+                        key={member.email}
+                        className={`flex items-center gap-2 px-2 py-1 rounded-full text-sm
+                          ${member.email === userEmail ? 'bg-primary/10 text-primary' : 'bg-gray-50'}`}
+                      >
+                        {member.image ? (
+                          <div className="relative w-4 h-4 rounded-full overflow-hidden">
+                            <Image
+                              src={member.image}
+                              alt={member.name || 'User'}
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <CircleUserRound className="w-4 h-4" />
+                        )}
+                        <span>{member.name || 'User'}</span>
+                        {member.email === userEmail && <span className="text-xs">(You)</span>}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Pending Members */}
+                  {group.pending_members && group.pending_members.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2 border-t pt-2">
+                      {group.pending_members.map((member) => (
+                        <div 
+                          key={member.email}
+                          className="flex items-center gap-2 px-2 py-1 rounded-full text-sm bg-gray-100/50 text-gray-500"
+                        >
+                          {member.image ? (
+                            <div className="relative w-4 h-4 rounded-full overflow-hidden opacity-60">
+                              <Image
+                                src={member.image}
+                                alt={member.name || 'User'}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <CircleUserRound className="w-4 h-4 opacity-60" />
+                          )}
+                          <span>{member.name || member.email}</span>
+                          <div className="flex items-center gap-1 text-xs bg-gray-200/70 px-1.5 py-0.5 rounded-full">
+                            <Clock className="w-3 h-3" />
+                            {getPendingStatusLabel(member.status || 'PENDING')}
+                          </div>
                         </div>
-                      ) : (
-                        <CircleUserRound className="w-4 h-4" />
-                      )}
-                      <span>{member.name || 'Pending User'}</span>
-                      {member.email === userEmail && <span className="text-xs">(You)</span>}
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             </div>

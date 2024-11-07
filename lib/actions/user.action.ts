@@ -1,5 +1,5 @@
 'use server'
-import { doc, setDoc, getDoc, addDoc, collection, query, where, getDocs, serverTimestamp, updateDoc, or  } from 'firebase/firestore';
+import { doc, setDoc, getDoc, addDoc, collection, query, where, getDocs, serverTimestamp, updateDoc, or, arrayUnion  } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { User } from 'firebase/auth';
 import { Group, GroupMember } from '@/types/Group'
@@ -276,6 +276,7 @@ export const saveGroup = async (groupData: Omit<Group, 'id'>, requesterId: strin
       groupData.members.map(async (member) => {
         if (!member.email) return member;
 
+        // Handle creator case
         if (member.email === groupData.members[0].email) {
           const creatorDoc = await getDoc(doc(db, 'Users', requesterId));
           if (!creatorDoc.exists()) throw new Error('Creator user not found');
@@ -288,6 +289,7 @@ export const saveGroup = async (groupData: Omit<Group, 'id'>, requesterId: strin
           };
         }
 
+        // Check if user exists
         const userQuery = query(
           collection(db, 'Users'),
           where('email', '==', member.email)
@@ -296,12 +298,48 @@ export const saveGroup = async (groupData: Omit<Group, 'id'>, requesterId: strin
         
         if (!userSnapshot.empty) {
           const userData = userSnapshot.docs[0].data();
+          const userId = userSnapshot.docs[0].id;
+
+          // Check if they are friends
+          const friendshipQuery = query(
+            collection(db, 'Friendships'),
+            where('requester_id', 'in', [requesterId, userId]),
+            where('addressee_id', 'in', [requesterId, userId]),
+            where('status', '==', 'ACCEPTED')
+          );
+          const friendshipSnapshot = await getDocs(friendshipQuery);
+
+          if (friendshipSnapshot.empty) {
+            // They are not friends, send a friendship request first
+            const friendshipData = {
+              requester_id: requesterId,
+              addressee_id: userId,
+              created_at: serverTimestamp(),
+              status: 'PENDING',
+              related_group_id: null, // Will be updated after group creation
+              related_group_name: groupData.name
+            };
+
+            await addDoc(collection(db, 'Friendships'), friendshipData);
+
+            // Return a special status for non-friend users
+            return {
+              email: member.email,
+              id: userId,
+              name: userData.name,
+              status: 'PENDING_FRIENDSHIP',
+              message: 'Friendship request sent'
+            };
+          }
+
+          // They are friends, add them to the group
           return {
-            id: userSnapshot.docs[0].id,
+            id: userId,
             name: userData.name,
             email: member.email
           };
         } else {
+          // Handle non-existing user case (invitation)
           const invitationToken = generateInviteToken();
           const invitationData = {
             requester_id: requesterId,
@@ -309,38 +347,140 @@ export const saveGroup = async (groupData: Omit<Group, 'id'>, requesterId: strin
             status: 'PENDING',
             invitation_token: invitationToken,
             created_at: serverTimestamp(),
-            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 
+            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
             email_sent: false,
-            group_name: groupData.name 
+            group_name: groupData.name
           };
 
           await addDoc(collection(db, 'Invitations'), invitationData);
           
-          return { 
+          return {
             email: member.email,
             invitation_token: invitationToken,
-            status: 'PENDING'
+            status: 'PENDING_INVITATION'
           };
         }
       })
     );
 
+    // Filter out members who are pending friendship
+    const activeMembers = processedMembers.filter(
+      member => !member.status || member.status === 'ACCEPTED'
+    );
+
+    const pendingFriendships = processedMembers.filter(
+      member => member.status === 'PENDING_FRIENDSHIP'
+    );
+
+    const pendingInvitations = processedMembers.filter(
+      member => member.status === 'PENDING_INVITATION'
+    );
+
+    // Only create group with active members
     const groupRef = await addDoc(collection(db, 'Groups'), {
       ...groupData,
-      members: processedMembers,
+      members: activeMembers,
       created_at: serverTimestamp(),
-      creator_id: requesterId
+      creator_id: requesterId,
+      pending_members: [...pendingFriendships, ...pendingInvitations]
     });
+
+    // Update friendship requests with group ID
+    const friendshipUpdates = pendingFriendships.map(async (member) => {
+      const friendshipQuery = query(
+        collection(db, 'Friendships'),
+        where('requester_id', '==', requesterId),
+        where('addressee_id', '==', member.id),
+        where('status', '==', 'PENDING')
+      );
+      
+      const friendshipSnapshot = await getDocs(friendshipQuery);
+      if (!friendshipSnapshot.empty) {
+        await updateDoc(friendshipSnapshot.docs[0].ref, {
+          related_group_id: groupRef.id
+        });
+      }
+    });
+
+    await Promise.all(friendshipUpdates);
 
     const result = {
       success: true,
       group_id: groupRef.id,
-      pending_invitations: processedMembers.filter(member => 'status' in member && member.status === 'PENDING')
+      pending_friendships: pendingFriendships,
+      pending_invitations: pendingInvitations
     };
 
     return serializeFirebaseData(result);
   } catch (error) {
     console.error('Error saving group:', error);
+    throw error;
+  }
+};
+
+// Add this function to handle accepting friendship and adding to group
+export const acceptFriendshipAndAddToGroup = async (
+  friendshipId: string,
+  currentUserId: string
+) => {
+  try {
+    const friendshipRef = doc(db, 'Friendships', friendshipId);
+    const friendshipDoc = await getDoc(friendshipRef);
+
+    if (!friendshipDoc.exists()) {
+      throw new Error('Friendship not found');
+    }
+
+    const friendshipData = friendshipDoc.data();
+    const groupId = friendshipData.related_group_id;
+
+    // Update friendship status
+    await updateDoc(friendshipRef, {
+      status: 'ACCEPTED',
+      accepted_at: serverTimestamp()
+    });
+
+    if (groupId) {
+      // Get user data
+      const userDoc = await getDoc(doc(db, 'Users', currentUserId));
+      if (!userDoc.exists()) throw new Error('User not found');
+      
+      const userData = userDoc.data();
+
+      // Add user to group
+      const groupRef = doc(db, 'Groups', groupId);
+      const groupDoc = await getDoc(groupRef);
+
+      if (!groupDoc.exists()) throw new Error('Group not found');
+
+      const groupData = groupDoc.data();
+      
+      // Remove from pending members
+      const updatedPendingMembers = (groupData.pending_members || [])
+        .filter((member: any) => member.id !== currentUserId);
+
+      // Add to active members
+      await updateDoc(groupRef, {
+        members: arrayUnion({
+          id: currentUserId,
+          name: userData.name,
+          email: userData.email
+        }),
+        pending_members: updatedPendingMembers
+      });
+
+      return {
+        success: true,
+        message: 'Successfully accepted friendship and added to group'
+      };
+    }
+
+    return {
+      success: true,
+      message: 'Successfully accepted friendship'
+    };
+  } catch (error) {
+    console.error('Error accepting friendship and adding to group:', error);
     throw error;
   }
 };
@@ -410,23 +550,29 @@ export async function getGroups(userEmail: string): Promise<Group[]> {
     const groupsData = groupsSnapshot.docs
       .filter(doc => {
         const data = doc.data() as FirestoreGroupData;
-        return data.members?.some(member => member.email === userEmail);
+        // Check both active members and pending members
+        return data.members?.some(member => member.email === userEmail) ||
+               data.pending_members?.some(member => member.email === userEmail);
       })
       .map(doc => ({
         id: doc.id,
         ...(doc.data() as FirestoreGroupData)
       }));
 
+    // Collect all member emails (both active and pending)
     const memberEmails = new Set<string>();
     groupsData.forEach(group => {
-      group.members.forEach((member: GroupMember) => {
-        if (!member || typeof member.email !== 'string') {
-          throw new Error('Invalid member data: email is required');
-        }
-        memberEmails.add(member.email);
+      // Add active members
+      group.members?.forEach((member: GroupMember) => {
+        if (member?.email) memberEmails.add(member.email);
+      });
+      // Add pending members
+      group.pending_members?.forEach((member: GroupMember) => {
+        if (member?.email) memberEmails.add(member.email);
       });
     });
 
+    // Fetch user data for all members
     const usersRef = collection(db, 'Users');
     const usersSnapshot = await getDocs(query(
       usersRef, 
@@ -444,13 +590,14 @@ export async function getGroups(userEmail: string): Promise<Group[]> {
       }
     });
 
+    // Process groups with both active and pending members
     const groupsWithMembers: Group[] = groupsData.map(group => ({
       id: group.id,
       name: group.name,
       type: group.type,
       image: group.image || '',
       members: group.members.map(member => {
-        if (!member || typeof member.email !== 'string') {
+        if (!member?.email) {
           throw new Error('Invalid member data: email is required');
         }
         const userData = userDataMap.get(member.email);
@@ -458,9 +605,23 @@ export async function getGroups(userEmail: string): Promise<Group[]> {
           email: member.email,
           id: member.id,
           name: userData?.name,
-          image: userData?.image
+          image: userData?.image,
+          status: 'ACTIVE'
+        };
+      }),
+      pending_members: group.pending_members?.map(member => {
+        if (!member?.email) {
+          throw new Error('Invalid member data: email is required');
         }
-      })
+        const userData = userDataMap.get(member.email);
+        return {
+          email: member.email,
+          id: member.id,
+          name: userData?.name,
+          image: userData?.image,
+          status: member.status || 'PENDING'
+        };
+      }) || []
     }));
 
     return groupsWithMembers;

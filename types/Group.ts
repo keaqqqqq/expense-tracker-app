@@ -4,7 +4,7 @@ export interface GroupMember {
     id?: string;
     name?: string;
     email?: string;
-    status?: 'PENDING' | 'ACCEPTED';
+    status?: 'ACTIVE' | 'PENDING_FRIENDSHIP' | 'PENDING_INVITATION' | 'PENDING';
     image?: string;
   }
   
@@ -14,12 +14,15 @@ export interface Group {
     name: string;
     image: string;
     members: GroupMember[];
+    pending_members?: GroupMember[];
   }
   
-export interface FirestoreGroupData extends DocumentData {
+export  interface FirestoreGroupData {
     name: string;
     type: string;
     image: string;
     members: GroupMember[];
+    pending_members?: GroupMember[];
+    creator_id: string;
+    created_at: any;
   }
-

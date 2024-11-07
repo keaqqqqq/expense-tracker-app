@@ -8,6 +8,7 @@ import Button from './Button';
 import Cookies from 'js-cookie'; 
 import { addDoc, collection } from 'firebase/firestore';
 import { db } from '@/firebase/config';
+import { Timestamp } from 'firebase-admin/firestore';
 
 const fugaz = Fugaz_One({ subsets: ['latin'], weight: ['400'] });
 
@@ -37,7 +38,7 @@ export default function AuthForm() {
             const friendshipData = {
                 addressee_id: currentUserUid, 
                 requester_id: requesterId,
-                created_at: Date.now(),
+                created_at: Timestamp.now(),
                 status: 'ACCEPTED'
             };
 
