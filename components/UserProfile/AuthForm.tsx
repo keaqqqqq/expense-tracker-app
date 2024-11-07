@@ -34,7 +34,8 @@ export default function AuthForm() {
     
     async function acceptInvitationAndFriendship(currentUserUid: string) {
         try {
-            // First, check if this invitation is related to a group
+            console.log('Starting acceptInvitationAndFriendship for:', { email, currentUserUid });
+            
             const invitationsRef = collection(db, 'Invitations');
             const invitationQuery = query(
                 invitationsRef,
@@ -43,10 +44,12 @@ export default function AuthForm() {
             );
             
             const invitationSnapshot = await getDocs(invitationQuery);
+            console.log('Found invitations:', invitationSnapshot.docs.map(doc => doc.data()));
+            
             const invitationDoc = invitationSnapshot.docs[0];
             const invitationData = invitationDoc?.data();
+            console.log('Invitation data:', invitationData);
     
-            // Create friendship regardless of invitation type
             const friendshipData = {
                 addressee_id: currentUserUid, 
                 requester_id: requesterId,
@@ -55,55 +58,67 @@ export default function AuthForm() {
             };
     
             const newFriendshipRef = await addDoc(collection(db, 'Friendships'), friendshipData);
+            console.log('Created friendship:', friendshipData);
     
-            // If invitation exists and has a group_name, it's a group invitation
             if (invitationData?.group_name) {
-                // Find the group where this user is in pending_members
+                console.log('This is a group invitation for group:', invitationData.group_name);
+                
                 const groupsRef = collection(db, 'Groups');
-                const groupQuery = query(
-                    groupsRef,
-                    where('pending_members', 'array-contains', { 
-                        email: email,
-                        status: 'PENDING_INVITATION'
-                    })
-                );
+                const groupsSnapshot = await getDocs(groupsRef);
                 
-                const groupSnapshot = await getDocs(groupQuery);
-                
-                if (!groupSnapshot.empty) {
-                    const groupDoc = groupSnapshot.docs[0];
+                console.log('All groups:', groupsSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    name: doc.data().name,
+                    pending_members: doc.data().pending_members
+                })));
+    
+                // Find matching group
+                for (const groupDoc of groupsSnapshot.docs) {
                     const groupData = groupDoc.data();
+                    console.log('Checking group:', groupData.name);
+                    console.log('Pending members:', groupData.pending_members);
     
-                    // Get user data for member info
-                    const userDoc = await getDoc(doc(db, 'Users', currentUserUid));
-                    if (!userDoc.exists()) throw new Error('User not found');
-                    const userData = userDoc.data();
+                    const pendingMember = groupData.pending_members?.find(
+                        (member: any) => member.email === email
+                    );
     
-                    // Update group: remove from pending_members and add to members
-                    const updatedPendingMembers = (groupData.pending_members || [])
-                    .filter((member: any) => {
-                      return (member.id !== currentUserUid && 
-                             member.email !== userData.email) || 
-                             (member.status !== 'PENDING_FRIENDSHIP' && 
-                              member.status !== 'PENDING_INVITATION');
-                    });
+                    if (pendingMember) {
+                        console.log('Found matching group! Updating membership...');
     
-                    await updateDoc(groupDoc.ref, {
-                        members: arrayUnion({
+                        // Get user data
+                        const userDoc = await getDoc(doc(db, 'Users', currentUserUid));
+                        if (!userDoc.exists()) throw new Error('User not found');
+                        const userData = userDoc.data();
+                        console.log('User data:', userData);
+    
+                        // Remove from pending and add to active
+                        const newMember = {
                             id: currentUserUid,
-                            name: userData?.name,
-                            email: email,
-                            image: userData?.image || ''
-                        }),
-                        pending_members: updatedPendingMembers
-                    });
-                }
+                            name: userData.name,
+                            email: userData.email,
+                            image: userData.image || ''                        };
     
-                // Update invitation status
-                await updateDoc(invitationDoc.ref, {
-                    status: 'ACCEPTED',
-                    accepted_at: Timestamp.now()
-                });
+                        const updatedPendingMembers = (groupData.pending_members || [])
+                            .filter((member: any) => member.email !== email);
+    
+                        console.log('New member to add:', newMember);
+                        console.log('Updated pending members:', updatedPendingMembers);
+    
+                        await updateDoc(groupDoc.ref, {
+                            members: arrayUnion(newMember),
+                            pending_members: updatedPendingMembers
+                        });
+    
+                        // Update invitation
+                        await updateDoc(invitationDoc.ref, {
+                            status: 'ACCEPTED',
+                            accepted_at: Timestamp.now()
+                        });
+    
+                        console.log('Successfully updated group and invitation');
+                        break;
+                    }
+                }
             }
     
             return {
@@ -111,7 +126,12 @@ export default function AuthForm() {
                 friendshipId: newFriendshipRef.id
             };
         } catch (error) {
-            console.error('Error in acceptInvitationAndFriendship:', error);
+            console.error('Detailed error in acceptInvitationAndFriendship:', {
+                error,
+                email,
+                currentUserUid,
+                requesterId
+            });
             throw error;
         }
     }
