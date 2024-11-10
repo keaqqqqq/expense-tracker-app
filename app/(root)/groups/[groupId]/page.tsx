@@ -1,4 +1,3 @@
-// app/groups/[uid]/[groupId]/page.tsx
 import { getGroupDetails } from '@/lib/actions/user.action';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';

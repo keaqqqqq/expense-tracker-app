@@ -81,11 +81,11 @@ const AddFriend: React.FC<AddFriendModalProps> = ({ isOpen, closeModal }) => {
                     shared costs makes tracking easier and keeps everyone accountable.</p>
                 <div className="absolute left-0 right-0 border-b border-black-500 mt-4" />
                 </div>
-                {/* Added px-1 for padding on sides to show focus ring */}
+
                 <div className="overflow-y-auto max-h-[45vh] mt-4 px-1">
                     <form className="mt-4 space-y-4">
                         {friendEmails.map((email, index) => (
-                            <div key={index} className="w-full">  {/* Wrapper div for input */}
+                            <div key={index} className="w-full">  
                                 <input
                                     type="email"
                                     placeholder="Friend's email"

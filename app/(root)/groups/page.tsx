@@ -1,5 +1,5 @@
 import GroupsContainer from '@/components/Groups/GroupsContainer'
-import { loadFriends, getGroups } from '@/lib/actions/user.action';  // Add getGroups import
+import { loadFriends, getGroups } from '@/lib/actions/user.action';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { UserData } from '@/types/User';
@@ -22,14 +22,12 @@ export default async function Groups() {
 
   if (uid) {
     try {
-      // First get user data to get the email
       userData = await fetchUserData(uid);
       
       if (userData?.email) {
-        // Then fetch friends and groups in parallel
         [friends, groups] = await Promise.all([
           loadFriends(uid),
-          getGroups(userData.email)  // Add this to fetch groups
+          getGroups(userData.email)  
         ]);
 
       }

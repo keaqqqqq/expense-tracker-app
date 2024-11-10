@@ -1,5 +1,3 @@
-import { DocumentData } from "firebase/firestore";
-
 export interface GroupMember {
     id?: string;
     name?: string;

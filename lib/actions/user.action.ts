@@ -150,9 +150,8 @@ export interface Relationship {
 export async function getFriendships(userId: string): Promise<Relationship[]> {
   try {
     const relationships: Relationship[] = [];
-    const existingFriendships = new Set(); // Track existing friendships
+    const existingFriendships = new Set(); 
 
-    // First get all friendships
     const sentFriendshipsQuery = query(
       collection(db, 'Friendships'),
       where('requester_id', '==', userId)
@@ -167,7 +166,6 @@ export async function getFriendships(userId: string): Promise<Relationship[]> {
         role: 'requester',
         created_at: data.created_at || Date.now(),
       } as Relationship);
-      // Store addressee_id to track existing friendship
       existingFriendships.add(data.addressee_id);
     });
 
@@ -185,11 +183,9 @@ export async function getFriendships(userId: string): Promise<Relationship[]> {
         role: 'addressee',
         created_at: data.created_at || Date.now(),
       } as Relationship);
-      // Store requester_id to track existing friendship
       existingFriendships.add(data.requester_id);
     });
 
-    // Get sent invitations but filter out those where the user has already registered
     const sentInvitationsQuery = query(
       collection(db, 'Invitations'),
       where('requester_id', '==', userId)
@@ -199,7 +195,6 @@ export async function getFriendships(userId: string): Promise<Relationship[]> {
     for (const doc of sentInvitations.docs) {
       const data = serializeFirebaseData(doc.data());
       
-      // Check if this invited user has already registered and friendship exists
       const usersQuery = query(
         collection(db, 'Users'),
         where('email', '==', data.addressee_email)
@@ -207,7 +202,6 @@ export async function getFriendships(userId: string): Promise<Relationship[]> {
       const userSnapshot = await getDocs(usersQuery);
       
       if (userSnapshot.empty || !userSnapshot.docs[0]) {
-        // User hasn't registered yet, show the invitation
         relationships.push({
           ...data,
           id: doc.id,
@@ -217,7 +211,6 @@ export async function getFriendships(userId: string): Promise<Relationship[]> {
         } as Relationship);
       } else {
         const registeredUserId = userSnapshot.docs[0].id;
-        // Only add if there isn't already a friendship with this user
         if (!existingFriendships.has(registeredUserId)) {
           relationships.push({
             ...data,
@@ -230,7 +223,6 @@ export async function getFriendships(userId: string): Promise<Relationship[]> {
       }
     }
 
-    // Get received invitations
     const receivedInvitationsQuery = query(
       collection(db, 'Invitations'),
       where('addressee_email', '==', userId)
@@ -238,7 +230,7 @@ export async function getFriendships(userId: string): Promise<Relationship[]> {
     const receivedInvitations = await getDocs(receivedInvitationsQuery);
     receivedInvitations.forEach(doc => {
       const data = serializeFirebaseData(doc.data());
-      // Only add received invitations if there isn't already a friendship
+
       if (!existingFriendships.has(data.requester_id)) {
         relationships.push({
           ...data,
@@ -568,7 +560,6 @@ export async function getGroups(userEmail: string): Promise<Group[]> {
         ...(doc.data() as FirestoreGroupData)
       }));
 
-    // If no groups found, return empty array
     if (groupsData.length === 0) {
       return [];
     }
@@ -583,7 +574,6 @@ export async function getGroups(userEmail: string): Promise<Group[]> {
       });
     });
 
-    // Only fetch user data if there are member emails
     let userDataMap = new Map<string, { name: string, image: string }>();
 
     if (memberEmails.size > 0) {
@@ -655,13 +645,11 @@ export async function getGroupDetails(groupId: string): Promise<Group | null> {
 
     const groupData = groupSnap.data() as FirestoreGroupData;
     
-    // Get all unique member emails
     const memberEmails = new Set<string>();
     groupData.members.forEach(member => {
       if (member.email) memberEmails.add(member.email);
     });
 
-    // Fetch user data for all members
     const usersRef = collection(db, 'Users');
     const usersQuery = query(
       usersRef, 

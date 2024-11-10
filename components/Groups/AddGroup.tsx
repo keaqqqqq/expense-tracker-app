@@ -246,7 +246,6 @@
                 <h2 className="text-xl font-bold mb-4">New Group</h2>
             
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Type Selection */}
               <div className="space-y-3">
                 <h3 className="text-sm font-medium text-gray-700">Type</h3>
                 <div className="grid grid-cols-6 gap-2">
@@ -272,9 +271,7 @@
                 </div>
               </div>
   
-              {/* Name and Photo Section */}
               <div className="grid grid-cols-[3fr_1fr] gap-4">
-              {/* Group Name */}
                 <div>
                   <label className="block text-sm font-medium mb-1.5">Name</label>
                   <Input
@@ -285,8 +282,7 @@
                     className="w-full"
                   />
                 </div>
-  
-                {/* Group Photo */}
+
                 <div>
                   <label className="block text-sm font-medium mb-1.5">Photo</label>
                   <div className="flex items-center gap-3">
@@ -322,18 +318,15 @@
                 </div>
               </div>
   
-              {/* Members Section */}
               <div className="space-y-3">
                 <label className="block text-sm font-medium">Members</label>
                 
-                {/* Current user */}
                 <div className="mb-2">
                   <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-md">
                     <span className="text-sm font-medium">👑 {name} (Creator)</span>
                   </div>
                 </div>
   
-                {/* Selected friends */}
                 <div className="space-y-2 max-h-[120px] overflow-y-auto">
                   {selectedFriends.map(friend => (
                     <div key={friend.id} className="flex items-center justify-between bg-gray-50 p-2 rounded-md">
@@ -378,7 +371,6 @@
                   </div>
                 ))}
   
-                {/* Friend search */}
                 <div className="relative" ref={searchContainerRef}>
                   <div className="relative">
                     <Input
@@ -394,7 +386,6 @@
                     <Search className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
                   </div>
   
-                  {/* Friends dropdown */}
                   {showFriendsList && filteredFriends.length > 0 && (
                     <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-36 overflow-auto">
                       {filteredFriends.map(friend => (

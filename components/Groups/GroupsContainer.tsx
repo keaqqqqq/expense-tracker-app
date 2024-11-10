@@ -28,7 +28,6 @@ export default function GroupsContainer({
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
-  // Function to refresh groups list
   const refreshGroups = async () => {
     try {
       if (email) {
@@ -40,14 +39,12 @@ export default function GroupsContainer({
     }
   };
 
-  // Load initial groups if not provided
   useEffect(() => {
     if (!initialGroups?.length && email) {
       refreshGroups();
     }
   }, [email, initialGroups]);
 
-  // Handle successful group creation
   const handleGroupCreated = async () => {
     setModalOpen(false);
     setToastMessage('Group created successfully!');

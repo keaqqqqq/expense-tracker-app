@@ -26,7 +26,6 @@ export const serializeFirebaseData = (data: any): any => {
   if (typeof data === 'object') {
     const serialized: any = {};
     for (const [key, value] of Object.entries(data)) {
-      // Handle Timestamp fields specifically
       if (key.includes('_at') || key.includes('date') || key === 'timestamp') {
         serialized[key] = serializeTimestamp(value);
       } else {

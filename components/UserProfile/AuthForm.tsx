@@ -1,4 +1,3 @@
-// AuthForm.tsx
 'use client';
 import { Fugaz_One } from 'next/font/google';
 import React, { useState, useEffect } from 'react';
@@ -71,8 +70,7 @@ export default function AuthForm() {
                     name: doc.data().name,
                     pending_members: doc.data().pending_members
                 })));
-    
-                // Find matching group
+
                 for (const groupDoc of groupsSnapshot.docs) {
                     const groupData = groupDoc.data();
                     console.log('Checking group:', groupData.name);
@@ -85,13 +83,11 @@ export default function AuthForm() {
                     if (pendingMember) {
                         console.log('Found matching group! Updating membership...');
     
-                        // Get user data
                         const userDoc = await getDoc(doc(db, 'Users', currentUserUid));
                         if (!userDoc.exists()) throw new Error('User not found');
                         const userData = userDoc.data();
                         console.log('User data:', userData);
     
-                        // Remove from pending and add to active
                         const newMember = {
                             id: currentUserUid,
                             name: userData.name,
@@ -108,8 +104,7 @@ export default function AuthForm() {
                             members: arrayUnion(newMember),
                             pending_members: updatedPendingMembers
                         });
-    
-                        // Update invitation
+
                         await updateDoc(invitationDoc.ref, {
                             status: 'ACCEPTED',
                             accepted_at: Timestamp.now()

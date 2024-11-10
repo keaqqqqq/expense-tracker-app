@@ -10,7 +10,7 @@ export interface Friendship {
   requester_id: string;
   addressee_id: string;
   status: 'PENDING' | 'ACCEPTED' | 'REJECTED';
-  created_at: any; // or more specific timestamp type
+  created_at: any;
 }
 
 export interface Relationship {

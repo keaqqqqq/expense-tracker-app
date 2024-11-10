@@ -44,7 +44,7 @@ const GroupList: React.FC<GroupListProps> = ({ groups, userEmail }) => {
   };
 
   return (
-    <div className="space-y-3">
+    <div className="mt-5 space-y-3 ">
       {groups.map((group) => (
         <Card 
           key={group.id}
@@ -53,9 +53,8 @@ const GroupList: React.FC<GroupListProps> = ({ groups, userEmail }) => {
           onClick={() => handleGroupClick(group.id)}
         >
           <CardContent className="p-2">
-            <div className="flex items-start gap-4">
-              {/* Group Image/Icon */}
-              <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
+            <div className="flex items-start gap-3">
+              <div className="relative w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
                 {group.image ? (
                   <Image
                     src={group.image}
@@ -71,7 +70,6 @@ const GroupList: React.FC<GroupListProps> = ({ groups, userEmail }) => {
               </div>
 
               <div className="flex-grow">
-                {/* Group Info */}
                 <div className="flex items-center gap-3 mb-2">
                   <h3 className="text-lg font-semibold">{group.name}</h3>
                   <div className="flex items-center gap-1 text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
@@ -80,9 +78,7 @@ const GroupList: React.FC<GroupListProps> = ({ groups, userEmail }) => {
                   </div>
                 </div>
 
-                {/* Members List */}
                 <div className="space-y-2">
-                  {/* Active Members */}
                   <div className="flex flex-wrap items-center gap-2">
                     {group.members.map((member) => (
                       <div 
@@ -108,7 +104,6 @@ const GroupList: React.FC<GroupListProps> = ({ groups, userEmail }) => {
                     ))}
                   </div>
 
-                  {/* Pending Members */}
                   {group.pending_members && group.pending_members.length > 0 && (
                     <div className="flex flex-wrap items-center gap-2 border-t pt-2">
                       {group.pending_members.map((member) => (
