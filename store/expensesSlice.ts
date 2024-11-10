@@ -18,10 +18,11 @@ const initialState: ExpensesState = {
         amount: 0,
         category: "",
         created_at: "",
-        paid_by: "",
         created_by: "sdf",
         group_id: '',
-        split_preference: ''
+        split_preference: '',
+        payer: [],
+        spliter:[]
 
     },
     expenses: [],
@@ -58,11 +59,6 @@ const expensesSlice = createSlice({
     name: 'expenses',
     initialState,
     reducers: {
-        setUserId(state, action: PayloadAction<string>) {
-            if (state.expense) {
-                state.expense.paid_by = action.payload;
-            }
-        },
         setDescription(state, action: PayloadAction<string>) {
             state.expense.description = action.payload;
         },
@@ -134,7 +130,6 @@ const expensesSlice = createSlice({
 
 export default expensesSlice.reducer;
 export const {
-    setUserId,
     setDescription,
     setAmount,
     setDate,

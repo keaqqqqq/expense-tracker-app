@@ -1,12 +1,14 @@
 import React, { useEffect } from 'react';
 import FormInput from "../FormInput";
-import { useDispatch, useSelector } from 'react-redux';
+// import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
-import { setAmount, setCategory, setDate, setDescription } from '@/store/expensesSlice';
+import { useExpense } from '@/context/ExpenseContext';
+// import { setAmount, setCategory, setDate, setDescription } from '@/store/expensesSlice';
 
 const CreateExpenseForm: React.FC = () => {
-    const dispatch = useDispatch();
-    const expense = useSelector((state: RootState) => state.expenses.expense);
+    // const dispatch = use);
+    // const expense = useSelector((state: RootState) => state.expenses.expense);
+    const {expense, setAmount, setCategory, setDate, setDescription} = useExpense();
 
     useEffect(() => {
         console.log(expense);
@@ -18,21 +20,21 @@ const CreateExpenseForm: React.FC = () => {
                 <div className="flex flex-col sm:flex-row sm:space-x-4">
                     <div className="flex flex-col w-full">
                         <label>Description</label>
-                        <FormInput className="ml-0" value={expense.description} onChange={(e) => dispatch(setDescription(e.target.value))} />
+                        <FormInput className="ml-0" value={expense.description} onChange={(e) => setDescription(e.target.value)} />
                     </div>
                     <div className="flex flex-col w-full">
                         <label>Amount</label>
-                        <FormInput className="ml-0" value={expense.amount} onChange={(e) => dispatch(setAmount(parseFloat(e.target.value) || 0))} />
+                        <FormInput className="ml-0" value={expense.amount} onChange={(e) => setAmount(parseFloat(e.target.value) || 0)} />
                     </div>
                 </div>
                 <div className="flex flex-col sm:flex-row sm:space-x-4">
                     <div className="flex flex-col w-full">
                         <label>Date</label>
-                        <FormInput className="ml-0" value={expense.date} type='date' onChange={(e) => dispatch(setDate(e.target.value))} />
+                        <FormInput className="ml-0" value={expense.date} type='date' onChange={(e) => setDate(e.target.value)} />
                     </div>
                     <div className="flex flex-col w-full">
                         <label>Category</label>
-                        <FormInput className="ml-0" value={expense.category} onChange={(e) => dispatch(setCategory(e.target.value))} />
+                        <FormInput className="ml-0" value={expense.category} onChange={(e) => setCategory(e.target.value)} />
                     </div>
                 </div>
             </div>

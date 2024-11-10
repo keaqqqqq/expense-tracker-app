@@ -1,27 +1,38 @@
-import { SplitInterface } from '@/types/SplitInterface';
-import React from 'react';
-
-interface User {
-    name: string;
-}
+import { useExpense } from '@/context/ExpenseContext';
+import React, { useEffect } from 'react';
 
 
-const EqualSplit: React.FC<SplitInterface> = ({expense}) => {
-    const users: User[] = [
-        { name: 'chua'},
-        { name: 'isyraf'},
-        { name: 'kiachua'},
-        { name: 'keachu'},
-    ];
+const EqualSplit: React.FC = () => {
+    const { expense, removeFriendFromSplit , updateFriendAmount} = useExpense(); // Get removeFriendFromSplit from context
 
-    const renderUsers = users.map((user) => {
+    // Function to remove a friend from the split
+    const handleRemoveFriend = (friendId: string) => {
+        removeFriendFromSplit(friendId); // Call context function to remove the friend
+    };
+
+
+    useEffect(()=>{
+        const friendAmount = Number((expense.amount/expense.spliter.length).toFixed(2))
+        expense.spliter.map((friend)=>updateFriendAmount(friend.id, friendAmount))
+    }, [expense.spliter.length, expense.amount])
+
+    useEffect(()=>{
+        console.log(expense.spliter);
+    },[expense.spliter])
+   
+    const renderUsers = expense.spliter.map((user) => {
         return (
-            <div className="flex flex-row border rounded" key={user.name}>
+            <div className="flex flex-row border rounded" key={user.id}>
                 <div className="flex flex-row w-full justify-around content-center">
                     <p className="my-auto">{user.name}</p>
-                    <p className="my-auto">{expense.amount/users.length}</p>
+                    <p className="my-auto">{(expense.amount/expense.spliter.length).toFixed(2)}</p>
                 </div>
-                <p className="w-8 border-l py-2 m-0 text-center hover:bg-gray-100">x</p>
+                <button
+                    className="w-8 border-l py-2 m-0 text-center hover:bg-gray-100"
+                    onClick={() => handleRemoveFriend(user.id)} // Trigger the removal when clicked
+                >
+                    x
+                </button>
             </div>
         );
     });

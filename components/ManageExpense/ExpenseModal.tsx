@@ -5,8 +5,8 @@ import FormInput from "../FormInput";
 import SplitTab from "../Split/SplitTab";
 import CreateExpenseForm from "./CreateExpensesForm";
 import { createExpenseAPI } from '@/api/expenses';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
+import AddSplit from './AddSplit';
+import { useExpense } from '@/context/ExpenseContext';
 
 interface ExpenseModalProps {
     isOpen: boolean;
@@ -14,8 +14,7 @@ interface ExpenseModalProps {
 }
 
 const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, closeModal }) => {
-    const expense = useSelector((state: RootState) => state.expenses.expense);
-
+    const {expense} = useExpense();
     return (
         <Dialog open={isOpen} onClose={closeModal} className="relative z-30">
             <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
@@ -34,7 +33,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, closeModal }) => {
                                     within group <FormInput />
                                 </div>
                                 <div className="flex flex-col w-full"> 
-                                    Add split <FormInput />
+                                    Add split <AddSplit />
                                 </div>
                             </div>
                             <div className="bg-gray-100 rounded-b-lg text-xs font-semibold flex justify-end px-2">
