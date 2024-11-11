@@ -1,4 +1,3 @@
-// AuthForm.tsx
 'use client';
 import { Fugaz_One } from 'next/font/google';
 import React, { useState, useEffect } from 'react';
@@ -6,8 +5,9 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation'; 
 import Button from './Button';
 import Cookies from 'js-cookie'; 
-import { acceptInvitationAndFriendship } from '@/lib/actions/user.action';
-
+import { addDoc, collection, query, where, getDocs, getDoc, doc, updateDoc, arrayUnion, setDoc } from 'firebase/firestore';
+import { db } from '@/firebase/config';
+import { Timestamp } from 'firebase/firestore';
 const fugaz = Fugaz_One({ subsets: ['latin'], weight: ['400'] });
 
 export default function AuthForm() {
@@ -31,6 +31,106 @@ export default function AuthForm() {
         }
     }, []);
     
+    async function acceptInvitationAndFriendship(currentUserUid: string) {
+        try {
+            console.log('Starting acceptInvitationAndFriendship for:', { email, currentUserUid });
+            
+            const invitationsRef = collection(db, 'Invitations');
+            const invitationQuery = query(
+                invitationsRef,
+                where('addressee_email', '==', email),
+                where('status', '==', 'PENDING')
+            );
+            
+            const invitationSnapshot = await getDocs(invitationQuery);
+            console.log('Found invitations:', invitationSnapshot.docs.map(doc => doc.data()));
+            
+            const invitationDoc = invitationSnapshot.docs[0];
+            const invitationData = invitationDoc?.data();
+            console.log('Invitation data:', invitationData);
+    
+            const friendshipData = {
+                addressee_id: currentUserUid, 
+                requester_id: requesterId,
+                created_at: Timestamp.now(),
+                status: 'ACCEPTED'
+            };
+    
+            const newFriendshipRef = await addDoc(collection(db, 'Friendships'), friendshipData);
+            console.log('Created friendship:', friendshipData);
+    
+            if (invitationData?.group_name) {
+                console.log('This is a group invitation for group:', invitationData.group_name);
+                
+                const groupsRef = collection(db, 'Groups');
+                const groupsSnapshot = await getDocs(groupsRef);
+                
+                console.log('All groups:', groupsSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    name: doc.data().name,
+                    pending_members: doc.data().pending_members
+                })));
+
+                for (const groupDoc of groupsSnapshot.docs) {
+                    const groupData = groupDoc.data();
+                    console.log('Checking group:', groupData.name);
+                    console.log('Pending members:', groupData.pending_members);
+    
+                    const pendingMember = groupData.pending_members?.find(
+                        (member: any) => member.email === email
+                    );
+    
+                    if (pendingMember) {
+                        console.log('Found matching group! Updating membership...');
+    
+                        const userDoc = await getDoc(doc(db, 'Users', currentUserUid));
+                        if (!userDoc.exists()) throw new Error('User not found');
+                        const userData = userDoc.data();
+                        console.log('User data:', userData);
+    
+                        const newMember = {
+                            id: currentUserUid,
+                            name: userData.name,
+                            email: userData.email,
+                            image: userData.image || ''                        };
+    
+                        const updatedPendingMembers = (groupData.pending_members || [])
+                            .filter((member: any) => member.email !== email);
+    
+                        console.log('New member to add:', newMember);
+                        console.log('Updated pending members:', updatedPendingMembers);
+    
+                        await updateDoc(groupDoc.ref, {
+                            members: arrayUnion(newMember),
+                            pending_members: updatedPendingMembers
+                        });
+
+                        await updateDoc(invitationDoc.ref, {
+                            status: 'ACCEPTED',
+                            accepted_at: Timestamp.now()
+                        });
+    
+                        console.log('Successfully updated group and invitation');
+                        break;
+                    }
+                }
+            }
+    
+            return {
+                success: true,
+                friendshipId: newFriendshipRef.id
+            };
+        } catch (error) {
+            console.error('Detailed error in acceptInvitationAndFriendship:', {
+                error,
+                email,
+                currentUserUid,
+                requesterId
+            });
+            throw error;
+        }
+    }
+
     async function handleSubmit() {
         if (!email || !password || password.length < 6) {
             return;
@@ -40,12 +140,17 @@ export default function AuthForm() {
             if (isRegister) {
                 console.log('Signing up a new user');
                 const userCredential = await signup(email, password);
+                await setDoc(doc(db, 'Users', userCredential.user.uid), {
+                    name: email.split('@')[0], 
+                    email: email,
+                    image: null
+                });
                 Cookies.set("loggedin", String(true));
                 Cookies.set("currentUserUid", userCredential.user.uid, { path: '/' });
                 
                 if (invitationData) {
                     try {
-                        await acceptInvitationAndFriendship(email, requesterId);
+                        await acceptInvitationAndFriendship(userCredential.user.uid);
                         console.log('Friendship created successfully');
                         localStorage.removeItem('invitationData');
                     } catch (friendshipError) {

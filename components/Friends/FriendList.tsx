@@ -1,12 +1,11 @@
 'use client'
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import type { Relationship } from '@/lib/actions/user.action';
 import { Card } from '@/components/ui/card';
 import { CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import Toast from '@/components/Toast';
-
+import { Relationship } from '@/types/Friend';
 export interface DisplayUserInfo {
   avatar: {
     image?: string;
@@ -22,7 +21,7 @@ export interface EnrichedRelationship extends Relationship {
 
 interface FriendListProps {
   relationships: EnrichedRelationship[];
-  onAcceptRequest: (relationshipId: string) => Promise<{ success: boolean }>;
+  onAcceptRequest: (relationshipId: string) => Promise<{ success: boolean, message?: string }>;
 }
 
 const FriendList = ({ relationships: initialRelationships, onAcceptRequest }: FriendListProps) => {
@@ -31,31 +30,54 @@ const FriendList = ({ relationships: initialRelationships, onAcceptRequest }: Fr
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
-  const handleAcceptRequest = async (relationshipId: string) => {
-    setPendingAccepts(prev => new Set(prev).add(relationshipId));
+  const getAcceptButtonText = (relationship: EnrichedRelationship) => {
+    if (pendingAccepts.has(relationship.id)) {
+      return 'Accepting...';
+    }
+
+    if (relationship.related_group_id) {
+      return 'Join Group';
+    }
+
+    return 'Accept Request';
+  };
+
+  const getSuccessMessage = (relationship: EnrichedRelationship) => {
+    if (relationship.related_group_id) {
+      return `Successfully accepted friend request and joined ${relationship.related_group_name || 'the group'}!`;
+    }
+    return 'Friend request accepted successfully!';
+  };
+
+  const handleAcceptRequest = async (relationship: EnrichedRelationship) => {
+    setPendingAccepts(prev => new Set(prev).add(relationship.id));
     
     try {
-      const result = await onAcceptRequest(relationshipId);
+      const result = await onAcceptRequest(relationship.id);
       
       if (result.success) {
         setRelationships(prev =>
-          prev.map(relationship =>
-            relationship.id === relationshipId
-              ? { ...relationship, status: 'ACCEPTED' }
-              : relationship
+          prev.map(r =>
+            r.id === relationship.id
+              ? { ...r, status: 'ACCEPTED' }
+              : r
           )
         );
         
-        setToastMessage("Friend request accepted successfully!");
+        setToastMessage(result.message || getSuccessMessage(relationship));
         setShowToast(true);
       }
     } catch (error) {
-      setToastMessage("Failed to accept friend request. Please try again.");
+      setToastMessage(
+        relationship.related_group_id 
+          ? "Failed to accept request and join group. Please try again."
+          : "Failed to accept friend request. Please try again."
+      );
       setShowToast(true);
     } finally {
       setPendingAccepts(prev => {
         const next = new Set(prev);
-        next.delete(relationshipId);
+        next.delete(relationship.id);
         return next;
       });
     }
@@ -67,7 +89,9 @@ const FriendList = ({ relationships: initialRelationships, onAcceptRequest }: Fr
         {relationships.map((relationship) => (
           <Card 
             key={relationship.id} 
-            className="w-full border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors duration-200 bg-white dark:bg-zinc-800/50"
+            className={`w-full border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors duration-200 bg-white dark:bg-zinc-800/50 ${
+              relationship.related_group_id ? 'ring-1 ring-primary/20' : ''
+            }`}
           >
             <CardContent className="flex items-center justify-between py-2 px-4">
               <div className="flex items-center space-x-3">
@@ -89,25 +113,37 @@ const FriendList = ({ relationships: initialRelationships, onAcceptRequest }: Fr
                         : `Request to: ${relationship.displayInfo.displayName}`
                     }
                   </p>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                    {relationship.status === 'PENDING' 
-                      ? 'Pending'
-                      : 'Accepted'
-                    }
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                      {relationship.status === 'PENDING' 
+                        ? 'Pending'
+                        : 'Accepted'
+                      }
+                    </p>
+                    {relationship.related_group_id && (
+                      <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                        Group Invitation
+                      </span>
+                    )}
+                    {relationship.related_group_name && (
+                      <span className="text-xs text-zinc-500">
+                        for {relationship.related_group_name}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
               
               {relationship.role === 'addressee' && 
                relationship.status === 'PENDING' && (
                 <Button
-                  onClick={() => handleAcceptRequest(relationship.id)}
+                  onClick={() => handleAcceptRequest(relationship)}
                   disabled={pendingAccepts.has(relationship.id)}
-                  className="ml-4 shrink-0 shadow-sm hover:shadow-md transition-shadow duration-200"
-                  variant="secondary"
+                  className={`ml-4 shrink-0 shadow-sm hover:shadow-md transition-shadow duration-200`}
+                  variant={relationship.related_group_id ? "default" : "secondary"}
                   size="sm"
                 >
-                  {pendingAccepts.has(relationship.id) ? 'Accepting...' : 'Accept Request'}
+                  {getAcceptButtonText(relationship)}
                 </Button>
               )}
             </CardContent>

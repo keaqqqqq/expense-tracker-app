@@ -10,5 +10,18 @@ export interface Friendship {
   requester_id: string;
   addressee_id: string;
   status: 'PENDING' | 'ACCEPTED' | 'REJECTED';
-  created_at: any; // or more specific timestamp type
+  created_at: any;
+}
+
+export interface Relationship {
+  id: string;
+  type: 'friendship' | 'invitation';
+  role: 'requester' | 'addressee';
+  status: 'PENDING' | 'ACCEPTED';
+  requester_id: string;
+  addressee_id?: string;
+  addressee_email?: string;
+  created_at: Date;
+  related_group_id?: string;
+  related_group_name?: string;
 }
