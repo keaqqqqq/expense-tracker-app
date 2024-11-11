@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import FormInput from "../FormInput";
 // import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
 import { useExpense } from '@/context/ExpenseContext';
 // import { setAmount, setCategory, setDate, setDescription } from '@/store/expensesSlice';
 
