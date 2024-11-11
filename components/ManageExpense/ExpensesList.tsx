@@ -1,7 +1,9 @@
+
 import React, { useEffect } from 'react';
 import Button from './Button';
 import { Edit, Pencil } from 'lucide-react';
 import { useExpense } from '@/context/ExpenseContext';
+
 
 const ExpensesList: React.FC = () => {
     const {expenses, loading, error} = useExpense();
@@ -50,3 +52,44 @@ const ExpensesList: React.FC = () => {
 };
 
 export default ExpensesList;
+
+// 'use client'
+// import React from 'react';
+// import Button from './Button';
+// import { Expense } from '@/types/Expense';
+// interface ExpensesListProps {
+//     expenses: Expense[];
+//     loading?: boolean; 
+//     error?: string;
+// }
+
+// const ExpensesList: React.FC<ExpensesListProps> = ({ expenses, loading, error }) => {
+//     const renderList = expenses.map((expense, index) => {
+//         const showDate = index === 0 || expense.date !== expenses[index - 1].date;
+
+//         return (
+//             <div key={expense.id}>
+//                 {showDate && (
+//                     <div className={`bg-gray-100 px-2 font-semibold text-gray-600 border ${index == 0 ? 'rounded-t-lg' : ''}`}>
+//                         {`${expense.date}`}
+//                     </div>
+//                 )}
+//                 <div className='flex flex-row justify-between font-bold content-center px-2 py-3 border-t'>
+//                     <div className='text-black'>{expense.description}</div>
+//                     <div className='text-black'>{`RM ${expense.amount}`} <Button primary onClick={() => { console.log(expense.id) }}>Edit</Button></div>
+//                 </div>
+//             </div>
+//         );
+//     });
+
+//     if (loading) return <div>Loading...</div>;
+//     if (error) return <div>{error}</div>;
+
+//     return (
+//         <div className='border rounded-lg'>
+//             {renderList}
+//         </div>
+//     );
+// };
+
+// export default ExpensesList;

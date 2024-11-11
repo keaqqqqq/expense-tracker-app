@@ -2,7 +2,7 @@ import React from 'react';
 import Button from "./Button";
 
 interface ManageExpensesHeaderProps {
-    openModal: () => void; // Function type for openModal
+    openModal: () => void; 
 }
 
 const ManageExpensesHeader: React.FC<ManageExpensesHeaderProps> = ({ openModal }) => {

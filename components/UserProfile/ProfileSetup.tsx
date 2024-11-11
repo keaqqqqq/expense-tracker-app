@@ -18,7 +18,6 @@ const ProfileSetup = () => {
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
-      {/* Header for small screens */}
       <div className="md:hidden bg-white shadow-md p-4">
         <h2 className="text-xl font-bold text-gray-900">Profile Setup</h2>
         <div className="mt-4 flex items-center">
