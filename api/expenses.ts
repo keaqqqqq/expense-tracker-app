@@ -31,7 +31,8 @@ export const editExpenseAPI = async (expense: Expense): Promise<Expense> => {
     date: expense.date,
     description: expense.description,
     group_id: expense.group_id,
-    paid_by: expense.paid_by,
+    payer: expense.payer,
+    spliter: expense.spliter,
     split_preference: expense.split_preference,
   });
   return expense; // Return the updated expense
