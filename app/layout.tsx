@@ -1,6 +1,7 @@
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import ClientProvider from "./ClientProvider";
+import { FriendsProvider } from "@/context/FriendsContext";
 export default function RootLayout({
   children,
 }: {

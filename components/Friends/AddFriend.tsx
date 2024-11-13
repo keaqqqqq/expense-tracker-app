@@ -2,22 +2,22 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext'; 
 import { saveFriendship } from '@/lib/actions/user.action';
-import { useRouter } from 'next/navigation';
 import Toast from '../Toast';
 import Button from '../UserProfile/Button';
 
 interface AddFriendModalProps {
     isOpen: boolean;
     closeModal: () => void;
+    onFriendAdded: () => void;
 }
 
-const AddFriend: React.FC<AddFriendModalProps> = ({ isOpen, closeModal }) => {
-    const router = useRouter();
+const AddFriend: React.FC<AddFriendModalProps> = ({ isOpen, closeModal, onFriendAdded }) => {
     const { currentUser } = useAuth(); 
     const [friendEmails, setFriendEmails] = useState<string[]>(['']);
     const [showToast, setShowToast] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
+    const [toastType, setToastType] = useState<'success' | 'error'>('success'); // Add this state
 
     const handleEmailChange = (index: number, value: string) => {
         const newEmails = [...friendEmails];
@@ -32,39 +32,54 @@ const AddFriend: React.FC<AddFriendModalProps> = ({ isOpen, closeModal }) => {
     const handleInviteFriends = async () => {
         const validEmails = friendEmails.filter(email => email);
         setIsLoading(true);
-
+    
         if (!currentUser) {
-            console.error("User not authenticated");
-            return;
+          console.error("User not authenticated");
+          return;
         }
-
+    
         try {
-            for (const email of validEmails) {
-                const result = await saveFriendship(
-                    currentUser.uid, 
-                    email,
-                );
-                
-                if (result.type === 'invitation_sent') {
-                    setToastMessage('Invitation sent successfully!');
-                } else {
-                    setToastMessage('Friend request sent successfully!');
-                }
-            }
+          let hasError = false;
+          
+          for (const email of validEmails) {
+            const result = await saveFriendship(
+              currentUser.uid, 
+              email,
+            );
             
+            if (!result.success) {
+              setToastType('error');
+              setToastMessage(result.error || 'Error processing friend request');
+              setShowToast(true);
+              hasError = true;
+              break;
+            }
+          }
+          
+          if (!hasError) {
+            setToastType('success');
+            setToastMessage(
+              validEmails.length === 1 
+                ? 'Friend request sent successfully!' 
+                : `Successfully sent ${validEmails.length} friend requests!`
+            );
             setShowToast(true);
+    
+            await onFriendAdded();
+            
             setTimeout(() => {
-                closeModal();
-                router.push('/');
+              closeModal();
+              setFriendEmails(['']);
             }, 2000);
+          }
         } catch (error) {
-            console.error("Error processing friend invitations:", error);
-            setToastMessage('Error sending invitations. Please try again.');
-            setShowToast(true);
+          setToastType('error');
+          setToastMessage('Error sending invitations. Please try again.');
+          setShowToast(true);
         } finally {
-            setIsLoading(false);
+          setIsLoading(false);
         }
-    };
+      };
 
     if (!isOpen) return null; 
 
@@ -115,7 +130,7 @@ const AddFriend: React.FC<AddFriendModalProps> = ({ isOpen, closeModal }) => {
                         variant='cancel'
                         redirectPath='/'
                     >
-                        Skip           
+                        Cancel
                     </Button>
                     <Button 
                         clickHandler={handleInviteFriends}
@@ -146,9 +161,10 @@ const AddFriend: React.FC<AddFriendModalProps> = ({ isOpen, closeModal }) => {
                 </div>
                 {showToast && (
                     <Toast
-                    message={toastMessage}
-                    onClose={() => setShowToast(false)} 
-                    />
+                        message={toastMessage}
+                        onClose={() => setShowToast(false)}
+                        type={toastType}  // Pass the toast type here
+                        />
                 )}
             </div>
         </div>

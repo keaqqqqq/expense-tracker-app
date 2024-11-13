@@ -53,7 +53,7 @@ export default function GroupsContainer({
   };
 
   return (
-    <div className="p-6">
+    <div>
       <ManageHeader 
         title="Groups"
         buttons={[
