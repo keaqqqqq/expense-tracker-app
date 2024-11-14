@@ -9,7 +9,7 @@ import { Relationship } from '@/types/Friend';
 import Image from 'next/image';
 import { useFriends } from '@/context/FriendsContext';
 import { useRouter } from 'next/navigation';
-
+import { useAuth } from '@/context/AuthContext';
 export interface DisplayUserInfo {
   avatar: {
     image?: string;
@@ -32,16 +32,14 @@ const FriendList = ({ relationships, onAcceptRequest }: FriendListProps) => {
   const [pendingAccepts, setPendingAccepts] = useState<Set<string>>(new Set());
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  const { refreshFriends } = useFriends(); // Get refreshFriends from context
+  const { refreshFriends } = useFriends(); 
   const router = useRouter();
-
-  // Helper function to determine if new relationship should replace existing one
+  const {currentUser} = useAuth()
   const shouldReplaceExisting = (existing: EnrichedRelationship, new_rel: EnrichedRelationship) => {
     if (new_rel.related_group_id && !existing.related_group_id) return true;
     return new Date(new_rel.created_at || '') > new Date(existing.created_at || '');
   };
 
-  // Deduplicate and organize relationships
   const organizedRelationships = useMemo(() => {
     const uniqueRelationships = new Map<string, EnrichedRelationship>();
 
@@ -55,7 +53,7 @@ const FriendList = ({ relationships, onAcceptRequest }: FriendListProps) => {
     });
 
     return Array.from(uniqueRelationships.values());
-  }, [relationships]); // Now depends only on props.relationships
+  }, [relationships]); 
 
   const getAvatarImage = (relationship: EnrichedRelationship) => {
     if (!relationship.displayInfo.avatar.image) return null;
@@ -97,7 +95,7 @@ const FriendList = ({ relationships, onAcceptRequest }: FriendListProps) => {
       const result = await onAcceptRequest(relationship.id);
       
       if (result.success) {
-        await refreshFriends(); // Refresh the friends list from context after successful accept
+        await refreshFriends(); 
         
         setToastMessage(result.message || 
           (relationship.related_group_id 
@@ -123,9 +121,12 @@ const FriendList = ({ relationships, onAcceptRequest }: FriendListProps) => {
   };
 
   const handleCardClick = (relationship: EnrichedRelationship) => {
-    router.push(`/friends/${relationship.displayInfo.displayName}`);
+    const targetUserId = currentUser?.uid === relationship.requester_id
+      ? relationship.addressee_id
+      : relationship.requester_id;
+      
+    router.push(`/friends/${targetUserId}`);
   };
-
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-w-6xl mx-auto">

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, UserPlus, Users, Plus, CircleUserRound } from 'lucide-react';
+import { Menu, X, UserPlus, Users, Plus, CircleUserRound, Settings  } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -294,7 +294,9 @@ const Sidebar: React.FC<SideBarProps> = ({ currentUser, initialFriends = [], ini
                     </div>
                 )}
 
-                <div className="h-full overflow-y-auto pb-20">
+                    <div className="h-full flex flex-col overflow-y-auto">
+                    <div className="flex-1">
+
                     <h2 className={`text-xl font-semibold text-black px-4 py-4 logo ${isMobile ? 'hidden' : 'block'}`}>
                         ExpenseTracker
                     </h2>
@@ -339,6 +341,19 @@ const Sidebar: React.FC<SideBarProps> = ({ currentUser, initialFriends = [], ini
 
                     {renderFriendsList()}
                     {renderGroupsList()}
+                </div>
+                <div className="mt-auto">
+                        <Link
+                            href="/settings"
+                            className={`flex items-center px-4 py-3 text-gray-800 hover:bg-gray-100 ${
+                                pathname === '/settings' ? 'bg-gray-100 text-indigo-600' : ''
+                            }`}
+                            onClick={() => isMobile && setIsOpen(false)}
+                        >
+                            {/* <Settings className="w-5 h-5 mr-3" /> */}
+                            <span className="font-semibold">Settings</span>
+                        </Link>
+                </div>
                 </div>
             </div>
 

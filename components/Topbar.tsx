@@ -8,7 +8,7 @@ interface TopBarProps {
   image: string | null; 
 }
 
-const TopBar: React.FC<TopBarProps> = ({  name, image }) => {
+const TopBar: React.FC<TopBarProps> = ({ name, image }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -27,7 +27,7 @@ const TopBar: React.FC<TopBarProps> = ({  name, image }) => {
         />
         <div className="ml-4 flex items-center">
           {image ? (
-            <div className="relative w-8 h-8 mr-2">
+            <div className="relative w-8 h-8">
               <Image
                 src={image}
                 alt="Profile"
@@ -37,13 +37,13 @@ const TopBar: React.FC<TopBarProps> = ({  name, image }) => {
               />
             </div>
           ) : (
-            <div className="w-8 h-8 mr-2 rounded-full bg-gray-200 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
               <span className="text-gray-500 text-sm">
-                {name?.[0] || '?' }
+                {name?.[0] || '?'}
               </span>
             </div>
           )}
-          <span className="font-semibold">
+          <span className="hidden md:block font-semibold truncate ml-2 max-w-[200px]">
             {name}
           </span>
         </div>
