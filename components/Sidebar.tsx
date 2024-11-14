@@ -296,10 +296,11 @@ const Sidebar: React.FC<SideBarProps> = ({ currentUser, initialFriends = [], ini
 
                     <div className="h-full flex flex-col overflow-y-auto">
                     <div className="flex-1">
-
-                    <h2 className={`text-xl font-semibold text-black px-4 py-4 logo ${isMobile ? 'hidden' : 'block'}`}>
-                        ExpenseTracker
-                    </h2>
+                    <Link href="/">
+                        <h2 className={`text-xl font-semibold text-black px-4 py-4 logo ${isMobile ? 'hidden' : 'block'} cursor-pointer hover:text-indigo-600`}>
+                            ExpenseTracker
+                        </h2>
+                    </Link>
                     <ul>
                         <li>
                             <Link

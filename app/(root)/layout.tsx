@@ -1,12 +1,11 @@
 import { cookies } from "next/headers";
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/config';
-import { Friend } from '@/types/Friend'; // Create this type file if you haven't already
+import { Friend } from '@/types/Friend'; 
 import { fetchUserData } from "@/lib/actions/user.action";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/Topbar";
 import { Group, FirestoreGroupData} from "@/types/Group";
-
 
 async function getInitialFriends(uid: string): Promise<Friend[]> {
     try {
@@ -63,10 +62,8 @@ async function getInitialGroups(uid: string, userEmail: string): Promise<Group[]
   try {
       const groupsRef = collection(db, 'Groups');
       
-      // Get all groups
       const groupsSnapshot = await getDocs(groupsRef);
       
-      // Filter groups where user is a member or pending member
       const groupData = await Promise.all(
           groupsSnapshot.docs
               .filter(doc => {
@@ -135,7 +132,7 @@ export default async function RootLayout({
                 initialFriends={initialFriends}
                 initialGroups={initialGroups}
             />
-            <div className="flex flex-col flex-1 md:ml-64">
+            <div className="flex flex-col flex-1 md:ml-64 relative">
                 <div className="hidden md:block">
                     <TopBar name={userData?.name || null} image={userData?.image || null} />
                 </div>

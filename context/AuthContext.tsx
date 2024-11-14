@@ -1,5 +1,5 @@
 'use client';
-import { User, createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut, updateProfile, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
+import { User, createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut, updateProfile, EmailAuthProvider, reauthenticateWithCredential, updatePassword, verifyBeforeUpdateEmail } from 'firebase/auth';
 import { DocumentData, doc, getDoc, setDoc} from 'firebase/firestore';
 import React, { useContext, useState, useEffect, ReactNode } from 'react';
 import { auth , db} from '../firebase/config';
@@ -14,8 +14,17 @@ interface AuthContextType {
   isProfileComplete: boolean; 
   setIsProfileComplete: React.Dispatch<React.SetStateAction<boolean>>;
   updateUserPassword: (currentPassword: string, newPassword: string) => Promise<void>;
-  updateUserProfile: (displayName?: string | null, photoURL?: string | null) => Promise<void>;
+  updateUserProfile: (params: UpdateProfileParams) => Promise<DocumentData>;
 }
+
+interface UpdateProfileParams {
+  currentUser: User;
+  name: string;
+  image: string | null;
+  newEmail?: string;
+  currentPassword?: string;
+}
+
 
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
@@ -91,18 +100,49 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const updateUserProfile = async (displayName?: string | null, photoURL?: string | null): Promise<void> => {
-    if (!currentUser) {
-      throw new Error('No user is currently logged in');
-    }
+  const updateUserProfile = async ({
+    currentUser,
+    name,
+    image,
+    newEmail,
+    currentPassword
+  }: UpdateProfileParams) => {
+    if (!currentUser) throw new Error("User not authenticated");
 
     try {
-      await updateProfile(currentUser, {
-        displayName: displayName || currentUser.displayName,
-        photoURL: photoURL || currentUser.photoURL
-      });
-    } catch (error) {
-      console.error('Error updating profile:', error);
+      if (newEmail && currentPassword && newEmail !== currentUser.email) {
+        const credential = EmailAuthProvider.credential(
+          currentUser.email!,
+          currentPassword
+        );
+        await reauthenticateWithCredential(currentUser, credential);
+        await verifyBeforeUpdateEmail(currentUser, newEmail);
+
+        const userData = {
+          name,
+          image,
+          email: currentUser.email,
+          pendingEmail: newEmail
+        };
+        await setDoc(doc(db, 'Users', currentUser.uid), userData);
+        setUserDataObj(userData);
+        throw new Error("VERIFICATION_SENT");
+      }
+
+      const userData = {
+        name,
+        image,
+        email: currentUser.email
+      };
+
+      await setDoc(doc(db, 'Users', currentUser.uid), userData);
+      setUserDataObj(userData);
+      return userData;
+    } catch (error: any) {
+      if (error.message === "VERIFICATION_SENT") {
+        throw error;
+      }
+      console.error("Profile update error:", error);
       throw error;
     }
   };

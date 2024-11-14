@@ -3,14 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { fetchUserData } from '@/lib/actions/user.action';
-import { doc, deleteDoc, setDoc } from 'firebase/firestore';
+import { doc, deleteDoc} from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { ref, uploadBytes, getDownloadURL, deleteObject} from 'firebase/storage';
 import { storage } from '@/firebase/config';
 import Toast from './Toast';
-import { User } from 'firebase/auth';
-import {EmailAuthProvider, reauthenticateWithCredential, verifyBeforeUpdateEmail } from 'firebase/auth';
 interface ProfileSettingsProps {
   userData: UserData | null;
 }
@@ -20,87 +17,15 @@ interface ToastState {
   message: string;
   type: 'success' | 'error';
 }
-
 interface UserData {
   id?: string;
-  name: string;  
+  name: string;
   email: string;
   image: string | null;
 }
 
-interface UpdateProfileParams {
-  currentUser: User;
-  name: string;
-  image: string | null;
-  newEmail?: string;
-  currentPassword?: string;
-}
-
-export const updateUserProfile = async ({
-  currentUser,
-  name,
-  image,
-  newEmail,
-  currentPassword
-}: UpdateProfileParams) => {
-  if (!currentUser) throw new Error("User not authenticated");
-
-  try {
-    if (newEmail && currentPassword && newEmail !== currentUser.email) {
-      try {
-        const credential = EmailAuthProvider.credential(
-          currentUser.email!,
-          currentPassword
-        );
-        await reauthenticateWithCredential(currentUser, credential);
-        
-        await verifyBeforeUpdateEmail(currentUser, newEmail);
-
-        const userData = {
-          name,
-          image,
-          email: currentUser.email, 
-          pendingEmail: newEmail 
-        };
-        await setDoc(doc(db, 'Users', currentUser.uid), userData);
-        
-        throw new Error("VERIFICATION_SENT");
-      } catch (error: any) {
-        if (error.message === "VERIFICATION_SENT") {
-          throw new Error("Verification email sent. Please check your new email inbox and verify before the change takes effect.");
-        }
-        
-        switch (error.code) {
-          case 'auth/email-already-in-use':
-            throw new Error("Email already in use");
-          case 'auth/invalid-credential':
-            throw new Error("Incorrect password");
-          case 'auth/invalid-email':
-            throw new Error("Invalid email format");
-          default:
-            console.error("Email update error:", error);
-            throw new Error("Failed to update email: " + error.message);
-        }
-      }
-    }
-
-    const userData = {
-      name,
-      image,
-      email: currentUser.email, 
-    };
-
-    await setDoc(doc(db, 'Users', currentUser.uid), userData);
-    return userData;
-  } catch (error: any) {
-    console.error("Profile update error:", error);
-    throw error;
-  }
-};
-
-
 const ProfileSettings = ({ userData }: ProfileSettingsProps) => {
-  const { currentUser, setUserDataObj } = useAuth();
+  const { currentUser, setUserDataObj, updateUserProfile } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showEmailUpdate, setShowEmailUpdate] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -129,39 +54,25 @@ const ProfileSettings = ({ userData }: ProfileSettingsProps) => {
 
     try {
       const file = e.target.files[0];
-      
-      // Validate file size (e.g., max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         throw new Error('File size must be less than 5MB');
       }
   
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         throw new Error('Only image files are allowed');
       }
   
-      // Upload new image
       const storageRef = ref(storage, `profile_images/${currentUser.uid}`);
       await uploadBytes(storageRef, file);
       const imageUrl = await getDownloadURL(storageRef);
       
-      // Update profile using updateUserProfile
       await updateUserProfile({
         currentUser,
         name: profile.name,
         image: imageUrl
       });      
-      // Update local state
       setProfile(prev => ({ ...prev, image: imageUrl }));
-      
-      // Update global context
-      setUserDataObj(prev => ({
-        ...prev,
-        image: imageUrl
-      }));
-  
       setToast({ show: true, message: 'Photo uploaded successfully', type: 'success' });
-      window.location.reload();
     } catch (error: any) {
       let errorMessage = 'Error uploading photo';
       if (error.message) {
@@ -179,34 +90,28 @@ const ProfileSettings = ({ userData }: ProfileSettingsProps) => {
     setIsLoading(true);
 
     try {
-      // Try to delete from storage if it exists
       try {
         const storageRef = ref(storage, `profile_images/${currentUser.uid}`);
         await deleteObject(storageRef);
       } catch (error: any) {
-        // Ignore "object-not-found" error
         if (error.code !== 'storage/object-not-found') {
           throw error;
         }
       }
 
-      // Update profile with null image regardless of storage deletion result
       await updateUserProfile({
         currentUser,
         name: profile.name,
         image: null
       });      
-      // Update local state
       setProfile(prev => ({ ...prev, image: null }));
       
-      // Update global context
       setUserDataObj(prev => ({
         ...prev,
         image: null
       }));
 
       setToast({ show: true, message: 'Photo removed successfully', type: 'success' });
-      window.location.reload();
 
     } catch (error) {
       console.error('Error removing photo:', error);
@@ -241,7 +146,7 @@ const ProfileSettings = ({ userData }: ProfileSettingsProps) => {
     setIsLoading(true);
     
     try {
-      const updatedProfile = await updateUserProfile({
+      await updateUserProfile({
         currentUser,
         name: profile.name.trim(),
         image: profile.image,
@@ -251,59 +156,32 @@ const ProfileSettings = ({ userData }: ProfileSettingsProps) => {
         } : {})
       });
   
-      setUserDataObj(prev => ({
-        ...prev,
-        ...updatedProfile
-      }));
-  
-      const message = updatedProfile.email === currentUser.email 
-        ? 'Profile updated successfully'
-        : 'Profile updated. Please check your email for verification link.';
-  
       setToast({ 
         show: true, 
-        message, 
-        type: 'success'
+        message: showEmailUpdate ? 
+          'Verification email sent. Please check your inbox.' : 
+          'Profile updated successfully', 
+        type: 'success' 
       });
-  
-      if (updatedProfile.email === currentUser.email) {
-        // Only reload if email wasn't changed
-        window.location.reload();
-      } else {
-        // Clear email update form
+
+      if (!showEmailUpdate) {
         setShowEmailUpdate(false);
         setCurrentPassword('');
-      }
-    } catch (error: any) {
-      const errorMessage = error.message || 'Error updating profile';
-      
-      // Check if it's a verification message
-      if (errorMessage.includes('Verification email sent')) {
+      } } catch (error: any) {
         setToast({ 
           show: true, 
-          message: errorMessage, 
-          type: 'success' 
-        });
-        setShowEmailUpdate(false);
-        setCurrentPassword('');
-      } else {
-        setToast({ 
-          show: true, 
-          message: errorMessage, 
+          message: error.message, 
           type: 'error' 
         });
-        if (errorMessage.includes('password')) {
-          setEmailUpdateError(errorMessage);
+        if (error.message.includes('password')) {
+          setEmailUpdateError(error.message);
         }
+      } finally {
+        setIsLoading(false);
       }
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
+  
 
-
-// Fix for the ProfileSettings component return statement
 return (
   <div className="mb-12">
     {toast.show && (
@@ -446,11 +324,9 @@ const PasswordSettings = () => {
 
         try {
       await updateUserPassword(passwords.current, passwords.new);
-      
-      // Clear form
+      setToast({ show: true, message: 'Password updated successfully', type: 'success' });
       setPasswords({ current: '', new: '', confirm: '' });
       setError('');
-      setToast({ show: true, message: 'Success message', type: 'success' });
     } catch (error) {
       console.error(error);
       setError('Failed to update password. Please check your current password.');
@@ -462,6 +338,13 @@ const PasswordSettings = () => {
 
   return (
     <div className="mb-12">
+          {toast.show && (
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ ...toast, show: false })}
+      />
+    )}
       <div className="flex gap-8">
         <div className="w-1/3">
           <h2 className="text-2xl font-semibold mb-2">Update Password</h2>
@@ -568,6 +451,13 @@ const DeleteAccount = () => {
 
   return (
     <div className="mb-12">
+    {toast.show && (
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ ...toast, show: false })}
+      />
+    )}
       <div className="flex gap-8">
         <div className="w-1/3">
           <h2 className="text-2xl font-semibold mb-2">Delete Account</h2>
@@ -598,46 +488,30 @@ const DeleteAccount = () => {
 };
 
 const Settings = () => {
-  const { currentUser, loading: authLoading } = useAuth();
+  const { currentUser, loading: authLoading, userDataObj } = useAuth();
   const router = useRouter();
-  const [userData, setUserData] = useState<UserData | null>(null);
-  const [isLoading, setIsLoading] = useState(false); // Global loading state
+  const [isLoading, setIsLoading] = useState(false); 
   const [toast, setToast] = useState<ToastState>({
     show: false,
     message: '',
     type: 'success'
   });
+
+  const typedUserData: UserData | null = userDataObj ? {
+    id: currentUser?.uid,
+    name: userDataObj.name || '',
+    email: userDataObj.email || '',
+    image: userDataObj.image || null
+  } : null;
+
   useEffect(() => {
-    // Wait for auth state to be determined
     if (authLoading) return;
 
     if (!currentUser) {
       router.push('/auth');
       return;
     }
-
-    console.log('Current user:', currentUser);
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const userDataResult = await fetchUserData(currentUser.uid);
-        const typedUserData: UserData = {
-          id: currentUser.uid || '',
-          name: userDataResult.name || '',
-          email: userDataResult.email || '',
-          image: userDataResult.image || null,
-        };
-        setUserData(typedUserData);
-      } catch (error) {
-        console.error("Error fetching initial data:", error);
-        setToast({ show: true, message: 'Error message', type: 'error' });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [currentUser, router, authLoading]);
+  }, [currentUser, router, authLoading, userDataObj]);
 
   // Show loading state while auth state is being determined
   if (authLoading || isLoading) {
@@ -648,7 +522,6 @@ const Settings = () => {
     );
   }
 
-  // If auth is finished loading and there's no user, redirect will happen
   if (!currentUser) {
     return null;
   }
@@ -669,8 +542,8 @@ const Settings = () => {
         </div>
         
         <div className="p-8">
-          <ProfileSettings userData={userData} />
-          <PasswordSettings />
+        <ProfileSettings userData={typedUserData} />
+        <PasswordSettings />
           <DeleteAccount />
         </div>
       </div>
