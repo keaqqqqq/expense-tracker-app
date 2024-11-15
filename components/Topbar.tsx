@@ -2,14 +2,19 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
+import { useAuth } from '@/context/AuthContext';
 
 interface TopBarProps {
-  name: string | null; 
-  image: string | null; 
+  name: string | null;
+  image: string | null;
 }
 
-const TopBar: React.FC<TopBarProps> = ({  name, image }) => {
+const TopBar: React.FC<TopBarProps> = ({ name: initialName, image: initialImage }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const { userDataObj } = useAuth();
+
+  const displayName = userDataObj !== null ? userDataObj.name : initialName;
+  const displayImage = userDataObj !== null ? userDataObj.image : initialImage;
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(event.target.value);
@@ -26,10 +31,10 @@ const TopBar: React.FC<TopBarProps> = ({  name, image }) => {
           className="bg-white text-black px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
         />
         <div className="ml-4 flex items-center">
-          {image ? (
-            <div className="relative w-8 h-8 mr-2">
+          {displayImage ? (
+            <div className="relative w-8 h-8">
               <Image
-                src={image}
+                src={displayImage}
                 alt="Profile"
                 fill
                 className="rounded-full object-cover"
@@ -37,14 +42,14 @@ const TopBar: React.FC<TopBarProps> = ({  name, image }) => {
               />
             </div>
           ) : (
-            <div className="w-8 h-8 mr-2 rounded-full bg-gray-200 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
               <span className="text-gray-500 text-sm">
-                {name?.[0] || '?' }
+                {displayName?.[0] || '?'}
               </span>
             </div>
           )}
-          <span className="font-semibold">
-            {name}
+          <span className="hidden md:block font-semibold truncate ml-2 max-w-[200px]">
+            {displayName}
           </span>
         </div>
       </div>

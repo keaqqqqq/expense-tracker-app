@@ -10,7 +10,7 @@ export interface Group {
     id: string;
     type: string;
     name: string;
-    image: string;
+    image?: string;
     members: GroupMember[];
     pending_members?: GroupMember[];
   }
@@ -18,9 +18,7 @@ export interface Group {
 export  interface FirestoreGroupData {
     name: string;
     type: string;
-    image: string;
+    image?: string;
     members: GroupMember[];
     pending_members?: GroupMember[];
-    creator_id: string;
-    created_at: any;
   }

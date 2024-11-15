@@ -2,35 +2,130 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, UserPlus, Users, Plus, CircleUserRound } from 'lucide-react';
+import { Menu, X, UserPlus, Users, Plus, CircleUserRound, Settings  } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import Button from './UserProfile/Button';
 import { useRouter } from 'next/navigation';
-
-interface SideBarProps {
-    name: string | null;
-    image: string | null;
-    friends?: Array<{
-        id: string;
-        name?: string;
-        image?: string;
-        email: string;
-    }>;
-    groups?: Array<{
-        id: string;
-        name: string;
-        image?: string;
-        type: string;
-    }>;
+import { collection, query, where, onSnapshot, getDoc, doc } from 'firebase/firestore';
+import { db } from '@/firebase/config';
+import { getGroups } from '@/lib/actions/user.action';
+import { Group } from '@/types/Group';
+interface Friend {
+    id: string;
+    name?: string;
+    image?: string;
+    email: string;
 }
 
-const Sidebar: React.FC<SideBarProps> = ({ name, image, friends = [], groups = [] }) => {
+  
+interface SideBarProps {
+    currentUser: {
+        uid: string;
+        email: string | null;
+        name: string | null;
+        image: string | null;
+    };
+    initialFriends?: Friend[]; 
+    initialGroups?: Group[];
+}   
+const Sidebar: React.FC<SideBarProps> = ({ currentUser, initialFriends = [], initialGroups = [] }) => {
     const pathname = usePathname();
     const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [friends, setFriends] = useState<Friend[]>(initialFriends);
+    const [groups, setGroups] = useState<Group[]>(initialGroups);
+
+    useEffect(() => {
+        if (!currentUser.uid || !currentUser.email) return;
+
+        const relationshipsRef = collection(db, 'Friendships');
+        
+        const requesterQuery = query(
+            relationshipsRef,
+            where('status', '==', 'ACCEPTED'),
+            where('requester_id', '==', currentUser.uid)
+        );
+
+        const addresseeQuery = query(
+            relationshipsRef,
+            where('status', '==', 'ACCEPTED'),
+            where('addressee_id', '==', currentUser.uid)
+        );
+
+        const handleFriendshipsUpdate = async (friendshipDocs: any[]) => {
+            const friendsList: Friend[] = [];
+            
+            for (const friendshipDoc of friendshipDocs) {
+                const friendship = friendshipDoc.data();
+                const friendId = friendship.requester_id === currentUser.uid 
+                    ? friendship.addressee_id 
+                    : friendship.requester_id;
+                
+                try {
+                    const userDocRef = doc(db, 'Users', friendId);
+                    const userDoc = await getDoc(userDocRef);
+                    if (userDoc.exists()) {
+                        const userData = userDoc.data();
+                        friendsList.push({
+                            id: friendId,
+                            name: userData.name || null,
+                            image: userData.image || null,
+                            email: userData.email || ''
+                        });
+                    }
+                } catch (error) {
+                    console.error(`Error fetching user ${friendId}:`, error);
+                }
+            }
+
+            setFriends(prevFriends => {
+                const allFriends = [...prevFriends, ...friendsList];
+                return Array.from(new Map(allFriends.map(friend => [friend.id, friend])).values());
+            });
+        };
+
+        const unsubscribeRequester = onSnapshot(requesterQuery, async (requesterSnapshot) => {
+            console.log("Requester snapshots:", requesterSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            if (requesterSnapshot.empty) {
+                console.log("No requester relationships found");
+            }
+            handleFriendshipsUpdate(requesterSnapshot.docs);
+        }, (error) => {
+            console.error("Error in requester subscription:", error);
+        });
+
+        const unsubscribeAddressee = onSnapshot(addresseeQuery, async (addresseeSnapshot) => {
+            console.log("Addressee snapshots:", addresseeSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            if (addresseeSnapshot.empty) {
+                console.log("No addressee relationships found");
+            }
+            handleFriendshipsUpdate(addresseeSnapshot.docs);
+        }, (error) => {
+            console.error("Error in addressee subscription:", error);
+        });
+
+        const groupsRef = collection(db, 'Groups');
+
+        const unsubscribeGroups = onSnapshot(groupsRef, async () => {
+            try {
+                const fetchedGroups = await getGroups(currentUser.email!);
+                setGroups(fetchedGroups);
+            } catch (error) {
+                console.error('Error fetching groups:', error);
+            }
+        }, (error) => {
+            console.error("Error in groups subscription:", error);
+        });
+    
+        return () => {
+            unsubscribeRequester();
+            unsubscribeAddressee();
+            unsubscribeGroups();
+        };
+    }, [currentUser.uid, currentUser.email]);
+    
 
     const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setSearchQuery(event.target.value);
@@ -68,13 +163,6 @@ const Sidebar: React.FC<SideBarProps> = ({ name, image, friends = [], groups = [
         <div className="mt-6">
             <div className="flex items-center justify-between px-4 mb-2">
                 <h3 className="text-sm font-semibold text-gray-500">Your Friends</h3>
-                <button
-                    onClick={() => router.push('/friends/add')}
-                    className="p-1 hover:bg-gray-100 rounded-lg text-gray-600"
-                    title="Add Friend"
-                >
-                    <UserPlus size={16} />
-                </button>
             </div>
             <ul className="space-y-1">
                 {friends.slice(0, 5).map((friend) => (
@@ -135,6 +223,11 @@ const Sidebar: React.FC<SideBarProps> = ({ name, image, friends = [], groups = [
                                 <Users className="w-6 h-6 mr-2 text-gray-400" />
                             )}
                             <span>{group.name}</span>
+                            {group.pending_members && group.pending_members.length > 0 && (
+                                <span className="ml-2 text-xs bg-gray-100 px-2 py-1 rounded-full">
+                                    {group.pending_members.length} pending
+                                </span>
+                            )}
                         </Link>
                     </li>
                 ))}
@@ -159,10 +252,10 @@ const Sidebar: React.FC<SideBarProps> = ({ name, image, friends = [], groups = [
                     className="bg-white text-black px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
                 />
                 <div className="ml-4 flex items-center">
-                    {image ? (
+                    {currentUser.image ? (
                         <div className="relative w-8 h-8 mr-2">
                             <Image
-                                src={image}
+                                src={currentUser.image}
                                 alt="Profile"
                                 fill
                                 className="rounded-full object-cover"
@@ -171,13 +264,13 @@ const Sidebar: React.FC<SideBarProps> = ({ name, image, friends = [], groups = [
                         </div>
                     ) : (
                         <div className="w-8 h-8 mr-2 rounded-full bg-gray-200 flex items-center justify-center">
-                          <span className="text-gray-500 text-sm">
-                            {name?.[0] || "?" }
-                          </span>
+                        <span className="text-gray-500 text-sm">
+                            {currentUser.name?.[0] || "?" }
+                        </span>
                         </div>
                     )}
                     <span className="font-semibold">
-                        {name}
+                        {currentUser.name}
                     </span>
                 </div>
             </div>
@@ -201,10 +294,13 @@ const Sidebar: React.FC<SideBarProps> = ({ name, image, friends = [], groups = [
                     </div>
                 )}
 
-                <div className="h-full overflow-y-auto pb-20">
-                    <h2 className={`text-xl font-semibold text-black px-4 py-4 logo ${isMobile ? 'hidden' : 'block'}`}>
-                        ExpenseTracker
-                    </h2>
+                    <div className="h-full flex flex-col overflow-y-auto">
+                    <div className="flex-1">
+                    <Link href="/">
+                        <h2 className={`text-xl font-semibold text-black px-4 py-4 logo ${isMobile ? 'hidden' : 'block'} cursor-pointer hover:text-indigo-600`}>
+                            ExpenseTracker
+                        </h2>
+                    </Link>
                     <ul>
                         <li>
                             <Link
@@ -246,6 +342,19 @@ const Sidebar: React.FC<SideBarProps> = ({ name, image, friends = [], groups = [
 
                     {renderFriendsList()}
                     {renderGroupsList()}
+                </div>
+                <div className="mt-auto">
+                        <Link
+                            href="/settings"
+                            className={`flex items-center px-4 py-3 text-gray-800 hover:bg-gray-100 ${
+                                pathname === '/settings' ? 'bg-gray-100 text-indigo-600' : ''
+                            }`}
+                            onClick={() => isMobile && setIsOpen(false)}
+                        >
+                            {/* <Settings className="w-5 h-5 mr-3" /> */}
+                            <span className="font-semibold">Settings</span>
+                        </Link>
+                </div>
                 </div>
             </div>
 

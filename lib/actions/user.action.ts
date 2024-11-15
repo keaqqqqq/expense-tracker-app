@@ -2,10 +2,11 @@
 import { doc, setDoc, getDoc, addDoc, collection, query, where, getDocs, serverTimestamp, updateDoc, or, arrayUnion  } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { User } from 'firebase/auth';
-import { Group, GroupMember } from '@/types/Group'
+import { Group } from '@/types/Group';
 import { Friend } from '@/types/Friend';
 import { serializeFirebaseData } from '../utils';
 import { FirestoreGroupData } from '@/types/Group';
+import { GroupMember } from '@/types/Group';
 export const updateUserProfile = async (
   currentUser: User | null,
   name: string,
@@ -60,19 +61,116 @@ export const fetchUserData = async (uid: string) => {
   }
 };
 
+// export const saveFriendship = async (requesterId: string, addresseeEmail: string) => {
+//   try {
+//     const usersRef = collection(db, 'Users');
+//     const q = query(usersRef, where('email', '==', addresseeEmail));
+//     const userSnapshot = await getDocs(q);
+    
+//     const invitationToken = generateInviteToken();
+    
+//     if (!userSnapshot.empty) {
+//       const existingUser = userSnapshot.docs[0];
+//       const friendshipData = {
+//         requester_id: requesterId,
+//         addressee_id: existingUser.id,
+//         status: 'PENDING',
+//         created_at: serverTimestamp()
+//       };
+      
+//       await addDoc(collection(db, 'Friendships'), friendshipData);
+//       return { success: true, type: 'friendship_request' };
+//     } else {
+//       const invitationData = {
+//         requester_id: requesterId,
+//         addressee_email: addresseeEmail,
+//         status: 'PENDING',
+//         invitation_token: invitationToken,
+//         created_at: serverTimestamp(),
+//         expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 
+//         email_sent: false 
+//       };
+      
+//       await addDoc(collection(db, 'Invitations'), invitationData);
+//       return { success: true, type: 'invitation_sent' };
+//     }
+//   } catch (error) {
+//     console.error('Error in saveFriendship:', error);
+//     throw error;
+//   }
+// };
+
 export const saveFriendship = async (requesterId: string, addresseeEmail: string) => {
   try {
+    // First get the potential addressee's user record
     const usersRef = collection(db, 'Users');
-    const q = query(usersRef, where('email', '==', addresseeEmail));
-    const userSnapshot = await getDocs(q);
-    
-    const invitationToken = generateInviteToken();
+    const userQuery = query(usersRef, where('email', '==', addresseeEmail));
+    const userSnapshot = await getDocs(userQuery);
     
     if (!userSnapshot.empty) {
       const existingUser = userSnapshot.docs[0];
+      const addresseeId = existingUser.id;
+
+      // Check if there's already a friendship (in either direction)
+      const friendshipsRef = collection(db, 'Friendships');
+      
+      // Check as requester
+      const asRequesterQuery = query(
+        friendshipsRef,
+        where('requester_id', '==', requesterId),
+        where('addressee_id', '==', addresseeId),
+        where('status', 'in', ['PENDING', 'ACCEPTED'])
+      );
+
+      // Check as addressee
+      const asAddresseeQuery = query(
+        friendshipsRef,
+        where('requester_id', '==', addresseeId),
+        where('addressee_id', '==', requesterId),
+        where('status', 'in', ['PENDING', 'ACCEPTED'])
+      );
+
+      // Check both queries
+      const [requesterSnapshot, addresseeSnapshot] = await Promise.all([
+        getDocs(asRequesterQuery),
+        getDocs(asAddresseeQuery)
+      ]);
+
+      // If either query returns results, there's an existing relationship
+      if (!requesterSnapshot.empty) {
+        const friendship = requesterSnapshot.docs[0].data();
+        if (friendship.status === 'PENDING') {
+          return { 
+            success: false, 
+            error: 'A friend request is already pending with this user.' 
+          };
+        } else if (friendship.status === 'ACCEPTED') {
+          return { 
+            success: false, 
+            error: 'You are already friends with this user.' 
+          };
+        }
+      }
+
+      if (!addresseeSnapshot.empty) {
+        const friendship = addresseeSnapshot.docs[0].data();
+        if (friendship.status === 'PENDING') {
+          return { 
+            success: false, 
+            error: 'This user has already sent you a friend request.' 
+          };
+        } else if (friendship.status === 'ACCEPTED') {
+          return { 
+            success: false, 
+            error: 'You are already friends with this user.' 
+          };
+        }
+      }
+
+      // If no existing friendship, create new friendship request
       const friendshipData = {
         requester_id: requesterId,
-        addressee_id: existingUser.id,
+        addressee_id: addresseeId,
         status: 'PENDING',
         created_at: serverTimestamp()
       };
@@ -80,6 +178,26 @@ export const saveFriendship = async (requesterId: string, addresseeEmail: string
       await addDoc(collection(db, 'Friendships'), friendshipData);
       return { success: true, type: 'friendship_request' };
     } else {
+      // Check if there's a pending invitation
+      const invitationsRef = collection(db, 'Invitations');
+      const existingInvitationQuery = query(
+        invitationsRef,
+        where('requester_id', '==', requesterId),
+        where('addressee_email', '==', addresseeEmail),
+        where('status', '==', 'PENDING')
+      );
+
+      const existingInvitation = await getDocs(existingInvitationQuery);
+
+      if (!existingInvitation.empty) {
+        return { 
+          success: false, 
+          error: 'An invitation is already pending for this email.' 
+        };
+      }
+
+      // If no existing invitation, create new one
+      const invitationToken = generateInviteToken();
       const invitationData = {
         requester_id: requesterId,
         addressee_email: addresseeEmail,
@@ -98,6 +216,7 @@ export const saveFriendship = async (requesterId: string, addresseeEmail: string
     throw error;
   }
 };
+
 
 const generateInviteToken = () => {
   return Math.random().toString(36).substr(2) + Date.now().toString(36);
@@ -152,95 +271,90 @@ export async function getFriendships(userId: string): Promise<Relationship[]> {
     const relationships: Relationship[] = [];
     const existingFriendships = new Set(); 
 
-    const sentFriendshipsQuery = query(
-      collection(db, 'Friendships'),
-      where('requester_id', '==', userId)
-    );
-    const sentFriendships = await getDocs(sentFriendshipsQuery);
-    sentFriendships.forEach(doc => {
-      const data = serializeFirebaseData(doc.data());
-      relationships.push({
-        ...data,
-        id: doc.id,
-        type: 'friendship',
-        role: 'requester',
-        created_at: data.created_at || Date.now(),
-      } as Relationship);
-      existingFriendships.add(data.addressee_id);
-    });
+    const [sentFriendships, receivedFriendships, sentInvitations, receivedInvitations] = await Promise.all([
+      getDocs(query(collection(db, 'Friendships'), where('requester_id', '==', userId))),
+      getDocs(query(collection(db, 'Friendships'), where('addressee_id', '==', userId))),
+      getDocs(query(collection(db, 'Invitations'), where('requester_id', '==', userId))),
+      getDocs(query(collection(db, 'Invitations'), where('addressee_email', '==', userId)))
+    ]);
 
-    const receivedFriendshipsQuery = query(
-      collection(db, 'Friendships'),
-      where('addressee_id', '==', userId)
-    );
-    const receivedFriendships = await getDocs(receivedFriendshipsQuery);
-    receivedFriendships.forEach(doc => {
-      const data = serializeFirebaseData(doc.data());
-      relationships.push({
-        ...data,
-        id: doc.id,
-        type: 'friendship',
-        role: 'addressee',
-        created_at: data.created_at || Date.now(),
-      } as Relationship);
-      existingFriendships.add(data.requester_id);
-    });
-
-    const sentInvitationsQuery = query(
-      collection(db, 'Invitations'),
-      where('requester_id', '==', userId)
-    );
-    const sentInvitations = await getDocs(sentInvitationsQuery);
-    
-    for (const doc of sentInvitations.docs) {
-      const data = serializeFirebaseData(doc.data());
-      
-      const usersQuery = query(
-        collection(db, 'Users'),
-        where('email', '==', data.addressee_email)
-      );
-      const userSnapshot = await getDocs(usersQuery);
-      
-      if (userSnapshot.empty || !userSnapshot.docs[0]) {
-        relationships.push({
+    const processedFriendships = await Promise.all([
+      ...sentFriendships.docs.map(doc => {
+        const data = serializeFirebaseData(doc.data());
+        existingFriendships.add(data.addressee_id);
+        return {
           ...data,
           id: doc.id,
-          type: 'invitation',
+          type: 'friendship',
           role: 'requester',
           created_at: data.created_at || Date.now(),
-        } as Relationship);
-      } else {
-        const registeredUserId = userSnapshot.docs[0].id;
-        if (!existingFriendships.has(registeredUserId)) {
-          relationships.push({
+        } as Relationship;
+      }),
+      ...receivedFriendships.docs.map(doc => {
+        const data = serializeFirebaseData(doc.data());
+        existingFriendships.add(data.requester_id);
+        return {
+          ...data,
+          id: doc.id,
+          type: 'friendship',
+          role: 'addressee',
+          created_at: data.created_at || Date.now(),
+        } as Relationship;
+      })
+    ]);
+    
+    relationships.push(...processedFriendships);
+
+    const emailsToCheck = sentInvitations.docs.map(doc => 
+      serializeFirebaseData(doc.data()).addressee_email
+    );
+    
+    const usersSnapshot = emailsToCheck.length > 0 ? await getDocs(
+      query(
+        collection(db, 'Users'),
+        where('email', 'in', emailsToCheck)
+      )
+    ) : { docs: [] };
+
+    const emailToUserMap = new Map(
+      usersSnapshot.docs.map(doc => [doc.data().email, doc.id])
+    );
+
+    const sentInvitationsProcessed = sentInvitations.docs
+      .map(doc => {
+        const data = serializeFirebaseData(doc.data());
+        const registeredUserId = emailToUserMap.get(data.addressee_email);
+        
+        if (!registeredUserId || !existingFriendships.has(registeredUserId)) {
+          return {
             ...data,
             id: doc.id,
             type: 'invitation',
             role: 'requester',
             created_at: data.created_at || Date.now(),
-          } as Relationship);
+          } as Relationship;
         }
-      }
-    }
+        return null;
+      })
+      .filter((invitation): invitation is Relationship => invitation !== null);
 
-    const receivedInvitationsQuery = query(
-      collection(db, 'Invitations'),
-      where('addressee_email', '==', userId)
-    );
-    const receivedInvitations = await getDocs(receivedInvitationsQuery);
-    receivedInvitations.forEach(doc => {
-      const data = serializeFirebaseData(doc.data());
+    const receivedInvitationsProcessed = receivedInvitations.docs
+      .map(doc => {
+        const data = serializeFirebaseData(doc.data());
+        if (!existingFriendships.has(data.requester_id)) {
+          return {
+            ...data,
+            id: doc.id,
+            type: 'invitation',
+            role: 'addressee',
+            created_at: data.created_at || Date.now(),
+          } as Relationship;
+        }
+        return null;
+      })
+      .filter((invitation): invitation is Relationship => invitation !== null);
 
-      if (!existingFriendships.has(data.requester_id)) {
-        relationships.push({
-          ...data,
-          id: doc.id,
-          type: 'invitation',
-          role: 'addressee',
-          created_at: data.created_at || Date.now(),
-        } as Relationship);
-      }
-    });
+    relationships.push(...sentInvitationsProcessed, ...receivedInvitationsProcessed);
 
     return relationships;
 
@@ -313,7 +427,7 @@ export const saveGroup = async (groupData: Omit<Group, 'id'>, requesterId: strin
             collection(db, 'Friendships'),
             where('requester_id', 'in', [requesterId, userId]),
             where('addressee_id', 'in', [requesterId, userId]),
-            where('status', '==', 'ACCEPTED')
+            where('status', '==', 'ACCEPTED'),
           );
           const friendshipSnapshot = await getDocs(friendshipQuery);
 

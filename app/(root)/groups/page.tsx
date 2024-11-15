@@ -5,7 +5,6 @@ import { redirect } from 'next/navigation';
 import { UserData } from '@/types/User';
 import { fetchUserData } from '@/lib/actions/user.action';
 import { Friend } from '@/types/Friend';
-import GroupList from '@/components/Groups/GroupList';
 import { Group } from '@/types/Group';
 
 export default async function Groups() {

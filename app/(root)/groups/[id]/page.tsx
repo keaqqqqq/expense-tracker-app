@@ -1,11 +1,12 @@
 import { getGroupDetails } from '@/lib/actions/user.action';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import ExpenseCard from '@/components/ExpenseCard';
 
 interface GroupDetailsPageProps {
   params: {
     uid: string;
-    groupId: string;
+    id: string;
   }
 }
 
@@ -18,7 +19,7 @@ export default async function GroupDetailsPage({ params }: GroupDetailsPageProps
   }
 
   try {
-    const group = await getGroupDetails(params.groupId);
+    const group = await getGroupDetails(params.id);
 
     if (!group) {
       return (
@@ -32,7 +33,16 @@ export default async function GroupDetailsPage({ params }: GroupDetailsPageProps
     }
 
     return (
-      <div></div>
+      <div>
+        <ExpenseCard
+          name={group.name}
+          amount={120}
+          type="group"
+          memberCount={group.members.length}
+          groupType={group.type}
+          imageUrl={group.image}
+        />
+      </div>
     );
   } catch (error) {
     console.error('Error loading group details:', error);
