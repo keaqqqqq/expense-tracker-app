@@ -7,13 +7,12 @@ import ExtraSplit from './ExtraSplit';
 import ManualSplit from './ManualSplit';
 
 const SplitTab: React.FC = () => {
-    const tabClass = "px-3 py-1 border focus:bg-blue-100 focus:outline-none focus:text-indigo-800";
-
+    const tabClass = "flex-1 px-3 py-1 border focus:bg-blue-100 focus:outline-none focus:text-indigo-800";
     return (
         <TabGroup>
-            <div className="flex flex-row content-center justify-between items-center">
+            <div className="flex flex-col md:flex-row content-center justify-between items-center">
                 <div className="my-auto">Split</div>
-                <TabList className="border rounded w-max justify-center">
+                <TabList className="border rounded w-full md:w-max flex mt-2 md:mt-0">
                     <Tab className={tabClass}>Equal</Tab>
                     <Tab className={tabClass}>%</Tab>
                     <Tab className={tabClass}>Weight</Tab>
@@ -23,10 +22,10 @@ const SplitTab: React.FC = () => {
                 <div className="my-auto">with</div>
             </div>
             <TabPanels>
-                <TabPanel><EqualSplit /></TabPanel>
+                <TabPanel><EqualSplit/></TabPanel>
                 <TabPanel><PercentageSplit/></TabPanel>
                 <TabPanel><WeightSplit/></TabPanel>
-                <TabPanel><ExtraSplit/></TabPanel>
+                <TabPanel><ExtraSplit /></TabPanel>
                 <TabPanel><ManualSplit/></TabPanel>
             </TabPanels>
         </TabGroup>
