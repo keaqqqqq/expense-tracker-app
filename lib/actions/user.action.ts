@@ -1,5 +1,5 @@
 'use server'
-import { doc, setDoc, getDoc, addDoc, collection, query, where, getDocs, serverTimestamp, updateDoc, or, arrayUnion  } from 'firebase/firestore';
+import { doc, setDoc, getDoc, addDoc, collection, query, where, getDocs, serverTimestamp, updateDoc, orderBy, arrayUnion, Timestamp  } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { User } from 'firebase/auth';
 import { Group } from '@/types/Group';
@@ -7,6 +7,7 @@ import { Friend } from '@/types/Friend';
 import { serializeFirebaseData } from '../utils';
 import { FirestoreGroupData } from '@/types/Group';
 import { GroupMember } from '@/types/Group';
+import { Expense, GroupedTransactions, Transaction,  } from '@/types/ExpenseList';
 export const updateUserProfile = async (
   currentUser: User | null,
   name: string,
@@ -807,3 +808,113 @@ export async function getGroupDetails(groupId: string): Promise<Group | null> {
     throw error;
   }
 }
+
+export const fetchExpenseData = async (expenseId: string): Promise<Expense | undefined> => {
+  try {
+    // Instead of querying by field, get the document directly by ID
+    const expenseDoc = doc(db, 'Expenses', expenseId);
+    const expenseSnapshot = await getDoc(expenseDoc);
+
+    if (!expenseSnapshot.exists()) return undefined;
+
+    // Serialize the data right when we get it from Firestore
+    const rawData = expenseSnapshot.data();
+
+    // Convert Firebase Timestamp to JavaScript Date
+    if (rawData.date instanceof Timestamp) {
+      rawData.date = rawData.date.toDate();
+    }
+    if (rawData.created_at instanceof Timestamp) {
+      rawData.created_at = rawData.created_at.toDate();
+    }
+
+    const serializedData = serializeFirebaseData(rawData);
+    return serializedData as Expense;
+  } catch (error) {
+    console.error('Error fetching expense:', error);
+    return undefined;
+  }
+};
+
+
+// lib/actions/expense.actions.ts
+export const fetchTransactions = async (currentUserId: string, friendId: string): Promise<GroupedTransactions[]> => {
+  try {
+    const transactionsRef = collection(db, 'Transactions');
+    
+    // Query where current user is payer and friend is receiver
+    const currentUserPayerQ = query(
+      transactionsRef,
+      where('payer_id', '==', currentUserId),
+      where('receiver_id', '==', friendId),
+      orderBy('created_at', 'desc')
+    );
+    
+    // Query where friend is payer and current user is receiver
+    const friendPayerQ = query(
+      transactionsRef,
+      where('payer_id', '==', friendId),
+      where('receiver_id', '==', currentUserId),
+      orderBy('created_at', 'desc')
+    );
+
+    // Fetch both sets of transactions
+    const [currentUserPayerSnapshot, friendPayerSnapshot] = await Promise.all([
+      getDocs(currentUserPayerQ),
+      getDocs(friendPayerQ)
+    ]);
+
+    // Combine and serialize transactions immediately
+    const transactions = [...currentUserPayerSnapshot.docs, ...friendPayerSnapshot.docs]
+      .map(doc => {
+        const data = doc.data();
+        // Convert Firebase Timestamp to JavaScript Date
+        if (data.created_at instanceof Timestamp) {
+          data.created_at = data.created_at.toDate();
+        }
+        return serializeFirebaseData(data) as Transaction;
+      })
+      .filter((transaction, index, self) =>
+        index === self.findIndex(t =>
+          t.created_at === transaction.created_at &&
+          t.payer_id === transaction.payer_id &&
+          t.receiver_id === transaction.receiver_id
+        )
+      );
+
+    // Group transactions
+    const groupedTransactions: { [key: string]: Transaction[] } = {};
+    for (const transaction of transactions) {
+      const key = transaction.expense_id || 'direct-payment';
+      if (!groupedTransactions[key]) {
+        groupedTransactions[key] = [];
+      }
+      groupedTransactions[key].push(transaction);
+
+    }
+    // Create the final grouped result
+    const result: GroupedTransactions[] = await Promise.all(
+      Object.entries(groupedTransactions).map(async ([key, transactions]) => {
+        let expense: Expense | undefined;
+
+        if (key !== 'direct-payment') {
+          expense = await fetchExpenseData(key);
+        }
+        console.log('Expense is: ' + expense)
+        return {
+          expense,
+          transactions: transactions.sort((a, b) => {
+            if (a.type === 'settle' && b.type !== 'settle') return -1;
+            if (a.type !== 'settle' && b.type === 'settle') return 1;
+            return 0;
+          })
+        };
+      })
+    );
+
+    return result;
+  } catch (error) {
+    console.error('Error fetching transactions:', error);
+    return [];
+  }
+};

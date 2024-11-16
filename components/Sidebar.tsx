@@ -87,7 +87,6 @@ const Sidebar: React.FC<SideBarProps> = ({ currentUser, initialFriends = [], ini
         };
 
         const unsubscribeRequester = onSnapshot(requesterQuery, async (requesterSnapshot) => {
-            console.log("Requester snapshots:", requesterSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
             if (requesterSnapshot.empty) {
                 console.log("No requester relationships found");
             }
@@ -97,10 +96,6 @@ const Sidebar: React.FC<SideBarProps> = ({ currentUser, initialFriends = [], ini
         });
 
         const unsubscribeAddressee = onSnapshot(addresseeQuery, async (addresseeSnapshot) => {
-            console.log("Addressee snapshots:", addresseeSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-            if (addresseeSnapshot.empty) {
-                console.log("No addressee relationships found");
-            }
             handleFriendshipsUpdate(addresseeSnapshot.docs);
         }, (error) => {
             console.error("Error in addressee subscription:", error);

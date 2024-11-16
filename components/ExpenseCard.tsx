@@ -1,6 +1,6 @@
 'use client'
 import React from 'react';
-import { ChevronDown, Users, User } from 'lucide-react';
+import { Users, User, Check } from 'lucide-react';
 
 interface ExpenseCardProps {
   name: string;
@@ -22,6 +22,7 @@ const ExpenseCard = ({
   imageUrl
 }: ExpenseCardProps) => {
   const isPositive = amount >= 0;
+  const isSettled = amount === 0;
   
   const displayImage = type === 'user' ? avatarUrl : imageUrl;
   
@@ -64,28 +65,38 @@ const ExpenseCard = ({
             )}
           </div>
           
-          <div className={`inline-block px-3 py-1 mt-1.5 rounded-full text-sm font-medium
-            ${isPositive 
-              ? 'text-green-700 bg-green-50' 
-              : 'text-red-700 bg-red-50'
+          <div className={`inline-flex items-center gap-1.5 px-3 py-1 mt-1.5 rounded-full text-sm font-medium
+            ${isSettled 
+              ? 'text-emerald-700 bg-emerald-50'
+              : isPositive 
+                ? 'text-green-700 bg-green-50' 
+                : 'text-red-700 bg-red-50'
             }`}
           >
-            {isPositive 
-              ? `You are owed $${Math.abs(amount).toFixed(2)}`
-              : `You owe $${Math.abs(amount).toFixed(2)}`
-            }
+            {isSettled ? (
+              <>
+                <Check className="w-4 h-4" />
+                <span>Settled up</span>
+              </>
+            ) : (
+              isPositive 
+                ? `Owes you $${Math.abs(amount).toFixed(2)}`
+                : `You owe $${Math.abs(amount).toFixed(2)}`
+            )}
           </div>
         </div>
       </div>
       
       <div className="flex gap-3">
-        <button className="flex items-center gap-2 px-2.5 py-1.5 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 text-xs">
+        <button className="flex items-center gap-2 px-2.5 py-1.5 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 text-sm">
           New expense
         </button>
         
-        <button className="px-2.5 py-1.5 text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 text-xs">
-          Settle up
-        </button>
+
+          <button className="px-2.5 py-1.5 text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 text-sm">
+            Settle up
+          </button>
+        
       </div>
     </div>
   );
