@@ -847,6 +847,7 @@ export const fetchTransactions = async (currentUserId: string, friendId: string)
       transactionsRef,
       where('payer_id', '==', currentUserId),
       where('receiver_id', '==', friendId),
+      where('group_id', '==', null),
       orderBy('created_at', 'desc')
     );
     
@@ -855,6 +856,7 @@ export const fetchTransactions = async (currentUserId: string, friendId: string)
       transactionsRef,
       where('payer_id', '==', friendId),
       where('receiver_id', '==', currentUserId),
+      where('group_id', '==', null),
       orderBy('created_at', 'desc')
     );
 
@@ -915,6 +917,70 @@ export const fetchTransactions = async (currentUserId: string, friendId: string)
     return result;
   } catch (error) {
     console.error('Error fetching transactions:', error);
+    return [];
+  }
+};
+
+export const fetchGroupTransactions = async (groupId: string): Promise<GroupedTransactions[]> => {
+  try {
+    const transactionsRef = collection(db, 'Transactions');
+    
+    // Single query for all group transactions
+    const groupTransactionsQ = query(
+      transactionsRef,
+      where('group_id', '==', groupId),
+      orderBy('created_at', 'desc')
+    );
+
+    const groupTransactionsSnapshot = await getDocs(groupTransactionsQ);
+    // Serialize transactions
+    const transactions = groupTransactionsSnapshot.docs
+      .map(doc => {
+        const data = doc.data();
+        if (data.created_at instanceof Timestamp) {
+          data.created_at = data.created_at.toDate();
+        }
+        return serializeFirebaseData(data) as Transaction;
+      })
+      .filter((transaction, index, self) =>
+        index === self.findIndex(t =>
+          t.created_at === transaction.created_at &&
+          t.payer_id === transaction.payer_id &&
+          t.receiver_id === transaction.receiver_id
+        )
+      );
+
+    // Group transactions
+    const groupedTransactions: { [key: string]: Transaction[] } = {};
+    for (const transaction of transactions) {
+      const key = transaction.expense_id || 'direct-payment';
+      if (!groupedTransactions[key]) {
+        groupedTransactions[key] = [];
+      }
+      groupedTransactions[key].push(transaction);
+    }
+
+    // Create the final grouped result
+    const result: GroupedTransactions[] = await Promise.all(
+      Object.entries(groupedTransactions).map(async ([key, transactions]) => {
+        let expense: Expense | undefined;
+        if (key !== 'direct-payment') {
+          expense = await fetchExpenseData(key);
+        }
+        return {
+          expense,
+          transactions: transactions.sort((a, b) => {
+            if (a.type === 'settle' && b.type !== 'settle') return -1;
+            if (a.type !== 'settle' && b.type === 'settle') return 1;
+            return 0;
+          })
+        };
+      })
+    );
+
+    return result;
+  } catch (error) {
+    console.error('Error fetching group transactions:', error);
     return [];
   }
 };

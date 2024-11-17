@@ -29,7 +29,7 @@ export interface Expense {
   created_by: string;
   group_id: string | null;
   date: string;
-  payer: Splitter;
+  payer: Splitter[];
   split_preference: string;
   splitter: Splitter[];
 }
