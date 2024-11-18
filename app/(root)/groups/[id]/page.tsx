@@ -15,7 +15,6 @@ interface GroupDetailsPageProps {
   }
 }
 
-// app/groups/[id]/page.tsx
 export default async function GroupDetailsPage({ params }: GroupDetailsPageProps) {
   const cookieStore = cookies();
   const uid = cookieStore.get('currentUserUid')?.value;
@@ -25,7 +24,6 @@ export default async function GroupDetailsPage({ params }: GroupDetailsPageProps
   }
 
   try {
-    // Fetch group and transactions in parallel
     const [group, initialTransactions] = await Promise.all([
       getGroupDetails(params.id),
       fetchGroupTransactions(params.id)
@@ -42,21 +40,17 @@ export default async function GroupDetailsPage({ params }: GroupDetailsPageProps
       );
     }
 
-    // Extract and filter member IDs
     const memberIds = group.members
       .map(member => typeof member === 'string' ? member : member.id)
       .filter((id): id is string => id !== undefined);
 
-    // Extract and filter transaction user IDs
     const transactionUserIds = initialTransactions
       .flatMap(group => group.transactions)
       .flatMap(t => [t.payer_id, t.receiver_id])
       .filter((id): id is string => id !== undefined);
 
-    // Combine and deduplicate all valid user IDs
     const userIds = new Set<string>([...memberIds, ...transactionUserIds]);
 
-    // Fetch all user data in parallel
     const usersDataPromises = Array.from(userIds).map(async (userId) => {
       try {
         const userData = await fetchUserData(userId);
@@ -71,7 +65,6 @@ export default async function GroupDetailsPage({ params }: GroupDetailsPageProps
     const usersDataArray = await Promise.all(usersDataPromises);
     const usersData = Object.fromEntries(usersDataArray);
 
-    // Rest of your code remains the same...
     const balance = initialTransactions.reduce((total: number, group: GroupedTransactions) => {
       return group.transactions.reduce((subTotal: number, transaction: Transaction) => {
         if (transaction.payer_id === uid) {

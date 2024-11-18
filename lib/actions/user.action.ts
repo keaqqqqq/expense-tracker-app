@@ -1,5 +1,5 @@
 'use server'
-import { doc, setDoc, getDoc, addDoc, collection, query, where, getDocs, serverTimestamp, updateDoc, orderBy, arrayUnion, Timestamp  } from 'firebase/firestore';
+import { doc, setDoc, getDoc, addDoc, collection, query, where, getDocs, serverTimestamp, updateDoc, orderBy, arrayUnion, Timestamp, writeBatch, and, or  } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { User } from 'firebase/auth';
 import { Group } from '@/types/Group';
@@ -424,15 +424,28 @@ export const saveGroup = async (groupData: Omit<Group, 'id'>, requesterId: strin
           const userData = userSnapshot.docs[0].data();
           const userId = userSnapshot.docs[0].id;
 
-          const friendshipQuery = query(
+          const friendshipAcceptedQuery = query(
             collection(db, 'Friendships'),
             where('requester_id', 'in', [requesterId, userId]),
             where('addressee_id', 'in', [requesterId, userId]),
             where('status', '==', 'ACCEPTED'),
           );
-          const friendshipSnapshot = await getDocs(friendshipQuery);
 
-          if (friendshipSnapshot.empty) {
+          const friendshipAcceptedSnapshot = await getDocs(friendshipAcceptedQuery);
+
+          if (friendshipAcceptedSnapshot.empty) {
+            const friendshipPendingQuery = query(
+              collection(db, 'Friendships'),
+              where('requester_id', 'in', [requesterId, userId]),
+              where('addressee_id', 'in', [requesterId, userId]),
+              where('status', '==', 'PENDING'),
+            );
+            const friendshipPendingSnapshot = await getDocs(friendshipPendingQuery);
+
+
+
+            if (friendshipPendingSnapshot.empty) {
+
             const friendshipData = {
               requester_id: requesterId,
               addressee_id: userId,
@@ -443,6 +456,12 @@ export const saveGroup = async (groupData: Omit<Group, 'id'>, requesterId: strin
             };
 
             await addDoc(collection(db, 'Friendships'), friendshipData);
+          } else {
+            await updateDoc(friendshipPendingSnapshot.docs[0].ref, {
+              related_group_name: groupData.name,
+              related_group_id: null, 
+            });
+          }
 
             return {
               email: member.email,
@@ -549,6 +568,7 @@ export const acceptFriendshipAndAddToGroup = async (
     const friendshipData = friendshipDoc.data();
     const groupId = friendshipData.related_group_id;
 
+    // Update friendship status first
     await updateDoc(friendshipRef, {
       status: 'ACCEPTED',
       accepted_at: serverTimestamp()
@@ -566,35 +586,35 @@ export const acceptFriendshipAndAddToGroup = async (
       if (!groupDoc.exists()) throw new Error('Group not found');
 
       const groupData = groupDoc.data();
-      
+
+      // Ensure member structure is consistent
+      const newMember = {
+        id: currentUserId,
+        email: userData.email || '',
+        name: userData.name || '',
+        image: userData.image || '',
+        status: 'ACCEPTED'  // Add explicit status
+      };
+
+      // Remove from pending members first
       const updatedPendingMembers = (groupData.pending_members || [])
-        .filter((member: any) => {
-          return (member.id !== currentUserId && 
-                 member.email !== userData.email) || 
-                 (member.status !== 'PENDING_FRIENDSHIP' && 
-                  member.status !== 'PENDING_INVITATION');
-        });
+        .filter((member: any) => 
+          member.id !== currentUserId && 
+          member.email !== userData.email
+        );
 
+      // Then add to active members
       await updateDoc(groupRef, {
-        members: arrayUnion({
-          id: currentUserId,
-          name: userData.name,
-          email: userData.email,
-          image: userData.image || '' 
-
-        }),
+        members: arrayUnion(newMember),
         pending_members: updatedPendingMembers
       });
-
-      return {
-        success: true,
-        message: 'Successfully accepted friendship and added to group'
-      };
     }
 
-    return {
-      success: true,
-      message: 'Successfully accepted friendship'
+    return { 
+      success: true, 
+      message: groupId 
+        ? 'Successfully accepted friendship and added to group' 
+        : 'Successfully accepted friendship'
     };
   } catch (error) {
     console.error('Error accepting friendship and adding to group:', error);
@@ -982,5 +1002,53 @@ export const fetchGroupTransactions = async (groupId: string): Promise<GroupedTr
   } catch (error) {
     console.error('Error fetching group transactions:', error);
     return [];
+  }
+};
+
+export const removeFriend = async (currentUserId: string, friendId: string) => {
+  try {
+    if (!currentUserId || !friendId) {
+      throw new Error('Missing required parameters');
+    }
+
+    const friendshipsRef = collection(db, 'Friendships');
+    const q = query(
+      friendshipsRef,
+      where('status', '==', 'ACCEPTED'),
+      where('requester_id', '==', currentUserId),
+      where('addressee_id', '==', friendId)
+    );
+
+    const q2 = query(
+      friendshipsRef,
+      where('status', '==', 'ACCEPTED'),
+      where('requester_id', '==', friendId),
+      where('addressee_id', '==', currentUserId)
+    );
+
+    const [snapshot1, snapshot2] = await Promise.all([
+      getDocs(q),
+      getDocs(q2)
+    ]);
+
+    const docs = [...snapshot1.docs, ...snapshot2.docs];
+    
+    if (docs.length === 0) {
+      throw new Error('Friendship not found');
+    }
+
+    const batch = writeBatch(db);
+    docs.forEach((doc) => {
+      // First update status to trigger listeners
+      batch.update(doc.ref, { status: 'REMOVED' });
+      // Then delete
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+
+    return true;
+  } catch (error) {
+    console.error('Error removing friend:', error);
+    throw error;
   }
 };

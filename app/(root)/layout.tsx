@@ -121,7 +121,7 @@ export default async function RootLayout({
     }
 
     return (
-        <main className="flex h-screen w-full font-inter">
+        <main className="flex h-screen w-full font-inter bg-gray-50">
             <Sidebar
                 currentUser={{
                     uid: uid || '',
@@ -131,13 +131,19 @@ export default async function RootLayout({
                 }}
                 initialFriends={initialFriends}
                 initialGroups={initialGroups}
+                className="bg-white shadow-lg z-20 border-r border-gray-200"
             />
-            <div className="flex flex-col flex-1 md:ml-64 relative">
-                <div className="hidden md:block">
-                    <TopBar name={userData?.name || null} image={userData?.image || null} />
+            <div className="flex flex-col flex-1 md:ml-56">
+                <div className="hidden md:block h-16 bg-white border-b border-gray-200 fixed top-0 right-0 left-56 z-10 shadow-sm">
+                    <TopBar 
+                        name={userData?.name || null} 
+                        image={userData?.image || null}
+                    />
                 </div>
-                <div className="p-4 flex-1 sm:p-8 mt-16 md:mt-0">
-                    {children}
+                <div className="flex-1 p-4 sm:p-8 mt-16 md:mt-20 bg-gray-50 min-h-screen">
+                    <div className="max-w-7xl mx-auto">
+                        {children}
+                    </div>
                 </div>
             </div>
         </main>

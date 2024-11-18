@@ -10,7 +10,9 @@ import { cookies } from "next/headers";
 import { redirect } from 'next/navigation';
 import BackButton from '@/components/BackButton';
 import { User} from 'lucide-react';
-
+import ManageFriend from '@/components/Friends/ManageFriend';
+import { Relationship } from '@/types/Friend';
+import { getFriendships } from '@/lib/actions/user.action';
 interface Props {
   params: {
     id: string;
@@ -19,10 +21,9 @@ interface Props {
 
 async function FriendDetails({ params }: Props) {
 
-  
   const PendingStatusUI = () => (
     <div className="container mx-auto px-4">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-3xl mx-auto">
         <div className="bg-white rounded-lg shadow p-8">
           <div className="flex flex-col items-center justify-center text-center">
             <div className="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center mb-4">
@@ -32,20 +33,20 @@ async function FriendDetails({ params }: Props) {
               Request / Invitation Pending
             </h2>
             <p className="text-gray-500 mb-4">
-              Either you sent a friend invitation or received a friend request. You can't view this profile yet because:
+              This friend isn't accessible until the friend request is accepted.
             </p>
             <ul className="text-sm text-gray-500 mb-6 space-y-2 text-left max-w-sm mx-auto">
               <li className="flex items-start gap-2">
                 <span className="text-yellow-500 mt-1">•</span>
-                They might still be considering your request
+                Request is still under consideration
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-yellow-500 mt-1">•</span>
-                The user hasn't accepted your invitation yet
+                Invitation acceptance is pending
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-yellow-500 mt-1">•</span>
-                Once accepted, you can start sharing expenses
+                Expense sharing will be available after acceptance
               </li>
             </ul>
             <div className="mt-2 flex flex-col gap-3 items-center">
@@ -64,7 +65,6 @@ async function FriendDetails({ params }: Props) {
     </div>
   );
 
-
   if (!params.id || params.id === 'undefined') {
     return <PendingStatusUI />;
   }
@@ -77,14 +77,22 @@ async function FriendDetails({ params }: Props) {
       redirect('/login');
     }
 
-    // Fetch all data in parallel
+    const relationships = await getFriendships(uid);
+    const friendship = relationships.find((rel: Relationship) => 
+      (rel.requester_id === params.id || rel.addressee_id === params.id) &&
+      rel.status === 'ACCEPTED'
+    );
+
+    if (!friendship) {
+      return <PendingStatusUI />;
+    }
+
     const [rawUserData, initialTransactions] = await Promise.all([
       fetchUserData(params.id),
       fetchTransactions(uid, params.id)
     ]);
 
 
-    // Collect all unique user IDs from transactions
     const userIds = new Set<string>();
     initialTransactions.forEach((group: GroupedTransactions) => {
       group.transactions.forEach((transaction: Transaction) => {
@@ -93,7 +101,6 @@ async function FriendDetails({ params }: Props) {
       });
     });
 
-    // Fetch all user data in parallel
     const usersDataPromises = Array.from(userIds).map(async (userId) => {
       try {
         const userData = await fetchUserData(userId);
@@ -107,7 +114,6 @@ async function FriendDetails({ params }: Props) {
     const usersDataArray = await Promise.all(usersDataPromises);
     const usersData = Object.fromEntries(usersDataArray);
 
-    // Calculate balance
     const balance = initialTransactions.reduce((total: number, group: GroupedTransactions) => {
       return group.transactions.reduce((subTotal: number, transaction: Transaction) => {
         if (transaction.payer_id === params.id) {
@@ -122,24 +128,34 @@ async function FriendDetails({ params }: Props) {
     const userData = serializeFirebaseData(rawUserData);
 
     return (
-      <div className="space-y-4">
-        <ExpenseProvider 
-          initialTransactions={initialTransactions}
-          usersData={usersData}
-        >
-          <div>
-            <ExpenseCard  
-              name={userData.name}
-              amount={balance}
-              type="user"
-              avatarUrl={userData.image || '/default-avatar.jpg'}
-            />
-            <Suspense fallback={<div className="p-4 text-center">Loading expenses...</div>}>
-              <ExpenseList currentUserId={uid}/>
-            </Suspense>
+      <ExpenseProvider 
+        initialTransactions={initialTransactions}
+        usersData={usersData}
+      >
+        <div className="grid md:grid-cols-4 gap-4">
+          <div className="md:col-span-3">
+            <div className="flex flex-col gap-2"> {/* Reduced gap from 4 to 2 */}
+              <ExpenseCard  
+                name={userData.name}
+                amount={balance}
+                type="user"
+                avatarUrl={userData.image || '/default-avatar.jpg'}
+              />
+              <Suspense fallback={<div className="text-center">Loading expenses...</div>}>
+                <ExpenseList currentUserId={uid}/>
+              </Suspense>
+            </div>
           </div>
-        </ExpenseProvider>
-      </div>
+          
+          <div className="md:col-span-1 h-fit sticky top-4">
+            <ManageFriend
+              friendId={params.id}
+              friendName={userData.name}
+              currentUserId={uid}
+            />
+          </div>
+        </div>
+      </ExpenseProvider>
     );
   } catch (error) {
     console.error('Error fetching data:', error);

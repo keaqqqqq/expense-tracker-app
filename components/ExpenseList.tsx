@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { ChevronDown, Utensils, Edit2, DollarSign, User, Receipt } from 'lucide-react';
 import type { GroupedTransactions, Transaction, Expense } from '@/types/ExpenseList';
 import { useExpense } from '@/context/ExpenseListContext';
@@ -11,9 +11,9 @@ interface ExpenseItemProps {
 }
 
 const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, currentUserId }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
   const { expense, transactions } = groupedTransactions;
   const isDirectPayment = transactions[0]?.expense_id === 'direct-payment';
-
   const { usersData } = useExpense();
 
   const getUserData = (userId: string) => {
@@ -31,12 +31,69 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
     return userId === currentUserId ? 'You' : getUserData(userId)?.name || userId;
   };
 
+  const calculateSummary = () => {
+    if (isDirectPayment) {
+      const transaction = transactions[0];
+      return {
+        totalAmount: transaction.amount,
+        perPersonAmount: transaction.amount,
+        participants: [
+          {
+            id: transaction.payer_id,
+            name: getDisplayName(transaction.payer_id),
+            paid: transaction.amount,
+            owed: 0,
+            balance: transaction.amount
+          },
+          {
+            id: transaction.receiver_id,
+            name: getDisplayName(transaction.receiver_id),
+            paid: 0,
+            owed: transaction.amount,
+            balance: -transaction.amount
+          }
+        ]
+      };
+    }
+
+    const totalAmount = expense?.amount || 0;
+    
+    const allUsers = new Set<string>();
+    
+    expense?.payer?.forEach(user => allUsers.add(user.id));
+    
+    expense?.splitter?.forEach(user => allUsers.add(user.id));
+
+    const splitAmount = totalAmount / (expense?.splitter?.length || 1);
+
+    const participants = Array.from(allUsers).map(userId => {
+      const paidAmount = expense?.payer?.find(p => p.id === userId)?.amount || 0;
+
+      const owedAmount = expense?.splitter?.find(s => s.id === userId) ? splitAmount : 0;
+
+      const balance = paidAmount - owedAmount;
+
+      return {
+        id: userId,
+        name: getDisplayName(userId),
+        paid: paidAmount,
+        owed: owedAmount,
+        balance: balance
+      };
+    });
+
+    return {
+      totalAmount,
+      participants: participants.sort((a, b) => a.name.localeCompare(b.name))
+    };
+  };
+
+
   const sortedTransactions = [...transactions].sort((a, b) => {
-    // Helper function to get priority (lower number = appears first)
     const getPriority = (type: string) => {
-      if (type === 'expense') return 0;  // Show expense with payments first
-      if (type === 'settle') return 2;   // Show settle payments last
-      return 1;  // For any other types
+      if (type === 'expense') return 0;  
+      if (type === 'settle') return 2;   
+      return 1;  
     };
 
     const priorityA = getPriority(a.type);
@@ -51,7 +108,6 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
     );
     
     if (samePayerTransactions.length > 1) {
-      // Check if current user is one of the receivers
       const isCurrentUserReceiver = samePayerTransactions.some(t => t.receiver_id === currentUserId);
       const otherPeopleCount = samePayerTransactions.length - (isCurrentUserReceiver ? 1 : 0);
       
@@ -92,64 +148,115 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
           </React.Fragment>
         ))}
         <span className="text-gray-400 text-xs">paid</span>
-        <span className="font-medium text-sm">RM {expense.amount}</span>
+        <span className="text-xs text-gray-600">
+        RM {expense.amount}
+        </span>
       </div>
     );
   };
+
+  const summary = calculateSummary();
+
+  const isSettled = () => {
+    if (isDirectPayment) return true;
+    
+    const totalSettlements = transactions
+      .filter(t => t.type === 'settle')
+      .reduce((sum, t) => sum + t.amount, 0);
+  
+    const totalNegativeBalance = summary.participants
+      .filter(participant => participant.balance < 0)
+      .reduce((sum, participant) => sum + Math.abs(participant.balance), 0);
+    
+    return Math.abs(totalSettlements - totalNegativeBalance) < 0.01; 
+  };
+
   return (
-    <div className="w-full max-w-2xl">
-      {/* Date header */}
-      <div className="text-sm text-gray-500 mb-1 px-3">
+    <div className="w-full max-w-3xl">
+    <div className="text-sm text-gray-500 mb-1 px-3 flex justify-between items-center">
+      <span>
         {expense?.date 
           ? new Date(expense.date).toLocaleDateString('en-GB')
           : new Date(transactions[0].created_at).toLocaleDateString('en-GB')}
-      </div>
-
-      {/* Main content */}
-      <div className={`p-3 bg-white rounded-lg shadow ${isDirectPayment ? 'border-l-4 border-green-400' : 'border-l-4 border-blue-400'}`}>
-        {/* Transaction type indicator */}
-        <div className="flex items-center gap-2 mb-2 text-xs text-gray-500">
-          {isDirectPayment ? (
-            <>
-              <DollarSign className="w-3 h-3" />
-              <span>Direct Payment</span>
-            </>
-          ) : (
-            <>
-              <Receipt className="w-3 h-3" />
-              <span>Expense with Split</span>
-            </>
-          )}
+      </span>
+      {!isDirectPayment && (
+        <div className="flex items-center gap-2">
+          <div className={`w-2 h-2 rounded-full ${isSettled() ? 'bg-green-400' : 'bg-red-400'}`} />
+          <span className="text-xs">
+            {isSettled() ? 'Settled' : 'Unsettled'}
+          </span>
         </div>
+      )}
+    </div>
 
-        <div className="flex flex-col">
-          {/* Main content container */}
-          <div className="flex justify-between items-center">
-            {/* Left section */}
+    <div className={`bg-white rounded-lg shadow ${
+      isDirectPayment 
+        ? 'border-l-4 border-green-400' 
+        : isSettled()
+          ? 'border-l-4 border-green-400'
+          : 'border-l-4 border-red-400'
+    }`}>
+        <div className="p-3">
+          <div className="flex items-center gap-2 mb-2 text-xs text-gray-500">
+            {isDirectPayment ? (
+              <>
+                <DollarSign className="w-3 h-3" />
+                <span>Direct Payment</span>
+              </>
+            ) : (
+              <>
+                <Receipt className="w-3 h-3" />
+                <span>Expense with Split</span>
+              </>
+            )}
+          </div>
+
+          {/* Main content row */}
+          <div className="flex justify-between items-start">
+            {/* Left section with expand button */}
             <div className="flex items-center gap-4">
-              {!isDirectPayment ? (
-                <>
-                  <span className="text-gray-900 font-medium text-sm">{expense?.description}</span>
-                  <ChevronDown className="w-3 h-3 text-gray-400" />
-                  <div className="flex items-center gap-2 text-gray-500 text-xs">
-                    <div className="flex items-center gap-1 px-2 py-0.5 bg-gray-50 rounded-md">
-                      <Utensils className="w-3 h-3" />
-                      <span>{expense?.category}</span>
-                    </div>
+              <button 
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="flex items-center gap-2 focus:outline-none"
+              >
+                <ChevronDown 
+                  className={`w-4 h-4 text-gray-400 transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                />
+                <span className="text-gray-900 font-medium text-sm">
+                  {isDirectPayment ? 'Transfer' : expense?.description}
+                </span>
+              </button>
+
+              {!isDirectPayment && (
+                <div className="flex items-center gap-2 text-gray-500 text-xs">
+                  <div className="flex items-center gap-1 px-2 py-0.5 bg-gray-50 rounded-md">
+                    <Utensils className="w-3 h-3" />
+                    <span>{expense?.category}</span>
                   </div>
-                </>
-              ) : (
-                <div className="w-48">
-                  <span className="text-gray-400 text-sm">Transfer</span>
                 </div>
               )}
             </div>
 
-            {/* Right section - Transactions and actions */}
+            {/* Right section with amount and edit */}
             <div className="flex items-center gap-4">
-              {/* Transactions container */}
-              <div className="flex flex-col gap-2">
-                {/* Total Payment Section - Only for expense with split */}
+              <span className="font-medium text-sm">
+                RM {summary.totalAmount}
+              </span>
+              <button 
+                onClick={() => onEdit(expense?.expense_id || transactions[0].payer_id)}
+                className="p-1 text-gray-400 hover:text-gray-600"
+              >
+                <Edit2 className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+
+          {/* Expanded content */}
+          {isExpanded && (
+            <div className="mt-4 space-y-4">
+
+              {/* Transaction details */}
+              <div className="space-y-3">
                 {!isDirectPayment && (
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2 text-xs text-gray-400">
@@ -175,7 +282,6 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                           );
                           const isMultipleLent = samePayerTransactions.length > 1;
 
-                          // Skip if this is part of a multiple lent group and not the first one
                           if (isMultipleLent && samePayerTransactions[0] !== transaction) {
                             return null;
                           }
@@ -183,7 +289,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                           return (
                             <div key={`${transaction.payer_id}-${transaction.created_at}`}>
                               {index === 0 && (
-                                <div className="flex items-center gap-2 text-xs text-gray-400 mt-2">
+                                <div className="flex items-center gap-2 text-xs text-gray-400">
                                   <span>Your lending</span>
                                   <div className="flex-1 border-b border-dashed border-gray-200"></div>
                                 </div>
@@ -233,8 +339,8 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                                   </div>
                                 )}
 
-                                <span className="font-medium text-sm text-black-600">
-                                  RM {isMultipleLent ? 
+                                <span className="text-xs text-gray-600">
+                                RM {isMultipleLent ? 
                                     samePayerTransactions.reduce((sum, t) => sum + t.amount, 0) : 
                                     transaction.amount}
                                 </span>
@@ -244,76 +350,83 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                         })}
                     </div>
 
-                    {/* Settlements Section */}
-                    {sortedTransactions.filter(t => t.type === 'settle').length > 0 && (
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-2 text-xs text-gray-400 mt-2">
-                          <span>Settlements</span>
-                          <div className="flex-1 border-b border-dashed border-gray-200"></div>
-                        </div>
-                        {sortedTransactions
-                          .filter(t => t.type === 'settle')
-                          .map(transaction => {
-                            const payerData = getUserData(transaction.payer_id);
-                            const receiverData = getUserData(transaction.receiver_id);
-                            return (
-                              <div 
-                                key={`${transaction.payer_id}-${transaction.created_at}`}
-                                className="flex items-center gap-2"
-                              >
-                                <div className="flex items-center gap-1.5">
-                                  <div className="w-5 h-5 rounded-full overflow-hidden bg-gray-200 relative">
-                                    {payerData?.image ? (
-                                      <img 
-                                        src={payerData.image}
-                                        alt={payerData.name}
-                                        className="w-full h-full object-cover"
-                                      />
-                                    ) : (
-                                      <div className="w-full h-full flex items-center justify-center">
-                                        <User className="w-3 h-3 text-gray-500" />
-                                      </div>
-                                    )}
-                                  </div>
-                                  <span className="text-xs text-gray-600">
-                                    {getDisplayName(transaction.payer_id)}
-                                  </span>
-                                </div>
-
-                                <span className="text-gray-400 text-xs">paid</span>
-
-                                <div className="flex items-center gap-1.5">
-                                  <div className="w-5 h-5 rounded-full overflow-hidden bg-gray-200 relative">
-                                    {receiverData?.image ? (
-                                      <img 
-                                        src={receiverData.image}
-                                        alt={receiverData.name}
-                                        className="w-full h-full object-cover"
-                                      />
-                                    ) : (
-                                      <div className="w-full h-full flex items-center justify-center">
-                                        <User className="w-3 h-3 text-gray-500" />
-                                      </div>
-                                    )}
-                                  </div>
-                                  <span className="text-xs text-gray-600">
-                                    {getDisplayName(transaction.receiver_id)}
-                                  </span>
-                                </div>
-
-                                <span className="font-medium text-sm text-gray-900">
-                                  RM {transaction.amount}
-                                </span>
+                        {/* Settlements Section */}
+                        {sortedTransactions.filter(t => t.type === 'settle').length > 0 && (
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-2 text-xs text-gray-400">
+                              <span>Settlements</span>
+                              <div className="flex-1 border-b border-dashed border-gray-200">
                               </div>
-                            );
-                          })}
-                      </div>
-                    )}
+                            </div>
+                            {sortedTransactions
+                              .filter(t => t.type === 'settle')
+                              .map(transaction => {
+                                const payerData = getUserData(transaction.payer_id);
+                                const receiverData = getUserData(transaction.receiver_id);
+                                return (
+                                  <div 
+                                    key={`${transaction.payer_id}-${transaction.created_at}`}
+                                    className="flex items-center justify-between w-full"
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-1.5">
+                                        <div className="w-5 h-5 rounded-full overflow-hidden bg-gray-200 relative">
+                                          {payerData?.image ? (
+                                            <img 
+                                              src={payerData.image}
+                                              alt={payerData.name}
+                                              className="w-full h-full object-cover"
+                                            />
+                                          ) : (
+                                            <div className="w-full h-full flex items-center justify-center">
+                                              <User className="w-3 h-3 text-gray-500" />
+                                            </div>
+                                          )}
+                                        </div>
+                                        <span className="text-xs text-gray-600">
+                                          {getDisplayName(transaction.payer_id)}
+                                        </span>
+                                      </div>
+
+                                      <span className="text-gray-400 text-xs">paid</span>
+
+                                      <div className="flex items-center gap-1.5">
+                                        <div className="w-5 h-5 rounded-full overflow-hidden bg-gray-200 relative">
+                                          {receiverData?.image ? (
+                                            <img 
+                                              src={receiverData.image}
+                                              alt={receiverData.name}
+                                              className="w-full h-full object-cover"
+                                            />
+                                          ) : (
+                                            <div className="w-full h-full flex items-center justify-center">
+                                              <User className="w-3 h-3 text-gray-500" />
+                                            </div>
+                                          )}
+                                        </div>
+                                        <span className="text-xs text-gray-600">
+                                          {getDisplayName(transaction.receiver_id)}
+                                        </span>
+                                      </div>
+
+                                      <span className="text-xs text-gray-600">
+                                        RM {transaction.amount}
+                                      </span>
+                                    </div>
+
+                                    <span className="text-xs text-gray-400 ml-auto">
+                                      {new Date(transaction.created_at).toLocaleDateString('en-GB')}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        )}
                   </div>
                 )}
 
-                {/* Direct Payment Display */}
-                {isDirectPayment && sortedTransactions.map(transaction => {
+                  {/* Direct Payment Display */}
+                  {isDirectPayment && sortedTransactions.map(transaction => {
                   const payerData = getUserData(transaction.payer_id);
                   const receiverData = getUserData(transaction.receiver_id);
                   return (
@@ -367,29 +480,59 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                     </div>
                   );
                 })}
+
+              {/* Summary section */}
+                <div className="flex items-center gap-2 text-xs text-gray-400">
+                  <span>Split Summary</span>
+                  <div className="flex-1 border-b border-dashed border-gray-200">
+                </div>
+                </div>
+                <div className="grid grid-cols-4 gap-2 text-sm">
+                  <div className="col-span-1 text-xs text-gray-400">Users</div>
+                  <div className="text-right text-xs text-gray-400">Paid</div>
+                  <div className="text-right text-xs text-gray-400">Owed</div>
+                  <div className="text-right text-xs text-gray-400">Balance</div>
+                  
+                  {summary.participants.map(participant => (
+                    <React.Fragment key={participant.id}>
+                      <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full overflow-hidden bg-gray-200 relative">
+                      {getUserData(participant.id)?.image ? (
+                            <img 
+                              src={getUserData(participant.id)?.image} 
+                              alt={participant.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <User className="w-3 h-3 text-gray-500" />
+                          )}
+                        </div>
+                        <span className="text-xs text-gray-600">{participant.name}</span>
+                      </div>
+                      <span className="text-xs text-gray-600 text-right">
+                        RM {participant.paid.toFixed(2)}
+                      </span>
+                      <span className="text-xs text-gray-600 text-right">
+                        RM {participant.owed.toFixed(2)}
+                      </span>
+                      <span className={`text-xs text-gray-600 text-right ${
+                        participant.balance > 0 
+                          ? 'text-green-600' 
+                          : participant.balance < 0 
+                            ? 'text-red-600' 
+                            : 'text-gray-900'
+                      }`}>
+                        {participant.balance > 0 ? '+' : ''}
+                        RM {participant.balance.toFixed(2)}
+                      </span>
+                    </React.Fragment>
+                  ))}
+                </div>
               </div>
 
-              {/* Split count or payment icon */}
-              {!isDirectPayment ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500 text-xs">=</span>
-                  <span className="text-gray-500 text-xs">{expense?.splitter.length}</span>
-                </div>
-              ) : (
-                <div className="bg-green-50 px-2 py-1 rounded-md">
-                  <span className="text-green-700 text-xs">💵</span>
-                </div>
-              )}
 
-              {/* Single edit button for the entire list */}
-              <button 
-                onClick={() => onEdit(expense?.expense_id || transactions[0].payer_id)}
-                className="p-1 text-gray-400 hover:text-gray-600"
-              >
-                <Edit2 className="w-3 h-3" />
-              </button>
-            </div>
-          </div>
+              </div>
+          )}
         </div>
       </div>
     </div>
@@ -397,13 +540,13 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
 };
 
 const ExpenseList: React.FC<{ currentUserId: string }> = ({ currentUserId }) => {
-  const { groupedTransactions, usersData } = useExpense();
+  const { groupedTransactions } = useExpense();
 
   if (!groupedTransactions || groupedTransactions.length === 0) {
     return (
       <div className="mt-4">
         <div className="space-y-4">
-          <div className="bg-white rounded-lg shadow w-full max-w-2xl">
+          <div className="bg-white rounded-lg shadow w-full max-w-3xl">
             <div className="flex flex-col items-center justify-center p-8 text-center">
               <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mb-4">
                 <Receipt className="w-6 h-6 text-blue-500" />

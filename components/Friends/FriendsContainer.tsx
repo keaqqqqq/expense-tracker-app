@@ -19,6 +19,8 @@ function FriendsContainer() {
     setModalOpen(false);
   }, []);
 
+  console.log('Enriched relationships: ' + enrichedRelationships)
+
   return (
       <div>
         <ManageHeader
