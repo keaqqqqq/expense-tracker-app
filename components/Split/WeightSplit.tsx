@@ -1,22 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { useExpense } from '@/context/ExpenseContext'; // Access the ExpenseContext
+import DisplaySplitter from './DisplaySplitter';
 
 const WeightSplit: React.FC = () => {
     const { expense, removeFriendFromSplit, updateFriendAmount } = useExpense(); // Access the expense context
 
     // Initialize weights state for each friend
-    const initialWeights = expense.spliter.reduce((acc, friend) => {
+    const initialWeights = expense.splitter.reduce((acc, friend) => {
         acc[friend.id] = 0; // Initialize to 0 weight for each friend
         return acc;
     }, {} as { [key: string]: number });
 
     const [weights, setWeights] = useState<{ [key: string]: number }>(initialWeights);
-
+useEffect(()=>{
+    console.log(expense)
+    if(expense.id){
+        expense.splitter.map((s)=>{
+            const weight = (s.amount/expense.amount)
+            setWeights((prev) => ({
+                ...prev,
+                [s.id]: Math.max(0, weight), // Ensure weights are non-negative
+            }));
+        })
+    }
+},[])
     const totalExpense = expense.amount; // Total amount of the expense
     const totalWeight = Object.values(weights).reduce((acc, curr) => acc + curr, 0); // Sum of all weights
 
     // Calculate the amounts based on weights
-    const userAmounts = expense.spliter.map(friend => {
+    const userAmounts = expense.splitter.map(friend => {
         const friendWeight = weights[friend.id] || 0;
         const amount = totalWeight > 0
             ? ((friendWeight / totalWeight) * totalExpense).toFixed(2)
@@ -54,28 +66,23 @@ const WeightSplit: React.FC = () => {
 
     // Update friend amounts based on weights whenever they change
     useEffect(() => {
-        expense.spliter.forEach((friend) => {
+        expense.splitter.forEach((friend) => {
             const friendWeight = weights[friend.id] || 0;
             const amountOwed = totalWeight > 0 ? Number(((friendWeight / totalWeight) * totalExpense).toFixed(2)): 0;
             updateFriendAmount(friend.id, amountOwed); // Update each friend's owed amount in the context
         });
         console.log(expense)
         
-    }, [weights, totalWeight, totalExpense, expense.spliter.length]);
+    }, [weights, totalWeight, totalExpense, expense.splitter.length]);
 
-    const renderFriends = expense.spliter.map((friend) => (
+    const renderFriends = expense.splitter.map((friend) => (
         <div key={friend.id}>
             <div className="flex flex-row border rounded my-2">
-                <div className="flex flex-row w-full justify-between content-center px-2">
-                    <p className="my-auto">{friend.name}</p>
-                    <p className="my-auto">{userAmounts.find(u => u.name === friend.name)?.amount} RM</p>
-                </div>
-                <button
-                    className="w-8 border-l py-2 m-0 text-center hover:bg-gray-100"
-                    onClick={() => handleRemoveFriend(friend.id)} // Remove friend when clicked
-                >
-                    x
-                </button>
+            <DisplaySplitter
+                    key={friend.id}
+                    friend={friend}
+                    handleRemoveFriend={handleRemoveFriend}
+                />
             </div>
             <div className="flex flex-row border rounded my-2">
                 <p className="w-16 border-r py-2 m-0 text-center text-gray-500 font-normal hover:bg-gray-100">Weight</p>

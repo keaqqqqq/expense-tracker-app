@@ -2,12 +2,16 @@ import React, { useEffect } from 'react';
 import FormInput from "../FormInput";
 // import { useDispatch, useSelector } from 'react-redux';
 import { useExpense } from '@/context/ExpenseContext';
+import AddPayer from '../Pay/AddPayer';
+import PayTab from '../Pay/PayTab';
+import ExpenseModal from './ExpenseModal';
+import ExpenseCategories from '@/types/ExpenseCategories';
 // import { setAmount, setCategory, setDate, setDescription } from '@/store/expensesSlice';
 
 const CreateExpenseForm: React.FC = () => {
     // const dispatch = use);
     // const expense = useSelector((state: RootState) => state.expenses.expense);
-    const {expense, setAmount, setCategory, setDate, setDescription} = useExpense();
+    const { expense, setAmount, setCategory, setDate, setDescription } = useExpense();
 
     useEffect(() => {
         console.log(expense);
@@ -33,22 +37,18 @@ const CreateExpenseForm: React.FC = () => {
                     </div>
                     <div className="flex flex-col w-full">
                         <label>Category</label>
-                        <FormInput className="ml-0" value={expense.category} onChange={(e) => setCategory(e.target.value)} />
+                        {/* <FormInput className="ml-0" value={expense.category} onChange={(e) => setCategory(e.target.value)} /> */}
+                        <select onChange={(e)=>setCategory(e.target.value)} className="text-xs border rounded focus:ring-2 focus:ring-indigo-500 focus:outline-none px-2 py-2.5 my-2 mr-2">
+                            {ExpenseCategories.map((category) => (
+                                <option key={category.value} value={category.value}>
+                                    {category.label}
+                                </option>
+                            ))}
+                        </select>
                     </div>
                 </div>
             </div>
-            <div className="px-5 py-2 flex flex-row justify-between font-semibold text-xs text-gray-700 border-b">
-                <div>paid by <b className='font-bold'>you</b></div>
-                <div>
-                    <a className='text-indigo-600 underline cursor-pointer' onClick={() => console.log("hello")}>
-                        Change payer
-                    </a>
-                    &nbsp;&mdash;&nbsp;
-                    <a className='text-indigo-600 underline cursor-pointer'>
-                        Add payers
-                    </a>
-                </div>
-            </div>
+            <AddPayer />
         </div>
     );
 }

@@ -1,18 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { useExpense } from '@/context/ExpenseContext'; // Access the ExpenseContext
+import DisplaySplitter from './DisplaySplitter';
 
 const PercentageSplit: React.FC = () => {
     const { expense, removeFriendFromSplit, updateFriendAmount } = useExpense(); // Access the expense context
 
-    // Initialize the percentage state for each friend
-    const initialPercentages = expense.spliter.reduce((acc, friend) => {
-        acc[friend.id] = 0; // Initialize to 0 percent for each friend
+    // Initialize the percentage state for each friend based on the existing expense (if any)
+    const initialPercentages = expense?.splitter?.reduce((acc, friend) => {
+        if (expense?.id) {
+            // If expense has an ID (existing expense), calculate percentage based on the split amounts
+            acc[friend.id] = (friend.amount / expense.amount) * 100;
+        } else {
+            // If no existing expense, initialize percentage to 0
+            acc[friend.id] = 0;
+        }
         return acc;
-    }, {} as { [key: string]: number });
+    }, {} as { [key: string]: number }) || {}; // Default to empty object if no expense
 
     const [percentages, setPercentages] = useState<{ [key: string]: number }>(initialPercentages);
 
-    const totalExpense = expense.amount; // Total amount of the expense
+    const totalExpense = expense?.amount ?? 0; // Total amount of the expense
     const totalPercentage = Object.values(percentages).reduce((acc, curr) => acc + curr, 0);
     const underBy = 100 - totalPercentage;
 
@@ -31,29 +38,24 @@ const PercentageSplit: React.FC = () => {
 
     // Update friend amounts in the context whenever percentages change
     useEffect(() => {
-        expense.spliter.forEach((friend) => {
-            const friendPercentage = percentages[friend.id] || 0;
-            const amountOwed = (friendPercentage / 100) * totalExpense;
-            updateFriendAmount(friend.id, amountOwed); // Update each friend's owed amount
-        });
-    }, [percentages, totalExpense, expense.spliter.length]);
+        if (expense?.splitter) {
+            expense.splitter.forEach((friend) => {
+                const friendPercentage = percentages[friend.id] || 0;
+                const amountOwed = (friendPercentage / 100) * totalExpense;
+                updateFriendAmount(friend.id, amountOwed); // Update each friend's owed amount
+            });
+        }
+    }, [percentages, expense.splitter.length]);
 
-    // Render the list of expense.spliter with their percentage inputs and calculated amounts
-    const renderFriends = expense.spliter.map((friend) => (
+    // Render the list of expense.splitter with their percentage inputs and calculated amounts
+    const renderFriends = expense?.splitter?.map((friend) => (
         <div key={friend.id}>
             <div className="flex flex-row border rounded my-2">
-                <div className="flex flex-row w-full justify-between content-center px-2">
-                    <p className="my-auto">{friend.name}</p>
-                    <p className="my-auto">
-                        {((percentages[friend.id] / 100) * totalExpense).toFixed(2)} RM
-                    </p>
-                </div>
-                <button
-                    className="w-8 border-l py-2 m-0 text-center hover:bg-gray-100"
-                    onClick={() => handleRemoveFriend(friend.id)} // Remove friend when clicked
-                >
-                    x
-                </button>
+                <DisplaySplitter
+                    key={friend.id}
+                    friend={friend}
+                    handleRemoveFriend={handleRemoveFriend}
+                />
             </div>
             <div className="flex flex-row border rounded my-2">
                 <p className="w-8 border-r py-2 m-0 text-center hover:bg-gray-100">%</p>

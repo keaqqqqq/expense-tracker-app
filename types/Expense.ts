@@ -1,7 +1,7 @@
 import { SplitFriend } from "./SplitFriend";
 
 export interface Expense {
-    id: string; // Document ID from Firestore
+    id?: string; // Document ID from Firestore
     amount: number;
     category: string;
     created_at: string; // Timestamp or date string
@@ -9,7 +9,8 @@ export interface Expense {
     description: string;
     group_id?: string; // Optional
     split_preference?: string;
-    spliter:SplitFriend[]; 
+    pay_preference?: string;
+    splitter:SplitFriend[]; 
     payer:SplitFriend[]; 
     created_by?: string;
 }

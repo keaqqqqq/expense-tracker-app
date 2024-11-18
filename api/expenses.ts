@@ -8,8 +8,10 @@ import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from 'firebase
 const expensesCollection = collection(db, 'Expenses');
 
 // Fetch expenses from Firestore
-export const fetchExpensesAPI = async (): Promise<Expense[]> => {
+export const fetchExpensesAPI = async (): Promise<(Expense & {id:string})[]> => {
+  console.time("fetchExpensesAPI")
   const snapshot = await getDocs(expensesCollection);
+  console.timeEnd("fetchExpensesAPI")
   return snapshot.docs.map(doc => {
     const data = doc.data() as Omit<Expense, 'id'>; // Omit 'id' from the document data
     return { ...data, id: doc.id}; // Return the document ID along with the data
@@ -23,8 +25,8 @@ export const createExpenseAPI = async (expense: Omit<Expense, 'id'>): Promise<Ex
 };
 
 // Edit an existing expense in Firestore
-export const editExpenseAPI = async (expense: Expense): Promise<Expense> => {
-  const expenseRef = doc(db, 'expenses', expense.id);
+export const editExpenseAPI = async (expense: (Expense & {id:string})): Promise<Expense & {id:string}> => {
+  const expenseRef = doc(db, 'Expenses', expense.id);
   await updateDoc(expenseRef, { // Update the document with the expense data
     amount: expense.amount,
     category: expense.category,
@@ -33,14 +35,15 @@ export const editExpenseAPI = async (expense: Expense): Promise<Expense> => {
     description: expense.description,
     group_id: expense.group_id,
     payer: expense.payer,
-    spliter: expense.spliter,
+    splitter: expense.splitter,
     split_preference: expense.split_preference,
+    pay_preference: expense.pay_preference,
   });
   return expense; // Return the updated expense
 };
 
 // Delete an expense from Firestore
 export const deleteExpenseAPI = async (id: string): Promise<void> => {
-  const expenseRef = doc(db, 'expenses', id);
+  const expenseRef = doc(db, 'Expenses', id);
   await deleteDoc(expenseRef); // Call Firestore to delete the document
 };

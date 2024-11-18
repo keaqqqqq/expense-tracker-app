@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import Button from "./Button";
 import FormInput from "../FormInput";
@@ -15,7 +15,17 @@ interface ExpenseModalProps {
 }
 
 const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, closeModal }) => {
-    const {expense} = useExpense();
+    const {expense, addFriendToSplit, addExpense, deleteExpense, editExpense, resetExpense} = useExpense();
+    useEffect(()=>{
+        
+    },[])
+
+    const handleDelete = ()=>{
+        if(expense.id){
+            deleteExpense(expense.id)
+        }
+        closeModal();
+    }
     return (
 
         <Dialog open={isOpen} onClose={closeModal} className="relative z-30">
@@ -32,17 +42,20 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, closeModal }) => {
                                 <SplitTab />
                             </div>
                             <div className="px-5 py-2 flex flex-col sm:flex-row font-semibold text-xs text-gray-700 border-b">
-                                <div className="flex flex-col w-full mb-2 sm:mb-0 sm:mr-2"> {/* Spacing for small screens */}
-                                    within group <FormInput />
-                                </div>
-                                <div className="flex flex-col w-full"> 
-                                    Add split <AddSplit />
-                                </div>
+                                <AddSplit/>
                             </div>
-                            <div className="bg-gray-100 rounded-b-lg text-xs font-semibold flex justify-end px-2">
+                            {expense.id?<div className='bg-gray-100 rounded-b-lg text-xs font-semibold flex flex-row justify-between'>
+                                <Button className='bg-red-500 rounded text-white border border-gray-100' onClick={handleDelete}>Delete</Button>                            
+                            <div className=" flex justify-end px-2">
+                                <Button className="border rounded bg-white mx-1" onClick={()=>{closeModal();resetExpense()}}>Cancel</Button>
+                                <Button primary className="mx-1" onClick={() => { editExpense(expense); closeModal(); }}>Edit</Button>
+                            </div>
+                            </div>:
+                           <div className="bg-gray-100 rounded-b-lg text-xs font-semibold flex justify-end px-2">
                                 <Button className="border rounded bg-white mx-1" onClick={closeModal}>Cancel</Button>
-                                <Button primary className="mx-1" onClick={() => { createExpenseAPI(expense); closeModal(); }}>Create</Button>
+                                <Button primary className="mx-1" onClick={() => { addExpense(expense); closeModal(); }}>Create</Button>
                             </div>
+                            }
                         </DialogPanel>
                     </div>
                 </div>

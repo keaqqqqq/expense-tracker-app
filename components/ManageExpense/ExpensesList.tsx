@@ -1,18 +1,24 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Button from './Button';
 import { Edit, Pencil } from 'lucide-react';
 import { useExpense } from '@/context/ExpenseContext';
 
-
-const ExpensesList: React.FC = () => {
-    const {expenses, loading, error} = useExpense();
+interface ExpenseListProps{
+    setIsOpen: (isOpen: boolean) => void;
+}
+const ExpensesList: React.FC<ExpenseListProps> = ({setIsOpen}) => {
+    const {expenses, loading, error, setExpenseById, deleteExpense} = useExpense();
+    const [isEdit, setIsEdit] = useState(false);
+    const handleEditExpense = (id:string) =>{
+        setExpenseById(id);
+        setIsOpen(true);
+    }
 
    
     const renderList = expenses.map((expense, index) => {
         // Check if the date is the same as the previous expense
         const showDate = index === 0 || expense.date !== expenses[index - 1].date;
-
         return (
             <div key={expense.id}>
                 {showDate && (
@@ -28,14 +34,33 @@ const ExpensesList: React.FC = () => {
                             <div className='text-black my-auto '>{expense.description}</div>
                             <div className='rounded-lg py-1 px-1 my-auto mx-2 bg-gray-200 text-xs font-sans text-gray-500'>{expense.category}</div>
                         </div>
-                        <div className='flex flex-row'>
-                            <div className='h-5 w-5 rounded-full bg-red-500'></div>
-                            <div className='text-xs mr-3 font-medium text-black'>
-                                {'You'} <span className='font-normal text-gray-500'>paid</span> {`RM${expense.amount}`}
-                            </div>
-                        </div>
+                        <div className="flex items-center">
+  {/* Map over the payers and display images together */}
+  <div className="flex items-center">
+    {expense.payer.map((payer, index) => (
+      <img 
+        key={index} 
+        src={payer.image} 
+        alt={payer.name} 
+        className={"h-5 w-5 rounded-full " + ((expense.payer.length > 1) && "-mr-2")} // Adjust margin between images
+      />
+    ))}
+  </div>
+
+  {/* Display the names together */}
+  <div className="text-xs font-medium text-black ml-2">
+    {expense.payer.map((payer, index) => (
+      <span key={index}>
+        {payer.name}{index < expense.payer.length - 1 && ', '}
+      </span>
+    ))}
+    <span className="font-normal text-gray-500"> paid</span> {`RM${expense.amount}`}
+  </div>
+</div>
+
+
                     </div>
-                    <button className='rounded-br-lg flex content-center hover:bg-gray-100 py-auto w-10' onClick={() => { console.log(expense.id) }}>
+                    <button className='rounded-br-lg flex content-center hover:bg-gray-100 py-auto w-10' onClick={() => { handleEditExpense(expense.id) }}>
                         <Pencil className='stroke-1 active:stroke-2 my-auto mx-auto w-5 h-5 font-light text-gray-500'/>
                     </button>
                 </div>

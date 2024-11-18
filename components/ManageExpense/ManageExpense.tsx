@@ -26,7 +26,7 @@ const ManageExpense: React.FC = () => {
                 <Button className={buttonClassName}>Recurring</Button>
                 <Button className={buttonClassName}>Uploads</Button>
             </div>
-            <ExpensesList />
+            <ExpensesList setIsOpen={setIsOpen}/>
             <ExpenseModal isOpen={isOpen} closeModal={closeModal} />
         </div>
     );

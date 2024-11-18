@@ -3,4 +3,5 @@ export interface SplitFriend {
   email: string;
   id: string;
   amount: number;
+  image: string;
 }
