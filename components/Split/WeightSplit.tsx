@@ -3,7 +3,7 @@ import { useExpense } from '@/context/ExpenseContext'; // Access the ExpenseCont
 import DisplaySplitter from './DisplaySplitter';
 
 const WeightSplit: React.FC = () => {
-    const { expense, removeFriendFromSplit, updateFriendAmount } = useExpense(); // Access the expense context
+    const { expense, removeFriendFromSplit, updateFriendAmount, setSplitData } = useExpense(); // Access the expense context
 
     // Initialize weights state for each friend
     const initialWeights = expense.splitter.reduce((acc, friend) => {
@@ -12,18 +12,7 @@ const WeightSplit: React.FC = () => {
     }, {} as { [key: string]: number });
 
     const [weights, setWeights] = useState<{ [key: string]: number }>(initialWeights);
-useEffect(()=>{
-    console.log(expense)
-    if(expense.id){
-        expense.splitter.map((s)=>{
-            const weight = (s.amount/expense.amount)
-            setWeights((prev) => ({
-                ...prev,
-                [s.id]: Math.max(0, weight), // Ensure weights are non-negative
-            }));
-        })
-    }
-},[])
+
     const totalExpense = expense.amount; // Total amount of the expense
     const totalWeight = Object.values(weights).reduce((acc, curr) => acc + curr, 0); // Sum of all weights
 
@@ -45,7 +34,37 @@ useEffect(()=>{
             ...prev,
             [friendId]: Math.max(0, value), // Ensure weights are non-negative
         }));
+
+        if (expense.split_data) {
+            // Update split_data by checking if the id already exists
+            const updatedSplitData = expense.split_data.map((data) =>
+                data.id === friendId
+                    ? { ...data, value } // Update the existing entry
+                    : data
+            );
+    
+            // If friendId doesn't exist in split_data, add a new entry
+            if (!expense.split_data.some((data) => data.id === friendId)) {
+                updatedSplitData.push({ id: friendId, value });
+            }
+    
+            setSplitData(updatedSplitData); // Set the updated split data
+        } else {
+            // If split_data doesn't exist yet, initialize it with the new entry
+            setSplitData([{ id: friendId, value }]);
+        }
     };
+
+    useEffect(()=>{
+        if(expense.id && expense.split_data){
+            expense.split_data.forEach((d)=>{
+                setWeights((prev) => ({
+                    ...prev,
+                    [d.id]: Math.max(0, d.value), // Ensure values are between 0 and 100
+                }));
+            })
+        }        
+    },[]);
 
     const handleRemoveFriend = (friendId: string) => {
         // Remove the friend from the split

@@ -3,23 +3,17 @@ import { useExpense } from '@/context/ExpenseContext'; // Access the ExpenseCont
 import DisplaySplitter from './DisplaySplitter';
 
 const PercentageSplit: React.FC = () => {
-    const { expense, removeFriendFromSplit, updateFriendAmount } = useExpense(); // Access the expense context
+    const { expense, removeFriendFromSplit, updateFriendAmount, setSplitData } = useExpense(); // Access the expense context
 
-    // Initialize the percentage state for each friend based on the existing expense (if any)
-    const initialPercentages = expense?.splitter?.reduce((acc, friend) => {
-        if (expense?.id) {
-            // If expense has an ID (existing expense), calculate percentage based on the split amounts
-            acc[friend.id] = (friend.amount / expense.amount) * 100;
-        } else {
-            // If no existing expense, initialize percentage to 0
-            acc[friend.id] = 0;
-        }
+    // Initialize the percentage state for each friend
+    const initialPercentages = expense.splitter.reduce((acc, friend) => {
+        acc[friend.id] = 0; // Initialize to 0 percent for each friend
         return acc;
-    }, {} as { [key: string]: number }) || {}; // Default to empty object if no expense
+    }, {} as { [key: string]: number });
 
     const [percentages, setPercentages] = useState<{ [key: string]: number }>(initialPercentages);
 
-    const totalExpense = expense?.amount ?? 0; // Total amount of the expense
+    const totalExpense = expense.amount; // Total amount of the expense
     const totalPercentage = Object.values(percentages).reduce((acc, curr) => acc + curr, 0);
     const underBy = 100 - totalPercentage;
 
@@ -29,6 +23,25 @@ const PercentageSplit: React.FC = () => {
             ...prev,
             [friendId]: Math.max(0, Math.min(100, value)), // Ensure values are between 0 and 100
         }));
+    
+        if (expense.split_data) {
+            // Update split_data by checking if the id already exists
+            const updatedSplitData = expense.split_data.map((data) =>
+                data.id === friendId
+                    ? { ...data, value: Math.max(0, Math.min(100, value)) } // Update the existing entry
+                    : data
+            );
+    
+            // If friendId doesn't exist in split_data, add a new entry
+            if (!expense.split_data.some((data) => data.id === friendId)) {
+                updatedSplitData.push({ id: friendId, value: Math.max(0, Math.min(100, value)) });
+            }
+    
+            setSplitData(updatedSplitData); // Set the updated split data
+        } else {
+            // If split_data doesn't exist yet, initialize it with the new entry
+            setSplitData([{ id: friendId, value: Math.max(0, Math.min(100, value)) }]);
+        }
     };
 
     // Handle friend removal from the split
@@ -38,20 +51,30 @@ const PercentageSplit: React.FC = () => {
 
     // Update friend amounts in the context whenever percentages change
     useEffect(() => {
-        if (expense?.splitter) {
-            expense.splitter.forEach((friend) => {
-                const friendPercentage = percentages[friend.id] || 0;
-                const amountOwed = (friendPercentage / 100) * totalExpense;
-                updateFriendAmount(friend.id, amountOwed); // Update each friend's owed amount
-            });
-        }
-    }, [percentages, expense.splitter.length]);
+        expense.splitter.forEach((friend) => {
+            const friendPercentage = percentages[friend.id] || 0;
+            const amountOwed = (friendPercentage / 100) * totalExpense;
+            updateFriendAmount(friend.id, amountOwed); // Update each friend's owed amount
+        });
+       
+    }, [percentages, totalExpense, expense.splitter.length]);
+
+    useEffect(()=>{
+        if(expense.id && expense.split_data){
+            expense.split_data.forEach((d)=>{
+                setPercentages((prev) => ({
+                    ...prev,
+                    [d.id]: Math.max(0, Math.min(100, d.value)), // Ensure values are between 0 and 100
+                }));
+            })
+        }        
+    },[]);
 
     // Render the list of expense.splitter with their percentage inputs and calculated amounts
-    const renderFriends = expense?.splitter?.map((friend) => (
+    const renderFriends = expense.splitter.map((friend) => (
         <div key={friend.id}>
             <div className="flex flex-row border rounded my-2">
-                <DisplaySplitter
+            <DisplaySplitter
                     key={friend.id}
                     friend={friend}
                     handleRemoveFriend={handleRemoveFriend}

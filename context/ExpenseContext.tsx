@@ -25,12 +25,13 @@ interface ExpenseContextType {
     setPayPreference: (pay_preference: string) => void;
     setSplitPreference: (split_preference: string) => void;
     setAmount: (amount: number) => void;
+    setSplitData: (data: {id:string, value: number}[]) => void;
     setDate: (date: string) => void;
     setCategory: (category: string) => void;
     setUserId: (userId: string) => void;
     fetchExpenses: (UserId: string) => void;
     addExpense: (expense: Omit<Expense, 'id'>) => void;
-    editExpense: (expense: Expense & { id: string }) => void;
+    editExpense: (expense: Expense) => void;
     deleteExpense: (id: string) => void;
     addFriendToSplit: (friend: Omit<SplitFriend, 'amount'>) => void;
     removeFriendFromSplit: (friendId: string) => void;
@@ -59,6 +60,7 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
     const [error, setError] = useState<string | null>(null);
     const [userData, setUserData] = useState<Omit<SplitFriend, 'amount'> | null>(null);
     const [expense, setExpense] = useState<Expense>({
+        
         description: '',
         date: '',
         amount: 0,
@@ -69,11 +71,14 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
         split_preference: '',
         pay_preference: '',
         splitter: [],
-        payer: []
+        payer: [],
+        split_data: [],
     });
 
 
-
+    const setSplitData = (data:{id: string, value: number}[]) =>{
+        expense.split_data = data;
+    }
     // Fetch expenses from the API
     const fetchExpenses = async (userId: string) => {
         try {
@@ -309,9 +314,10 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
     };
 
     // Edit an expense
-    const editExpense = async (updatedExpense: Expense & { id: string }) => {
+    const editExpense = async (updatedExpense: Expense) => {
+        if(typeof updatedExpense.id === 'string'){
         try {
-            const response = await editExpenseAPI(updatedExpense);
+            const response = await editExpenseAPI({...updatedExpense, id:updatedExpense.id});
 
             if (currentUser?.uid)
                 fetchExpenses(currentUser.uid); // Re-fetch expenses after editing
@@ -320,7 +326,7 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
         } finally {
             setLoading(false);
             resetExpense();
-        }
+        }}
     };
 
     // Delete an expense
@@ -500,6 +506,7 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
             resetExpense,
             setUserData,
             setExpense,
+            setSplitData,
             setDescription,
             setPayPreference,
             setSplitPreference,

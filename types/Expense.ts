@@ -11,6 +11,10 @@ export interface Expense {
     split_preference?: string;
     pay_preference?: string;
     splitter:SplitFriend[]; 
+    split_data?:{
+        id: string,
+        value: number,
+    }[];
     payer:SplitFriend[]; 
     created_by?: string;
 }
