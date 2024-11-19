@@ -46,6 +46,10 @@ const PercentageSplit: React.FC = () => {
 
     // Handle friend removal from the split
     const handleRemoveFriend = (friendId: string) => {
+        if (expense.split_data) {
+            const updatedSplitData = expense.split_data.filter((data) => data.id !== friendId);
+            setSplitData(updatedSplitData); // Update the split data
+        }
         removeFriendFromSplit(friendId); // Call context function to remove the friend
     };
 

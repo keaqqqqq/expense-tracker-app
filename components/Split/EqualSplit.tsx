@@ -17,7 +17,7 @@ const EqualSplit: React.FC = () => {
         if(expense.split_preference=='equal'){const friendAmount = Number((expense.amount / expense.splitter.length).toFixed(2))
         expense.splitter.map((friend) => updateFriendAmount(friend.id, friendAmount))}
         setSplitData([]);
-    }, [expense.splitter.length, expense.amount])
+    }, [expense.splitter.length, expense.amount, expense.split_preference])
 
     useEffect(() => {
         console.log(expense.splitter);

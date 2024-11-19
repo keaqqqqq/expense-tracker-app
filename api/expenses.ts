@@ -25,7 +25,7 @@ export const createExpenseAPI = async (expense: Omit<Expense, 'id'>): Promise<Ex
 };
 
 // Edit an existing expense in Firestore
-export const editExpenseAPI = async (expense: (Expense & {id:string})): Promise<Expense & {id:string}> => {
+export const editExpenseAPI = async (expense: (Expense & {id:string})): Promise<Expense> => {
   const expenseRef = doc(db, 'Expenses', expense.id);
   await updateDoc(expenseRef, { // Update the document with the expense data
     amount: expense.amount,
@@ -38,6 +38,7 @@ export const editExpenseAPI = async (expense: (Expense & {id:string})): Promise<
     splitter: expense.splitter,
     split_preference: expense.split_preference,
     pay_preference: expense.pay_preference,
+    split_data: expense.split_data,
   });
   return expense; // Return the updated expense
 };

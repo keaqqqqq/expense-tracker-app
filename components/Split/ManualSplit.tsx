@@ -3,7 +3,7 @@ import { useExpense } from '@/context/ExpenseContext'; // Access the ExpenseCont
 import DisplaySplitter from './DisplaySplitter';
 
 const ManualSplit: React.FC = () => {
-    const { expense, removeFriendFromSplit, updateFriendAmount } = useExpense(); // Access the expense context
+    const { expense, removeFriendFromSplit, updateFriendAmount, setSplitData } = useExpense(); // Access the expense context
 
     // State to hold the amounts entered for each friend
     const [amounts, setAmounts] = useState<{ [key: string]: number }>({});
@@ -18,6 +18,25 @@ const ManualSplit: React.FC = () => {
             ...prevAmounts,
             [friendId]: newValue,
         }));
+
+        if (expense.split_data) {
+            // Update split_data by checking if the id already exists
+            const updatedSplitData = expense.split_data.map((data) =>
+                data.id === friendId
+                    ? { ...data, value: newValue } // Update the existing entry
+                    : data
+            );
+
+            // If friendId doesn't exist in split_data, add a new entry
+            if (!expense.split_data.some((data) => data.id === friendId)) {
+                updatedSplitData.push({ id: friendId, value: newValue });
+            }
+
+            setSplitData(updatedSplitData); // Set the updated split data
+        } else {
+            // If split_data doesn't exist yet, initialize it with the new entry
+            setSplitData([{ id: friendId, value: newValue }]);
+        }
     };
 
     const handleRemoveFriend = (friendId: string) => {
@@ -31,8 +50,22 @@ const ManualSplit: React.FC = () => {
             return newAmounts;
         });
 
-    };
+        if (expense.split_data) {
+            const updatedSplitData = expense.split_data.filter((data) => data.id !== friendId);
+            setSplitData(updatedSplitData); // Update the split data
+        }
 
+    };
+    useEffect(()=>{
+        if(expense.id && expense.split_data){
+            expense.split_data.forEach((d)=>{
+                setAmounts((prev) => ({
+                    ...prev,
+                    [d.id]: d.value, // Ensure values are between 0 and 100
+                }));
+            })
+        }        
+    },[]);
     // Reset the amount for a specific friend when the "x" button is clicked
     const handleResetAmount = (friendId: string) => {
         setAmounts((prevAmounts) => {
@@ -40,6 +73,11 @@ const ManualSplit: React.FC = () => {
             delete newAmounts[friendId]; // Remove the entered amount for this friend
             return newAmounts;
         });
+
+        if (expense.split_data) {
+            const updatedSplitData = expense.split_data.filter((data) => data.id !== friendId);
+            setSplitData(updatedSplitData); // Update the split data
+        }
     };
 
     // Calculate the total entered amount

@@ -3,8 +3,8 @@ import React, { useEffect, useState } from 'react';
 import DisplaySplitter from './DisplaySplitter';
 
 const ExtraSplit: React.FC = () => {
-    const { expense, removeFriendFromSplit, updateFriendAmount } = useExpense(); // Access the expense context
-    
+    const { expense, removeFriendFromSplit, updateFriendAmount, setSplitData } = useExpense(); // Access the expense context
+
     // State to track adjustments for each friend (using their id as key)
     const [adjustments, setAdjustments] = useState<{ [key: string]: number }>({});
 
@@ -16,7 +16,16 @@ const ExtraSplit: React.FC = () => {
         }, {} as { [key: string]: number });
 
         setAdjustments(initialAdjustments);
+        if (expense.id && expense.split_data) {
+            expense.split_data.forEach((d) => {
+                setAdjustments((prev) => ({
+                    ...prev,
+                    [d.id]: d.value, // Ensure values are between 0 and 100
+                }));
+            })
+        }
     }, []);
+    
 
     // Function to remove a friend from the split
     const handleRemoveFriend = (friendId: string) => {
@@ -30,6 +39,11 @@ const ExtraSplit: React.FC = () => {
             return newAdjustments;
         });
 
+        if (expense.split_data) {
+            const updatedSplitData = expense.split_data.filter((data) => data.id !== friendId);
+            setSplitData(updatedSplitData); // Update the split data
+        }
+
     };
 
     // Handle adjustment changes for each friend
@@ -38,6 +52,25 @@ const ExtraSplit: React.FC = () => {
             ...prev,
             [friendId]: value,
         }));
+
+        if (expense.split_data) {
+            // Update split_data by checking if the id already exists
+            const updatedSplitData = expense.split_data.map((data) =>
+                data.id === friendId
+                    ? { ...data, value } // Update the existing entry
+                    : data
+            );
+
+            // If friendId doesn't exist in split_data, add a new entry
+            if (!expense.split_data.some((data) => data.id === friendId)) {
+                updatedSplitData.push({ id: friendId, value });
+            }
+
+            setSplitData(updatedSplitData); // Set the updated split data
+        } else {
+            // If split_data doesn't exist yet, initialize it with the new entry
+            setSplitData([{ id: friendId, value }]);
+        }
     };
 
     // Calculate total adjustments and the remainder
@@ -53,12 +86,12 @@ const ExtraSplit: React.FC = () => {
         });
     }, [adjustments, splitAmount, expense.splitter.length]);
 
-    
+
     // Render the selected expense.splitter with their adjusted amounts
     const renderFriends = expense.splitter.map((friend) => (
         <div key={friend.id}>
             <div className="flex flex-row border rounded my-2">
-            <DisplaySplitter
+                <DisplaySplitter
                     key={friend.id}
                     friend={friend}
                     handleRemoveFriend={handleRemoveFriend}

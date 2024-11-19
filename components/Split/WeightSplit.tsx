@@ -77,6 +77,12 @@ const WeightSplit: React.FC = () => {
             return newWeights;
         });
 
+        if (expense.split_data) {
+            const updatedSplitData = expense.split_data.filter((data) => data.id !== friendId);
+            setSplitData(updatedSplitData); // Update the split data
+        }
+        
+
         // Reset the friend's amount owed to 0
         updateFriendAmount(friendId, 0);
     };
