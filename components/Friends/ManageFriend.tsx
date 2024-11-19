@@ -32,25 +32,20 @@ const ManageFriend = ({ friendId, friendName, currentUserId }: ManageFriendProps
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-5">
+    <div className="bg-white rounded-lg shadow-md p-5 ">
       <div className="flex items-center gap-2 mb-5">
-        <div className="h-8 w-8 rounded-full bg-indigo-50 flex items-center justify-center">
-          <Settings2 className="h-4 w-4 text-indigo-600" />
-        </div>
-        <h3 className="text-base text-md text-gray-900">Manage Friend</h3>
+        <h3 className="text-base text-sm text-gray-900">Manage Friend</h3>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-2">
         <Button
           onClick={handleRemoveFriend}
           className="w-full h-10 justify-start text-sm font-medium bg-white hover:bg-red-50 text-gray-700 hover:text-red-600 border border-gray-200 hover:border-red-100 transition-colors"
           variant="outline"
         >
           <div className="flex items-center gap-3">
-            <div className="h-7 w-7 rounded-full bg-red-50 flex items-center justify-center">
-              <UserMinus className="h-3.5 w-3.5 text-red-500" />
-            </div>
-            <span className='text-sm'>Remove friend</span>
+              <UserMinus className="h-2.5 w-2.5 text-red-500" />
+            <span className='text-base text-sm'>Remove friend</span>
           </div>
         </Button>
       </div>

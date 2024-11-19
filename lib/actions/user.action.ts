@@ -398,6 +398,10 @@ export async function acceptFriendship(relationshipId: string) {
 
 export const saveGroup = async (groupData: Omit<Group, 'id'>, requesterId: string) => {
   try {
+    if (!groupData.name || !groupData.members || groupData.members.length === 0) {
+      throw new Error('Missing required group data: name and members are required');
+    }
+
     const processedMembers = await Promise.all(
       groupData.members.map(async (member) => {
         if (!member.email) return member;
@@ -409,8 +413,9 @@ export const saveGroup = async (groupData: Omit<Group, 'id'>, requesterId: strin
           const creatorData = creatorDoc.data();
           return {
             id: requesterId,
-            name: creatorData.name,
-            email: member.email
+            name: creatorData.name || 'Unknown',
+            email: member.email,
+            image: member.image || null
           };
         }
 
@@ -466,7 +471,7 @@ export const saveGroup = async (groupData: Omit<Group, 'id'>, requesterId: strin
             return {
               email: member.email,
               id: userId,
-              name: userData.name,
+              name: userData.name || 'Unknown',
               status: 'PENDING_FRIENDSHIP',
               message: 'Friendship request sent'
             };
@@ -474,7 +479,7 @@ export const saveGroup = async (groupData: Omit<Group, 'id'>, requesterId: strin
 
           return {
             id: userId,
-            name: userData.name,
+            name: userData.name || 'Unknown',
             email: member.email
           };
         } else {
@@ -501,15 +506,17 @@ export const saveGroup = async (groupData: Omit<Group, 'id'>, requesterId: strin
       })
     );
 
-    const activeMembers = processedMembers.filter(
+    const validProcessedMembers = processedMembers.filter(Boolean);
+
+    const activeMembers = validProcessedMembers.filter(
       member => !member.status || member.status === 'ACCEPTED'
     );
 
-    const pendingFriendships = processedMembers.filter(
+    const pendingFriendships = validProcessedMembers.filter(
       member => member.status === 'PENDING_FRIENDSHIP'
     );
 
-    const pendingInvitations = processedMembers.filter(
+    const pendingInvitations = validProcessedMembers.filter(
       member => member.status === 'PENDING_INVITATION'
     );
 
@@ -1049,6 +1056,342 @@ export const removeFriend = async (currentUserId: string, friendId: string) => {
     return true;
   } catch (error) {
     console.error('Error removing friend:', error);
+    throw error;
+  }
+};
+
+export async function fetchUserBalances(userId: string) {
+  try {
+    const userRef = doc(db, 'Users', userId);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      throw new Error('User not found');
+    }
+
+    const usersRef = collection(db, 'Users');
+    const usersSnap = await getDocs(usersRef);
+    
+    const balances: Balance[] = [];
+
+    usersSnap.forEach((doc) => {
+      const userData = doc.data();
+      if (userData.balances && Array.isArray(userData.balances)) {
+        const userBalance = userData.balances.find(
+          (b: Balance) => b.id === userId
+        );
+        
+        if (userBalance) {
+          balances.push({
+            id: doc.id,
+            balance: -userBalance.balance 
+          });
+        }
+      }
+    });
+
+    const currentUserData = userSnap.data();
+    if (currentUserData.balances && Array.isArray(currentUserData.balances)) {
+      currentUserData.balances.forEach((balance: Balance) => {
+        const existingBalanceIndex = balances.findIndex(b => b.id === balance.id);
+        
+        if (existingBalanceIndex === -1) {
+          balances.push(balance);
+        }
+      });
+    }
+
+    console.log('Fetched balances:', balances);
+    return balances;
+  } catch (error) {
+    console.error('Error fetching user balances:', error);
+    throw error;
+  }
+}
+
+
+export async function fetchGroupBalances(userId: string) {
+  try {
+    const groupsRef = collection(db, 'Groups');
+    const q = query(
+      groupsRef,
+      where('members', 'array-contains', { id: userId })
+    );
+
+    const querySnapshot = await getDocs(q);
+    const groupBalances: { groupId: string; balance: number; name: string; image?: string }[] = [];
+
+    querySnapshot.forEach((doc) => {
+      const groupData = doc.data();
+      const memberData = groupData.members.find((member: any) => member.id === userId);
+      
+      if (memberData && memberData.balances) {
+        groupBalances.push({
+          groupId: doc.id,
+          name: groupData.name,
+          image: groupData.image,
+          balance: memberData.balances[0]?.balance || 0
+        });
+      }
+    });
+
+    return groupBalances;
+  } catch (error) {
+    console.error('Error fetching group balances:', error);
+    throw error;
+  }
+}
+
+export async function updateUserBalance(userId: string, friendId: string, newBalance: number) {
+  try {
+    const userRef = doc(db, 'Users', userId);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      throw new Error('User not found');
+    }
+
+    const userData = userSnap.data();
+    const balances = userData.balances || [];
+    
+    const balanceIndex = balances.findIndex((b: Balance) => b.id === friendId);
+    
+    if (balanceIndex === -1) {
+      // Add new balance
+      balances.push({ id: friendId, balance: newBalance });
+    } else {
+      // Update existing balance
+      balances[balanceIndex].balance = newBalance;
+    }
+
+    await updateDoc(userRef, {
+      balances: balances
+    });
+
+    return balances;
+  } catch (error) {
+    console.error('Error updating user balance:', error);
+    throw error;
+  }
+}
+
+export async function updateGroupBalance(groupId: string, userId: string, newBalance: number) {
+  try {
+    const groupRef = doc(db, 'Groups', groupId);
+    const groupSnap = await getDoc(groupRef);
+
+    if (!groupSnap.exists()) {
+      throw new Error('Group not found');
+    }
+
+    const groupData = groupSnap.data();
+    const members = groupData.members || [];
+    
+    const memberIndex = members.findIndex((m: any) => m.id === userId);
+    
+    if (memberIndex === -1) {
+      throw new Error('User not found in group');
+    }
+
+    // Update member's balance
+    if (!members[memberIndex].balances) {
+      members[memberIndex].balances = [];
+    }
+
+    if (members[memberIndex].balances.length === 0) {
+      members[memberIndex].balances.push({ balance: newBalance });
+    } else {
+      members[memberIndex].balances[0].balance = newBalance;
+    }
+
+    await updateDoc(groupRef, {
+      members: members
+    });
+
+    return members[memberIndex].balances;
+  } catch (error) {
+    console.error('Error updating group balance:', error);
+    throw error;
+  }
+}
+
+export async function settleBalance(
+  userId: string, 
+  targetId: string, 
+  type: 'friend' | 'group'
+) {
+  try {
+    if (type === 'friend') {
+      // Update both users' balances to 0
+      await Promise.all([
+        updateUserBalance(userId, targetId, 0),
+        updateUserBalance(targetId, userId, 0)
+      ]);
+    } else {
+      // Update group balance to 0
+      await updateGroupBalance(targetId, userId, 0);
+    }
+    return true;
+  } catch (error) {
+    console.error('Error settling balance:', error);
+    throw error;
+  }
+}
+
+export const updateGroup = async (groupId: string, groupData: Omit<Group, 'id'>, requesterId: string) => {
+  try {
+    // First, get the current group data to compare changes
+    const groupRef = doc(db, 'Groups', groupId);
+    const groupSnapshot = await getDoc(groupRef);
+    
+    if (!groupSnapshot.exists()) {
+      throw new Error('Group not found');
+    }
+
+    const currentGroup = groupSnapshot.data();
+    const currentMembers = new Set(currentGroup.members.map((m: any) => m.email));
+
+    // Process members similar to saveGroup
+    const processedMembers = await Promise.all(
+      groupData.members.map(async (member) => {
+        if (!member.email) return member;
+
+        if (member.email === groupData.members[0].email) {
+          const creatorDoc = await getDoc(doc(db, 'Users', requesterId));
+          if (!creatorDoc.exists()) throw new Error('Creator user not found');
+          
+          const creatorData = creatorDoc.data();
+          return {
+            id: requesterId,
+            name: creatorData.name,
+            email: member.email
+          };
+        }
+
+        // If member was already in the group, keep their existing data
+        if (currentMembers.has(member.email)) {
+          const existingMember = currentGroup.members.find((m: any) => m.email === member.email);
+          if (existingMember) return existingMember;
+        }
+
+        // Handle new members
+        const userQuery = query(
+          collection(db, 'Users'),
+          where('email', '==', member.email)
+        );
+        const userSnapshot = await getDocs(userQuery);
+        
+        if (!userSnapshot.empty) {
+          const userData = userSnapshot.docs[0].data();
+          const userId = userSnapshot.docs[0].id;
+
+          const friendshipAcceptedQuery = query(
+            collection(db, 'Friendships'),
+            where('requester_id', 'in', [requesterId, userId]),
+            where('addressee_id', 'in', [requesterId, userId]),
+            where('status', '==', 'ACCEPTED'),
+          );
+
+          const friendshipAcceptedSnapshot = await getDocs(friendshipAcceptedQuery);
+
+          if (friendshipAcceptedSnapshot.empty) {
+            const friendshipPendingQuery = query(
+              collection(db, 'Friendships'),
+              where('requester_id', 'in', [requesterId, userId]),
+              where('addressee_id', 'in', [requesterId, userId]),
+              where('status', '==', 'PENDING'),
+            );
+            const friendshipPendingSnapshot = await getDocs(friendshipPendingQuery);
+
+            if (friendshipPendingSnapshot.empty) {
+              const friendshipData = {
+                requester_id: requesterId,
+                addressee_id: userId,
+                created_at: serverTimestamp(),
+                status: 'PENDING',
+                related_group_id: groupId,
+                related_group_name: groupData.name
+              };
+
+              await addDoc(collection(db, 'Friendships'), friendshipData);
+            } else {
+              await updateDoc(friendshipPendingSnapshot.docs[0].ref, {
+                related_group_name: groupData.name,
+                related_group_id: groupId,
+              });
+            }
+
+            return {
+              email: member.email,
+              id: userId,
+              name: userData.name,
+              status: 'PENDING_FRIENDSHIP',
+              message: 'Friendship request sent'
+            };
+          }
+
+          return {
+            id: userId,
+            name: userData.name,
+            email: member.email
+          };
+        } else {
+          // Handle invitations for new email addresses
+          const invitationToken = generateInviteToken();
+          const invitationData = {
+            requester_id: requesterId,
+            addressee_email: member.email,
+            status: 'PENDING',
+            invitation_token: invitationToken,
+            created_at: serverTimestamp(),
+            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            email_sent: false,
+            group_name: groupData.name,
+            group_id: groupId
+          };
+
+          await addDoc(collection(db, 'Invitations'), invitationData);
+          
+          return {
+            email: member.email,
+            invitation_token: invitationToken,
+            status: 'PENDING_INVITATION'
+          };
+        }
+      })
+    );
+
+    const activeMembers = processedMembers.filter(
+      member => !member.status || member.status === 'ACCEPTED'
+    );
+
+    const pendingFriendships = processedMembers.filter(
+      member => member.status === 'PENDING_FRIENDSHIP'
+    );
+
+    const pendingInvitations = processedMembers.filter(
+      member => member.status === 'PENDING_INVITATION'
+    );
+
+    await updateDoc(groupRef, {
+      name: groupData.name,
+      type: groupData.type,
+      image: groupData.image,
+      members: activeMembers,
+      updated_at: serverTimestamp(),
+      pending_members: [...pendingFriendships, ...pendingInvitations]
+    });
+
+    const result = {
+      success: true,
+      group_id: groupId,
+      pending_friendships: pendingFriendships,
+      pending_invitations: pendingInvitations
+    };
+
+    return serializeFirebaseData(result);
+  } catch (error) {
+    console.error('Error updating group:', error);
     throw error;
   }
 };

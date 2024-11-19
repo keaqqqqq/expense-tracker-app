@@ -22,3 +22,6 @@ export  interface FirestoreGroupData {
     members: GroupMember[];
     pending_members?: GroupMember[];
   }
+
+export type GroupType = 'trip' | 'house' | 'couple' | 'party' | 'business' | 'other' | string;
+

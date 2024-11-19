@@ -7,7 +7,8 @@
   import { Friend } from '@/types/Friend';
   import { saveGroup } from '@/lib/actions/user.action';
   import { Search, UserCircle, Camera, Plane, Home, Heart, PartyPopper, Briefcase, MoreHorizontal } from 'lucide-react';
-
+  import { ToastState } from '@/types/Toast';
+  import { updateGroup } from '@/lib/actions/user.action';
   type GroupType = 'trip' | 'house' | 'couple' | 'party' | 'business' | 'other';
 
   interface TypeOption {
@@ -60,10 +61,19 @@
     isOpen: boolean;
     closeModal: () => void;
     currentUserId: string;
+    currentUserImage?: string; // Add this prop
     name?: string;
     friends: Friend[];
     email?: string;
-    onSuccess?: () => void;  
+    onSuccess?: () => void; 
+    isEditing?: boolean;
+    editData?: {
+      type: string;
+      name: string;
+      image?: string | '';
+      members: Array<{ id?: string; email?: string; name?: string; }>;
+    };
+  groupId?: string; 
   }
 
   const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -72,10 +82,14 @@
     isOpen, 
     closeModal, 
     currentUserId,
+    currentUserImage,
     name,
     friends, 
     email, 
-    onSuccess
+    onSuccess,
+    isEditing,
+    editData,
+    groupId
   }: AddGroupProps) {
     const [searchTerm, setSearchTerm] = useState('');
     const [emailInput, setEmailInput] = useState('');
@@ -87,15 +101,42 @@
     const fileInputRef = useRef<HTMLInputElement>(null);
     
     const [formData, setFormData] = useState<Omit<Group, 'id'>>({
-      type: 'trip',
-      name: '',
-      image: '',
-      members: [
-        {  },
-      ]
+      type: editData?.type || 'trip',
+      name: editData?.name || '',
+      image: editData?.image || '',
+      members: editData?.members || [{ }]
     });
     
     const [previewImage, setPreviewImage] = useState<string>('');
+    const [toast, setToast] = useState<ToastState>({
+      show: false,
+      message: '',
+      type: 'success'
+    });
+
+    useEffect(() => {
+      if (isEditing && editData) {
+
+        const memberIds = editData.members
+        .filter(member => member.id && member.id !== currentUserId)
+        .map(member => member.id) as string[];
+      // Filter friends list to get only those who are members
+      const initialFriends = friends.filter(friend => 
+        memberIds.includes(friend.id)
+      );
+
+        const initialEmails = editData.members
+          .filter(member => !member.id && member.email && member.email !== email)
+          .map(member => member.email as string);
+  
+        setSelectedFriends(initialFriends);
+        setInvitedEmails(initialEmails);
+
+        if (editData.image) {
+          setPreviewImage(editData.image);
+        }
+      }
+    }, [isEditing, editData, friends, currentUserId, email]);
 
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
@@ -216,34 +257,53 @@
       }));
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-      try {
-        await saveGroup(formData, currentUserId);
-        if (onSuccess) {
-          onSuccess(); 
-        } else {
-          closeModal(); 
-        }
-        setFormData({
-          type: 'trip',
-          name: '',
-          image: '',
-          members: [{  }]
-        });
-        setSelectedFriends([]);
-        setPreviewImage('');
-      } catch (error) {
-        console.error('Error creating group:', error);
-      }
+    const creatorMember = editData?.members.find(member => member.id === currentUserId);
+    const creatorData = {
+      name: creatorMember?.name || name || email,
+      image: currentUserImage
     };
 
+// In AddGroup.tsx where you handle form submission
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  try {
+    if (isEditing && groupId) {
+      await updateGroup(groupId, formData, currentUserId);
+      setToast({ show: true, message: 'Group updated successfully', type: 'success' });
+
+    } else {
+      await saveGroup(formData, currentUserId);
+      setToast({ show: true, message: 'Group created successfully', type: 'success' });
+    }
+    
+    if (onSuccess) {
+      onSuccess();
+    } else {
+      closeModal();
+    }
+    
+    setFormData({
+      type: 'trip',
+      name: '',
+      image: '',
+      members: [{ }]
+    });
+    setSelectedFriends([]);
+    setPreviewImage('');
+  } catch (error) {
+    console.error('Error saving/updating group:', error);
+    setToast({ show: true, message: 'Failed to save group changes', type: 'error' });
+
+  }
+};
     return (
       <Dialog>
-        <div className="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto z-[100]">
             <div className="min-h-full flex items-center justify-center p-4">
               <div className="relative bg-white rounded-lg p-5 w-full max-w-2xl my-8">
-                <h2 className="text-xl font-bold mb-4">New Group</h2>
+              <h2 className="text-xl font-bold mb-4">
+              {isEditing ? 'Edit Group' : 'New Group'}
+            </h2>
             
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-3">
@@ -323,10 +383,18 @@
                 
                 <div className="mb-2">
                   <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-md">
-                    <span className="text-sm font-medium">👑 {name} (Creator)</span>
+                    {creatorData.image ? (
+                      <img 
+                        src={creatorData.image}
+                        alt={creatorData.name}
+                        className="w-6 h-6 rounded-full object-cover"
+                      />
+                    ) : (
+                      <UserCircle className="w-6 h-6 text-gray-400" />
+                    )}
+                    <span className="text-sm">{creatorData.name}</span>
                   </div>
                 </div>
-  
                 <div className="space-y-2 max-h-[120px] overflow-y-auto">
                   {selectedFriends.map(friend => (
                     <div key={friend.id} className="flex items-center justify-between bg-gray-50 p-2 rounded-md">
@@ -433,7 +501,7 @@
                   Cancel
                 </Button>
                 <Button type="submit" variant="default">
-                  Create
+                  {isEditing ? 'Save' : 'Create'}
                 </Button>
               </div>
             </form>

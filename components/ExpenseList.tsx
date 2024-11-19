@@ -172,7 +172,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
   };
 
   return (
-    <div className="w-full max-w-3xl">
+    <div className="w-full max-w-4xl">
     <div className="text-sm text-gray-500 mb-1 px-3 flex justify-between items-center">
       <span>
         {expense?.date 
@@ -191,7 +191,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
 
     <div className={`bg-white rounded-lg shadow ${
       isDirectPayment 
-        ? 'border-l-4 border-green-400' 
+        ? 'border-l-4 border-indigo-600' 
         : isSettled()
           ? 'border-l-4 border-green-400'
           : 'border-l-4 border-red-400'

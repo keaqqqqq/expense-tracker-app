@@ -1,14 +1,15 @@
-// app/groups/[id]/page.tsx
 import React, { Suspense } from 'react';
 import ExpenseCard from '@/components/ExpenseCard';
 import { getGroupDetails, fetchGroupTransactions, fetchUserData } from '@/lib/actions/user.action';
 import ExpenseList from '@/components/ExpenseList';
 import { serializeFirebaseData } from '@/lib/utils';
 import type { GroupedTransactions, Transaction } from '@/types/ExpenseList';
+import type { Friend } from '@/types/Friend';
 import { ExpenseProvider } from '@/context/ExpenseListContext';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-
+import ManageGroup from '@/components/Groups/ManageGroup';
+import { getFriendships } from '@/lib/actions/user.action';
 interface GroupDetailsPageProps {
   params: {
     id: string;
@@ -24,9 +25,10 @@ export default async function GroupDetailsPage({ params }: GroupDetailsPageProps
   }
 
   try {
-    const [group, initialTransactions] = await Promise.all([
+    const [group, initialTransactions, friendships] = await Promise.all([
       getGroupDetails(params.id),
-      fetchGroupTransactions(params.id)
+      fetchGroupTransactions(params.id),
+      getFriendships(uid)
     ]);
 
     if (!group) {
@@ -49,9 +51,11 @@ export default async function GroupDetailsPage({ params }: GroupDetailsPageProps
       .flatMap(t => [t.payer_id, t.receiver_id])
       .filter((id): id is string => id !== undefined);
 
-    const userIds = new Set<string>([...memberIds, ...transactionUserIds]);
-
-    const usersDataPromises = Array.from(userIds).map(async (userId) => {
+    const friendIds = friendships
+    .filter(rel => rel.type === 'friendship' && rel.status === 'ACCEPTED')
+    .map(rel => rel.role === 'requester' ? rel.addressee_id : rel.requester_id) as string[];
+  
+    const usersDataArray = await Promise.all([uid, ...friendIds].map(async (userId) => {
       try {
         const userData = await fetchUserData(userId);
         return [userId, serializeFirebaseData(userData)];
@@ -59,11 +63,22 @@ export default async function GroupDetailsPage({ params }: GroupDetailsPageProps
         console.error(`Error fetching user ${userId}:`, error);
         return [userId, { id: userId, name: userId }];
       }
+    }));
+  const usersData = Object.fromEntries(usersDataArray);
+  
+  // Transform to Friend type
+  const groupFriends = friendships
+    .filter(rel => rel.type === 'friendship' && rel.status === 'ACCEPTED')
+    .map(rel => {
+      const friendId = rel.role === 'requester' ? rel.addressee_id : rel.requester_id;
+      const userData = usersData[friendId as string];
+      return {
+        id: friendId as string,
+        name: userData?.name || 'Unknown User',
+        email: userData?.email || '',
+        image: userData?.image || '/default-avatar.jpg'
+      };
     });
-
-    console.log('Initial transactions: ' + initialTransactions)
-    const usersDataArray = await Promise.all(usersDataPromises);
-    const usersData = Object.fromEntries(usersDataArray);
 
     const balance = initialTransactions.reduce((total: number, group: GroupedTransactions) => {
       return group.transactions.reduce((subTotal: number, transaction: Transaction) => {
@@ -76,27 +91,53 @@ export default async function GroupDetailsPage({ params }: GroupDetailsPageProps
       }, total);
     }, 0);
 
+    const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL}/groups/join/${params.id}`;
+
     return (
-        <div className="space-y-4">
+      <div>
         <ExpenseProvider 
           initialTransactions={initialTransactions}
           usersData={usersData}
         >
-          <div>
-            <ExpenseCard  
-              name={group.name}
-              amount={balance}
-              type="group"
-              memberCount={group.members.length}
-              groupType={group.type}
-              imageUrl={group.image}
-            />
-            <Suspense fallback={<div className="p-4 text-center">Loading expenses...</div>}>
-              <ExpenseList currentUserId={uid}/>
-            </Suspense>
+          <div className="grid md:grid-cols-4 gap-5 xl:gap-0">
+            <div className="md:col-span-3">
+              <div className="flex flex-col gap-2">
+                <ExpenseCard  
+                  name={group.name}
+                  amount={balance}
+                  type="group"
+                  memberCount={group.members.length}
+                  groupType={group.type}
+                  imageUrl={group.image}
+                />
+                <Suspense fallback={<div className="text-center">Loading expenses...</div>}>
+                  <ExpenseList currentUserId={uid}/>
+                </Suspense>
+              </div>
+            </div>
+            
+            <div className="md:col-span-1 space-y-4">
+              <div className="sticky top-4">
+                <ManageGroup 
+                  groupId={params.id}
+                  groupName={group.name}
+                  inviteLink={inviteLink}
+                  groupData={{
+                    type: group.type,
+                    name: group.name,
+                    image: group.image,
+                    members: group.members
+                  }}
+                  currentUserId={uid}
+                  groupFriends={groupFriends}  
+                  currentUserEmail={usersData[uid]?.email || ''}
+                  currentUserImage={usersData[uid]?.image}
+                  />
+              </div>
+            </div>
           </div>
         </ExpenseProvider>
-        </div>
+      </div>
     );
   } catch (error) {
     console.error('Error loading group details:', error);

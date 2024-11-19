@@ -1,5 +1,4 @@
 import React, { Suspense } from 'react';
-import ExpenseCard from '@/components/ExpenseCard';
 import { fetchUserData } from '@/lib/actions/user.action';
 import ExpenseList from '@/components/ExpenseList';
 import { serializeFirebaseData } from '@/lib/utils';
@@ -13,6 +12,10 @@ import { User} from 'lucide-react';
 import ManageFriend from '@/components/Friends/ManageFriend';
 import { Relationship } from '@/types/Friend';
 import { getFriendships } from '@/lib/actions/user.action';
+import { fetchUserBalances, fetchGroupBalances, settleBalance } from '@/lib/actions/user.action';
+import { BalancesProvider } from '@/context/BalanceContext';
+import Balances from '@/components/Balances/Balance';
+import ExpenseCard from '@/components/ExpenseCard';
 interface Props {
   params: {
     id: string;
@@ -87,11 +90,17 @@ async function FriendDetails({ params }: Props) {
       return <PendingStatusUI />;
     }
 
-    const [rawUserData, initialTransactions] = await Promise.all([
+    const [
+      rawUserData, 
+      initialTransactions,
+      userBalances,
+      groupBalances
+    ] = await Promise.all([
       fetchUserData(params.id),
-      fetchTransactions(uid, params.id)
+      fetchTransactions(uid, params.id),
+      fetchUserBalances(uid), 
+      fetchGroupBalances(params.id)
     ]);
-
 
     const userIds = new Set<string>();
     initialTransactions.forEach((group: GroupedTransactions) => {
@@ -127,35 +136,53 @@ async function FriendDetails({ params }: Props) {
 
     const userData = serializeFirebaseData(rawUserData);
 
-    return (
-      <ExpenseProvider 
-        initialTransactions={initialTransactions}
-        usersData={usersData}
-      >
-        <div className="grid md:grid-cols-4 gap-4">
-          <div className="md:col-span-3">
-            <div className="flex flex-col gap-2"> {/* Reduced gap from 4 to 2 */}
-              <ExpenseCard  
-                name={userData.name}
-                amount={balance}
-                type="user"
-                avatarUrl={userData.image || '/default-avatar.jpg'}
-              />
-              <Suspense fallback={<div className="text-center">Loading expenses...</div>}>
-                <ExpenseList currentUserId={uid}/>
-              </Suspense>
+    console.log('User balances: ' + userBalances);
+      console.log(groupBalances);
+      return (
+        <ExpenseProvider 
+          initialTransactions={initialTransactions}
+          usersData={usersData}
+        >
+          <BalancesProvider 
+            userId={uid}
+            initialBalances={userBalances}
+            initialGroupBalances={groupBalances}
+          >
+            <div className="grid md:grid-cols-4 gap-5 xl:gap-0">
+              <div className="md:col-span-3">
+                <div className="flex flex-col gap-2">
+                  <ExpenseCard  
+                    name={userData.name}
+                    amount={balance}
+                    type="user"
+                    avatarUrl={userData.image || '/default-avatar.jpg'}
+                  />
+                  <Suspense fallback={<div className="text-center">Loading expenses...</div>}>
+                    <ExpenseList currentUserId={uid}/>
+                  </Suspense>
+                </div>
+              </div>
+              
+              <div className="md:col-span-1 space-y-4">
+                <div className="sticky top-4">
+                  <ManageFriend
+                    friendId={params.id}
+                    friendName={userData.name}
+                    currentUserId={uid}
+                  />
+                  <div className="mt-4">
+                    <Balances
+                      type="friend"
+                      userData={userData}
+                      currentUserId={uid}
+                      friendId={params.id}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-          
-          <div className="md:col-span-1 h-fit sticky top-4">
-            <ManageFriend
-              friendId={params.id}
-              friendName={userData.name}
-              currentUserId={uid}
-            />
-          </div>
-        </div>
-      </ExpenseProvider>
+          </BalancesProvider>
+        </ExpenseProvider>
     );
   } catch (error) {
     console.error('Error fetching data:', error);

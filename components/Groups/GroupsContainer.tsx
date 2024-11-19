@@ -14,6 +14,7 @@ interface GroupsContainerProps {
   friends: Friend[];
   email?: string;
   initialGroups?: Group[];
+  currentUserImage?: string;
 }
 
 export default function GroupsContainer({ 
@@ -21,7 +22,8 @@ export default function GroupsContainer({
   name, 
   friends, 
   email,
-  initialGroups = [] 
+  initialGroups = [],
+  currentUserImage
 }: GroupsContainerProps) {
   const [isModalOpen, setModalOpen] = useState(false);
   const [groups, setGroups] = useState<Group[]>(initialGroups);
@@ -52,6 +54,18 @@ export default function GroupsContainer({
     await refreshGroups();
   };
 
+  useEffect(() => {
+    if (isModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+  
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isModalOpen]);
+
   return (
     <div>
       <ManageHeader 
@@ -68,6 +82,7 @@ export default function GroupsContainer({
         friends={friends}
         email={email}
         onSuccess={handleGroupCreated}
+        currentUserImage={currentUserImage}
       />
       <GroupList 
         groups={groups} 

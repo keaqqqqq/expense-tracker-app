@@ -244,7 +244,7 @@ const Sidebar: React.FC<SideBarProps> = ({ currentUser, initialFriends = [], ini
     return (
 
             <aside className={`fixed left-0 top-0 h-full w-56 ${className}`}>
-            <div className={`fixed top-0 left-0 w-full h-16 bg-white border-b md:hidden z-20 flex items-center px-4 transition-transform duration-300 ${isOpen ? '-translate-x-full' : 'translate-x-0'}`}>
+            <div className={`fixed top-0 left-0 w-full h-16 border-b md:hidden z-20 flex items-center px-4 transition-transform duration-300 ${isOpen ? '-translate-x-full' : 'translate-x-0'}`}>
                 <button
                     onClick={() => setIsOpen(!isOpen)}
                     className="p-2 hover:bg-gray-100 rounded-lg"
