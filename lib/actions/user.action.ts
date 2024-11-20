@@ -1110,35 +1110,60 @@ export async function fetchUserBalances(userId: string) {
 }
 
 
-export async function fetchGroupBalances(userId: string) {
+export async function fetchGroupBalances(userId: string, groupId: string) {
   try {
-    const groupsRef = collection(db, 'Groups');
-    const q = query(
-      groupsRef,
-      where('members', 'array-contains', { id: userId })
-    );
+    const groupRef = doc(db, 'Groups', groupId);
+    const groupDoc = await getDoc(groupRef);
+    
+    if (!groupDoc.exists()) {
+      return [];
+    }
 
-    const querySnapshot = await getDocs(q);
-    const groupBalances: { groupId: string; balance: number; name: string; image?: string }[] = [];
+    const groupData = groupDoc.data();
+    
+    const currentUserMember = groupData.members.find((member: any) => member.id === userId);
+    
+    if (!currentUserMember || !currentUserMember.balances) {
+      return [];
+    }
 
-    querySnapshot.forEach((doc) => {
-      const groupData = doc.data();
-      const memberData = groupData.members.find((member: any) => member.id === userId);
+    const balances = await Promise.all(currentUserMember.balances.map(async (balance: any) => {
+      const member = groupData.members.find((m: any) => m.id === balance.id);
       
-      if (memberData && memberData.balances) {
-        groupBalances.push({
-          groupId: doc.id,
-          name: groupData.name,
-          image: groupData.image,
-          balance: memberData.balances[0]?.balance || 0
-        });
+      try {
+        const memberData = await fetchUserData(balance.id);
+        
+        return {
+          groupId: groupDoc.id,
+          userId: userId,                  
+          userName: currentUserMember.name,  
+          userEmail: currentUserMember.email,
+          memberId: balance.id,            
+          memberName: memberData.name || member?.name || 'Unknown',
+          memberImage: memberData.image || '/default-avatar.jpg',
+          memberEmail: memberData.email || member?.email || '',
+          memberBalance: balance.balance || 0
+        };
+      } catch (error) {
+        console.error(`Error fetching member data for ${balance.id}:`, error);
+        return {
+          groupId: groupDoc.id,
+          userId: userId,
+          userName: currentUserMember.name,
+          userEmail: currentUserMember.email,
+          memberId: balance.id,
+          memberName: member?.name || 'Unknown Member',
+          memberImage: '/default-avatar.jpg',
+          memberEmail: member?.email || '',
+          memberBalance: balance.balance || 0
+        };
       }
-    });
+    }));
 
-    return groupBalances;
+    return balances;
   } catch (error) {
     console.error('Error fetching group balances:', error);
-    throw error;
+    return [];
   }
 }
 
@@ -1240,7 +1265,6 @@ export async function settleBalance(
 
 export const updateGroup = async (groupId: string, groupData: Omit<Group, 'id'>, requesterId: string) => {
   try {
-    // First, get the current group data to compare changes
     const groupRef = doc(db, 'Groups', groupId);
     const groupSnapshot = await getDoc(groupRef);
     
@@ -1251,30 +1275,35 @@ export const updateGroup = async (groupId: string, groupData: Omit<Group, 'id'>,
     const currentGroup = groupSnapshot.data();
     const currentMembers = new Set(currentGroup.members.map((m: any) => m.email));
 
-    // Process members similar to saveGroup
     const processedMembers = await Promise.all(
       groupData.members.map(async (member) => {
         if (!member.email) return member;
 
+        // If it's the creator
         if (member.email === groupData.members[0].email) {
           const creatorDoc = await getDoc(doc(db, 'Users', requesterId));
           if (!creatorDoc.exists()) throw new Error('Creator user not found');
           
           const creatorData = creatorDoc.data();
+          // Find creator's existing balances from current group
+          const existingCreator = currentGroup.members.find((m: any) => m.id === requesterId);
           return {
             id: requesterId,
             name: creatorData.name,
-            email: member.email
+            email: member.email,
+            balances: existingCreator?.balances || [] // Preserve creator's balances
           };
         }
 
-        // If member was already in the group, keep their existing data
+        // If member already exists in the group
         if (currentMembers.has(member.email)) {
           const existingMember = currentGroup.members.find((m: any) => m.email === member.email);
-          if (existingMember) return existingMember;
+          if (existingMember) return {
+            ...existingMember,
+            balances: existingMember.balances || [] // Preserve existing member's balances
+          };
         }
 
-        // Handle new members
         const userQuery = query(
           collection(db, 'Users'),
           where('email', '==', member.email)
@@ -1295,6 +1324,7 @@ export const updateGroup = async (groupId: string, groupData: Omit<Group, 'id'>,
           const friendshipAcceptedSnapshot = await getDocs(friendshipAcceptedQuery);
 
           if (friendshipAcceptedSnapshot.empty) {
+            // Handle pending friendship case
             const friendshipPendingQuery = query(
               collection(db, 'Friendships'),
               where('requester_id', 'in', [requesterId, userId]),
@@ -1326,17 +1356,21 @@ export const updateGroup = async (groupId: string, groupData: Omit<Group, 'id'>,
               id: userId,
               name: userData.name,
               status: 'PENDING_FRIENDSHIP',
-              message: 'Friendship request sent'
+              message: 'Friendship request sent',
+              balances: [] // New pending friend starts with empty balances
             };
           }
 
+          // Check if this user was previously in the group to preserve their balances
+          const existingMember = currentGroup.members.find((m: any) => m.id === userId);
           return {
             id: userId,
             name: userData.name,
-            email: member.email
+            email: member.email,
+            balances: existingMember?.balances || [] // Preserve balances if they existed before
           };
         } else {
-          // Handle invitations for new email addresses
+          // Handle invitation case
           const invitationToken = generateInviteToken();
           const invitationData = {
             requester_id: requesterId,
@@ -1355,7 +1389,8 @@ export const updateGroup = async (groupId: string, groupData: Omit<Group, 'id'>,
           return {
             email: member.email,
             invitation_token: invitationToken,
-            status: 'PENDING_INVITATION'
+            status: 'PENDING_INVITATION',
+            balances: [] // New invited member starts with empty balances
           };
         }
       })
@@ -1377,7 +1412,7 @@ export const updateGroup = async (groupId: string, groupData: Omit<Group, 'id'>,
       name: groupData.name,
       type: groupData.type,
       image: groupData.image,
-      members: activeMembers,
+      members: activeMembers, // Now includes preserved balances
       updated_at: serverTimestamp(),
       pending_members: [...pendingFriendships, ...pendingInvitations]
     });

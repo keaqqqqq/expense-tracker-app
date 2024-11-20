@@ -172,7 +172,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
   };
 
   return (
-    <div className="w-full max-w-4xl">
+    <div className="w-full max-w-7xl">
     <div className="text-sm text-gray-500 mb-1 px-3 flex justify-between items-center">
       <span>
         {expense?.date 
@@ -546,7 +546,7 @@ const ExpenseList: React.FC<{ currentUserId: string }> = ({ currentUserId }) => 
     return (
       <div className="mt-4">
         <div className="space-y-4">
-          <div className="bg-white rounded-lg shadow w-full max-w-3xl">
+          <div className="bg-white rounded-lg shadow w-full max-w-7xl">
             <div className="flex flex-col items-center justify-center p-8 text-center">
               <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mb-4">
                 <Receipt className="w-6 h-6 text-blue-500" />

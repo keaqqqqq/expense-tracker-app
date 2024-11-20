@@ -32,7 +32,7 @@ const ManageFriend = ({ friendId, friendName, currentUserId }: ManageFriendProps
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-5 ">
+    <div className="bg-white rounded-lg shadow-md p-5 xl:ml-8">
       <div className="flex items-center gap-2 mb-5">
         <h3 className="text-base text-sm text-gray-900">Manage Friend</h3>
       </div>

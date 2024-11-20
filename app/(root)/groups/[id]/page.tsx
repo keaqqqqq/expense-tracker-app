@@ -4,12 +4,14 @@ import { getGroupDetails, fetchGroupTransactions, fetchUserData } from '@/lib/ac
 import ExpenseList from '@/components/ExpenseList';
 import { serializeFirebaseData } from '@/lib/utils';
 import type { GroupedTransactions, Transaction } from '@/types/ExpenseList';
-import type { Friend } from '@/types/Friend';
 import { ExpenseProvider } from '@/context/ExpenseListContext';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import ManageGroup from '@/components/Groups/ManageGroup';
 import { getFriendships } from '@/lib/actions/user.action';
+import Balances from '@/components/Balances/Balance';
+import { fetchGroupBalances } from '@/lib/actions/user.action';
+import { BalancesProvider } from '@/context/BalanceContext';
 interface GroupDetailsPageProps {
   params: {
     id: string;
@@ -25,10 +27,11 @@ export default async function GroupDetailsPage({ params }: GroupDetailsPageProps
   }
 
   try {
-    const [group, initialTransactions, friendships] = await Promise.all([
+    const [group, initialTransactions, friendships, userBalances] = await Promise.all([
       getGroupDetails(params.id),
       fetchGroupTransactions(params.id),
-      getFriendships(uid)
+      getFriendships(uid),
+      fetchGroupBalances(uid, params.id), 
     ]);
 
     if (!group) {
@@ -92,13 +95,18 @@ export default async function GroupDetailsPage({ params }: GroupDetailsPageProps
     }, 0);
 
     const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL}/groups/join/${params.id}`;
-
+    console.log('Group balances: ' + JSON.stringify(userBalances))
     return (
       <div>
         <ExpenseProvider 
           initialTransactions={initialTransactions}
           usersData={usersData}
         >
+         <BalancesProvider
+            userId={uid}
+            initialGroupBalances={userBalances} 
+            groupId={params.id}
+          >
           <div className="grid md:grid-cols-4 gap-5 xl:gap-0">
             <div className="md:col-span-3">
               <div className="flex flex-col gap-2">
@@ -133,9 +141,18 @@ export default async function GroupDetailsPage({ params }: GroupDetailsPageProps
                   currentUserEmail={usersData[uid]?.email || ''}
                   currentUserImage={usersData[uid]?.image}
                   />
+                  <div className="mt-4">
+                  <Balances
+                    type="group"
+                    groupData={group}    // Pass the group data
+                    currentUserId={uid}
+                    groupId={params.id}
+                  />
+                  </div>
               </div>
             </div>
           </div>
+          </BalancesProvider>
         </ExpenseProvider>
       </div>
     );

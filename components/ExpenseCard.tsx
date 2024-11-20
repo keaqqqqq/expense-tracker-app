@@ -32,7 +32,7 @@ const ExpenseCard = ({
   
   return (
     <>
-      <div className="w-full max-w-4xl p-3 bg-white rounded-lg shadow">
+      <div className="w-full max-w-7xl p-3 bg-white rounded-lg shadow gap-6 ">
         <div className="flex justify-between items-center">
           {/* Left side - Profile info */}
           <div className="flex items-center gap-4">

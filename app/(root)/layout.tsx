@@ -135,7 +135,7 @@ export default async function RootLayout({
             />
             <div className="flex flex-col flex-1 md:ml-56">
                 <TopBar name={userData?.name || null} image={userData?.image || null} />
-                <div className="p-4 flex-1 sm:p-8">
+                <div className="p-3 flex-1 sm:p-4">
                     {children}
                 </div>
             </div>

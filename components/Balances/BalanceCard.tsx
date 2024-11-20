@@ -20,12 +20,12 @@ export function BalanceCard({ title, balance, image, name, type, onSettle }: Bal
     <div className="bg-white rounded-lg shadow p-4">
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-3">
-          <Avatar className="h-10 w-10">
+          <Avatar className="h-8 w-8">
             <AvatarImage src={image || '/default-avatar.jpg'} alt={name} />
             <AvatarFallback>{name[0]}</AvatarFallback>
           </Avatar>
           <div>
-            <h3 className="text-sm">{title}/{name}</h3>
+            <h3 className="text-xs">{title} {name}</h3>
           </div>
         </div>
       </div>

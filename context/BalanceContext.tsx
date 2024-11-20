@@ -16,9 +16,14 @@ interface Balance {
 
 interface GroupBalance {
   groupId: string;
-  name: string;
-  image?: string;
-  balance: number;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  memberBalance: number;
+  memberId: string;  
+  memberName: string; 
+  memberImage: string;
+  memberEmail: string;
 }
 
 interface BalancesContextState {
@@ -41,8 +46,9 @@ interface BalancesContextValue extends BalancesContextState {
 interface BalancesProviderProps {
   children: React.ReactNode;
   userId: string;
-  initialBalances: Balance[];
-  initialGroupBalances: GroupBalance[];
+  initialBalances?: Balance[];
+  initialGroupBalances?: GroupBalance[];
+  groupId?: string;
 }
 
 const BalancesContext = createContext<BalancesContextValue | undefined>(undefined);
@@ -51,7 +57,8 @@ export function BalancesProvider({
   children, 
   userId,
   initialBalances = [],
-  initialGroupBalances = []
+  initialGroupBalances = [],
+  groupId
 }: BalancesProviderProps) {
   const [state, setState] = useState<BalancesContextState>({
     balances: initialBalances,
@@ -60,10 +67,11 @@ export function BalancesProvider({
     toast: null
   });
 
-  // Set up real-time listeners
   useEffect(() => {
     if (!userId) return;
-
+  
+    const unsubscribeHandlers: (() => void)[] = [];
+  
     // Listen for current user's document changes
     const userRef = doc(db, 'Users', userId);
     const unsubscribeUser = onSnapshot(userRef, async (userDoc) => {
@@ -80,22 +88,27 @@ export function BalancesProvider({
         }
       }
     });
-
-    // Listen for group changes where user is a member
-    const groupsRef = collection(db, 'Groups');
-    const groupQuery = query(groupsRef, where('members', 'array-contains', { id: userId }));
-    const unsubscribeGroups = onSnapshot(groupQuery, async () => {
-      try {
-        const newGroupBalances = await fetchGroupBalances(userId);
-        setState(prev => ({
-          ...prev,
-          groupBalances: newGroupBalances
-        }));
-      } catch (error) {
-        console.error('Error updating group balances:', error);
-      }
-    });
-
+    unsubscribeHandlers.push(unsubscribeUser);
+  
+    // Listen for specific group changes if groupId is provided
+    if (groupId) {
+      const groupRef = doc(db, 'Groups', groupId);
+      const unsubscribeGroup = onSnapshot(groupRef, async (groupDoc) => {
+        if (groupDoc.exists()) {
+          try {
+            const newGroupBalances = await fetchGroupBalances(userId, groupId);
+            setState(prev => ({
+              ...prev,
+              groupBalances: newGroupBalances
+            }));
+          } catch (error) {
+            console.error('Error updating group balances:', error);
+          }
+        }
+      });
+      unsubscribeHandlers.push(unsubscribeGroup);
+    }
+  
     // Listen for changes in other users' documents that might affect balances
     const usersRef = collection(db, 'Users');
     const unsubscribeOtherUsers = onSnapshot(usersRef, async () => {
@@ -109,14 +122,13 @@ export function BalancesProvider({
         console.error('Error updating balances from other users:', error);
       }
     });
-
-    // Cleanup listeners
+    unsubscribeHandlers.push(unsubscribeOtherUsers);
+  
+    // Cleanup all listeners
     return () => {
-      unsubscribeUser();
-      unsubscribeGroups();
-      unsubscribeOtherUsers();
+      unsubscribeHandlers.forEach(unsubscribe => unsubscribe());
     };
-  }, [userId]);
+  }, [userId, groupId]);
 
   const setToast = useCallback((message: string, type: 'success' | 'error') => {
     setState(prev => ({
@@ -139,12 +151,12 @@ export function BalancesProvider({
     }));
   }, []);
 
-  const refreshBalances = useCallback(async (userId: string) => {
+  const refreshBalances = useCallback(async (userId: string, groupId?: string) => {
     setState(prev => ({ ...prev, isLoading: true }));
     try {
       const [newBalances, newGroupBalances] = await Promise.all([
         fetchUserBalances(userId),
-        fetchGroupBalances(userId)
+        groupId ? fetchGroupBalances(userId, groupId) : Promise.resolve([])
       ]);
       
       setState(prev => ({

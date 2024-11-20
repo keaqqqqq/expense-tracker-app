@@ -2,76 +2,109 @@
 import React from 'react';
 import { BalanceCard } from './BalanceCard';
 import { useBalances } from '@/context/BalanceContext';
+import { Group } from '@/types/Group';
+import { Friend } from '@/types/Friend';
+
 interface BalancesProps {
   type: 'friend' | 'group';
-  userData: {
-    id: string;
-    name: string;
-    image?: string;
-  };
+  groupData?: Group;
+  friendData?: Friend;
   currentUserId: string;
-  friendId: string; 
-
+  friendId?: string;
+  groupId?: string;
 }
 
-export default function Balances({ type, userData, currentUserId, friendId }: BalancesProps) {
-  const { 
-    balances, 
-    groupBalances, 
+export default function Balances({ type, friendData, groupData, currentUserId, friendId, groupId }: BalancesProps) {
+  const {
+    balances,
+    groupBalances,
     handleSettleBalance,
   } = useBalances();
+
+  const friendBalance = friendId ? balances.find(b => b.id === friendId)?.balance || 0 : 0;
+
+  const groupMembers = React.useMemo(() => {
+    if (!groupData?.members) return [];
   
-  const friendBalance = balances.find(b => b.id === friendId)?.balance || 0;
+    return groupData.members
+      .map(member => {
+        const memberId = typeof member === 'string' ? member : member.id;
+        if (memberId === currentUserId) return null;
+  
+        const memberBalance = groupBalances.find(b => b.memberId === memberId);
+        
+        return memberBalance ? {
+          groupId: memberBalance.groupId,
+          userId: memberBalance.userId,
+          userName: memberBalance.userName,
+          userEmail: memberBalance.userEmail,
+          memberId: memberBalance.memberId,
+          memberName: memberBalance.memberName,
+          memberImage: memberBalance.memberImage,
+          memberEmail: memberBalance.memberEmail,
+          memberBalance: memberBalance.memberBalance
+        } : null;
+      })
+      .filter((member): member is {
+        groupId: string;
+        userId: string;
+        userName: string;
+        userEmail: string;
+        memberId: string;
+        memberName: string;
+        memberImage: string;
+        memberEmail: string;
+        memberBalance: number;
+      } => member !== null);
+  }, [groupData?.members, currentUserId, groupBalances]);
+
+  const canShowFriendBalance = type === 'friend' && friendData;
+  const canShowGroupBalance = type === 'group' && groupData && groupId;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 xl:ml-10">
       <h2 className="text-sm mb-4">
-        {type === 'friend' ? 'Friend Balance' : 'Group Balance'}
+        {type === 'friend' ? 'Friend Balance' : 'Group Members Balance'}
       </h2>
 
-      {type === 'friend' && (
+      {canShowFriendBalance && (
         <>
           <BalanceCard
             title="1:1 w/Friend"
-            balance={friendBalance}  
-            name={userData.name}
-            image={userData.image}
+            balance={friendBalance}
+            name={friendData.name}
+            image={friendData.image}
             type="friend"
-            onSettle={() => handleSettleBalance(currentUserId, userData.id, 'friend')}
+            onSettle={() => handleSettleBalance(currentUserId, friendData.id, 'friend')}
           />
-          
-          {groupBalances && groupBalances.length > 0 && (
-            <div className="mt-4">
-              <h3 className="text-lg font-medium mb-3">In Groups</h3>
-              <div className="space-y-3">
-                {groupBalances.map((group) => (
-                  <BalanceCard
-                    key={group.groupId}
-                    title={group.name}
-                    balance={group.balance}
-                    name={group.name}
-                    image={group.image}
-                    type="group"
-                    onSettle={() => handleSettleBalance(currentUserId, group.groupId, 'group')}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+
+          {/* <h3 className="text-lg font-medium mb-3 mt-4">In Groups</h3>
+          <div className="space-y-3">
+            {groupBalances && groupBalances.map((group) => (
+              <BalanceCard
+                key={group.groupId}
+                title={group.name}
+                balance={group.balance}
+                name={group.name}
+                image={group.image}
+                type="group"
+                onSettle={() => handleSettleBalance(currentUserId, group.groupId, 'group')}
+              />
+            ))}
+          </div> */}
         </>
       )}
-
-      {type === 'group' && (
+      {canShowGroupBalance && (
         <div className="space-y-3">
-          {balances.map((balance) => (
+          {groupMembers.map((member) => (
             <BalanceCard
-              key={balance.id}
-              title="Member Balance"
-              balance={balance.balance}
-              name={userData.name}
-              image={userData.image}
+              key={member.memberId}
+              title={``}
+              balance={member.memberBalance}
+              name={member.memberName}
+              image={member.memberImage}
               type="group"
-              onSettle={() => handleSettleBalance(currentUserId, balance.id, 'group')}
+              onSettle={() => handleSettleBalance(currentUserId, member.memberId, 'group')}
             />
           ))}
         </div>

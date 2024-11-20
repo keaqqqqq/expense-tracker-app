@@ -94,12 +94,10 @@ async function FriendDetails({ params }: Props) {
       rawUserData, 
       initialTransactions,
       userBalances,
-      groupBalances
     ] = await Promise.all([
       fetchUserData(params.id),
       fetchTransactions(uid, params.id),
-      fetchUserBalances(uid), 
-      fetchGroupBalances(params.id)
+      fetchUserBalances(uid)
     ]);
 
     const userIds = new Set<string>();
@@ -135,9 +133,8 @@ async function FriendDetails({ params }: Props) {
     }, 0);
 
     const userData = serializeFirebaseData(rawUserData);
-
+    console.log('FRIEND PAGE USER DATA:' + JSON.stringify(userData))
     console.log('User balances: ' + userBalances);
-      console.log(groupBalances);
       return (
         <ExpenseProvider 
           initialTransactions={initialTransactions}
@@ -146,7 +143,6 @@ async function FriendDetails({ params }: Props) {
           <BalancesProvider 
             userId={uid}
             initialBalances={userBalances}
-            initialGroupBalances={groupBalances}
           >
             <div className="grid md:grid-cols-4 gap-5 xl:gap-0">
               <div className="md:col-span-3">
@@ -173,7 +169,7 @@ async function FriendDetails({ params }: Props) {
                   <div className="mt-4">
                     <Balances
                       type="friend"
-                      userData={userData}
+                      friendData={userData}
                       currentUserId={uid}
                       friendId={params.id}
                     />

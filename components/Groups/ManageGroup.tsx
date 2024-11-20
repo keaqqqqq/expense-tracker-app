@@ -78,7 +78,7 @@ const ManageGroup = ({
 
   return (
     <>
-      <div className="bg-white rounded-lg shadow-md p-5">
+      <div className="bg-white rounded-lg shadow-md p-5 xl:ml-8">
         <div className="flex items-center gap-2 mb-5">
           <h3 className="text-base text-sm text-gray-900">Manage Group</h3>
         </div>
@@ -90,8 +90,8 @@ const ManageGroup = ({
             variant="outline"
           >
             <div className="flex items-center gap-3">
-              <Settings2 className="h-2.5 w-2.5 text-gray-500" />
-              <span className="text-base text-sm">Edit group</span>
+              <Settings2 className="h-2 w-2 text-gray-500" />
+              <span className="text-base text-xs">Edit group</span>
             </div>
           </Button>
 
@@ -101,8 +101,8 @@ const ManageGroup = ({
             variant="outline"
           >
             <div className="flex items-center gap-3">
-              <Copy className="h-2.5 w-2.5 text-gray-500" />
-              <span className="text-base text-sm">Copy invite link</span>
+              <Copy className="h-2 w-2 text-gray-500" />
+              <span className="text-base text-xs">Copy invite link</span>
             </div>
           </Button>
         </div>
