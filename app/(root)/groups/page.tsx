@@ -43,6 +43,7 @@ export default async function Groups() {
         friends={friends} 
         email={userData?.email}      
         initialGroups={groups}
+        currentUserImage={userData?.image}
       />
     </div>
   );

@@ -131,12 +131,11 @@ export default async function RootLayout({
                 }}
                 initialFriends={initialFriends}
                 initialGroups={initialGroups}
+                className="w-56"
             />
-            <div className="flex flex-col flex-1 md:ml-64 relative">
-                <div className="hidden md:block">
-                    <TopBar name={userData?.name || null} image={userData?.image || null} />
-                </div>
-                <div className="p-4 flex-1 sm:p-8 mt-16 md:mt-0">
+            <div className="flex flex-col flex-1 md:ml-56">
+                <TopBar name={userData?.name || null} image={userData?.image || null} />
+                <div className="p-3 flex-1 sm:p-4">
                     {children}
                 </div>
             </div>

@@ -8,15 +8,11 @@ import { db } from '@/firebase/config';
 import { ref, uploadBytes, getDownloadURL, deleteObject} from 'firebase/storage';
 import { storage } from '@/firebase/config';
 import Toast from './Toast';
+import { ToastState } from '@/types/Toast';
 interface ProfileSettingsProps {
   userData: UserData | null;
 }
 
-interface ToastState {
-  show: boolean;
-  message: string;
-  type: 'success' | 'error';
-}
 interface UserData {
   id?: string;
   name: string;
