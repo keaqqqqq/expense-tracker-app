@@ -13,6 +13,8 @@ interface BalanceCardProps {
 }
 
 export function BalanceCard({ title, balance, image, name, type, onSettle }: BalanceCardProps) {
+  if (balance === 0) return null;
+  
   const formattedAmount = Math.abs(balance).toFixed(2);
   const isPositive = balance > 0;
 
