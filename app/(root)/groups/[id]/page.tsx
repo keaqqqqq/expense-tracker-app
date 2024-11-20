@@ -12,6 +12,7 @@ import { getFriendships } from '@/lib/actions/user.action';
 import Balances from '@/components/Balances/Balance';
 import { fetchGroupBalances } from '@/lib/actions/user.action';
 import { BalancesProvider } from '@/context/BalanceContext';
+import { getOrCreateGroupInviteLink } from '@/lib/actions/user.action';
 interface GroupDetailsPageProps {
   params: {
     id: string;
@@ -44,6 +45,10 @@ export default async function GroupDetailsPage({ params }: GroupDetailsPageProps
         </div>
       );
     }
+
+    const inviteToken = await getOrCreateGroupInviteLink(params.id, uid);
+    const inviteLink = inviteToken ? `https://keaqqqqq.com/invite?token=${inviteToken}` : '';
+
 
     const memberIds = group.members
       .map(member => typeof member === 'string' ? member : member.id)
@@ -94,7 +99,6 @@ export default async function GroupDetailsPage({ params }: GroupDetailsPageProps
       }, total);
     }, 0);
 
-    const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL}/groups/join/${params.id}`;
     console.log('Group balances: ' + JSON.stringify(userBalances))
     return (
       <div>

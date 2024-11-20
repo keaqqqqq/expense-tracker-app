@@ -7,6 +7,7 @@ import Toast from '../Toast';
 import AddGroup from '../Groups/AddGroup';
 import { useRouter } from 'next/navigation';
 import { Friend } from '@/types/Friend';
+import { getOrCreateGroupInviteLink } from '@/lib/actions/user.action';
 interface ManageGroupProps {
   groupId: string;
   groupName: string;
@@ -45,17 +46,19 @@ const ManageGroup = ({
 
   const handleCopyInviteLink = async () => {
     try {
+      const token = await getOrCreateGroupInviteLink(groupId, currentUserId);
+      if (!token) throw new Error('Failed to generate invite token');
+      
+      const inviteLink = `https://keaqqqqq.com/invite?token=${token}`;
       await navigator.clipboard.writeText(inviteLink);
       setToastMessage('Invite link copied to clipboard');
       setToastType('success');
-      setShowToast(true);
     } catch (error) {
       setToastMessage('Failed to copy invite link');
       setToastType('error');
-      setShowToast(true);
     }
+    setShowToast(true);
   };
-
   const handleEditSuccess = () => {
     setIsEditModalOpen(false);
     setToastMessage('Group updated successfully');

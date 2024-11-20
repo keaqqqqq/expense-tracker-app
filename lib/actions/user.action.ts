@@ -1434,3 +1434,52 @@ export const updateGroup = async (groupId: string, groupData: Omit<Group, 'id'>,
     throw error;
   }
 };
+
+export const getOrCreateGroupInviteLink = async (groupId: string, requesterId: string) => {
+  try {
+    const groupInvitesRef = collection(db, 'GroupInvites');
+    const q = query(
+      groupInvitesRef,
+      where('group_id', '==', groupId),
+      where('requester_id', '==', requesterId),
+      where('status', '==', 'PENDING')
+    );
+
+    const snapshot = await getDocs(q);
+    
+    if (snapshot.empty) {
+      const inviteData = {
+        requester_id: requesterId,
+        group_id: groupId,
+        status: 'PENDING',
+        invitation_token: Math.random().toString(36).substring(7),
+        created_at: serverTimestamp()
+      };
+      
+      await addDoc(collection(db, 'GroupInvites'), inviteData);
+      return inviteData.invitation_token;
+    }
+
+    return snapshot.docs[0].data().invitation_token;
+  } catch (error) {
+    console.error('Error with group invite:', error);
+    return null;
+  }
+};
+
+export const validateGroupInvite = async (token: string) => {
+  try {
+    const q = query(
+      collection(db, 'GroupInvites'),
+      where('invitation_token', '==', token),
+      where('status', '==', 'PENDING')
+    );
+
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) return null;
+    return snapshot.docs[0].data();
+  } catch (error) {
+    console.error('Error validating group invite:', error);
+    return null;
+  }
+};
