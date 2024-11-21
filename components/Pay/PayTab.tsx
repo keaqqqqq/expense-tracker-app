@@ -9,10 +9,10 @@ interface PayTabProps {
 }
 
 const PayTab: React.FC<PayTabProps> = ({onChangePayer, onAddPayer }) => {
-    const {expense} = useExpense();
+    const {expense, friendList} = useExpense();
   return (
     <div className="px-5 py-2 flex flex-row justify-between font-semibold text-xs text-gray-700 border-b">
-      <div>paid by <b className="font-bold">{expense.payer.map(p => p.name).join(', ')}</b></div>
+      <div>paid by <b className="font-bold">{expense.payer.map(p => friendList.find(user=>user.id===p.id)?.name).join(', ')}</b></div>
       <div>
         <a
           className="text-indigo-600 underline cursor-pointer"
