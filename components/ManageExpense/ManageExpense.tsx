@@ -11,7 +11,7 @@ import { useTransaction } from '@/context/TransactionContext';
 const ManageExpense: React.FC = () => {
     const buttonClassName = "border rounded text-gray-800 hover:bg-gray-200";
     const [expIsOpen, setExpIsOpen] = useState<boolean>(false);
-    const [transIsOpen, setTransIsOpen] = useState<boolean>(true);
+    const [transIsOpen, setTransIsOpen] = useState<boolean>(false);
     const {setTransaction} = useTransaction();
  
 

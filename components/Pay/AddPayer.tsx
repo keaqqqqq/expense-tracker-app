@@ -9,7 +9,7 @@ interface PayerInfoProps {
 }
 
 const PayerInfo: React.FC<PayerInfoProps> = ({ }) => {
-    const { expense, userData, removePayer, addPayer, setPayPreference, updatePayerAmount } = useExpense();
+    const { expense, userData, removePayer, addPayer, setPayPreference, updatePayerAmount, friendList } = useExpense();
     const [isAddPayer, setIsAddPayer] = useState(false);
     const onClickChangePayer = () => {
         expense.payer.map((p) => { removePayer(p.id) })
@@ -41,15 +41,18 @@ const PayerInfo: React.FC<PayerInfoProps> = ({ }) => {
     //     }
     // },[expense.pay_preference])
     const renderPayer = expense.payer.map((p) => {
+        let payerInfo = friendList.find(user=>user.id===p.id)
+        if(payerInfo){
+        return(
         <>
             <div className="flex flex-row w-full justify-start items-center space-x-4 p-1"> {/* Added space-x-4 for spacing */}
                 <img
-                    src={p.image}
-                    alt={p.name}
+                    src={payerInfo.image}
+                    alt={payerInfo.name}
                     className="w-8 h-8 rounded-full object-cover" // Circle styling
                 />
                 <div className="flex flex-row w-full justify-between">
-                    <p className="my-auto">{p.name}</p>
+                    <p className="my-auto">{payerInfo.name}</p>
                     <p className="my-auto">RM {p.amount.toFixed(2)}</p>
                 </div>
             </div>
@@ -59,14 +62,15 @@ const PayerInfo: React.FC<PayerInfoProps> = ({ }) => {
             >
                 x
             </button>
-        </>
+        </>)
+        }
     })
     return (<>
         {expense.payer.length === 1 && !isAddPayer &&
             (<>
                 <div className="px-5 py-2 flex flex-row justify-between font-semibold text-xs text-gray-700 border-b">
                     <div>
-                        paid by <b className='font-bold'>{expense.payer[0]?.id === userData?.id ? 'you' : expense.payer[0]?.name}</b>
+                        paid by <b className='font-bold'>{expense.payer[0]?.id === userData?.id ? 'you' : friendList.find(user=>user.id===expense.payer[0].id)?.name}</b>
                     </div>
                     <div>
                         <a
@@ -98,7 +102,7 @@ const PayerInfo: React.FC<PayerInfoProps> = ({ }) => {
                     <div className='my-auto'>
                         <a
                             className='text-indigo-600 underline cursor-pointer'
-                            onClick={() => { userData ? addPayer(userData) : null }}
+                            onClick={() => { userData ? addPayer(userData.id) : null }}
                         >
                             Only I paid
                         </a>
@@ -127,7 +131,7 @@ const PayerInfo: React.FC<PayerInfoProps> = ({ }) => {
                     <div className='my-auto'>
                         <a
                             className='text-indigo-600 underline cursor-pointer'
-                            onClick={() => { onClickChangePayer(); userData ? addPayer(userData) : null; setIsAddPayer(false) }}
+                            onClick={() => { onClickChangePayer(); userData ? addPayer(userData.id) : null; setIsAddPayer(false) }}
                         >
                             Only I paid
                         </a>
@@ -138,7 +142,7 @@ const PayerInfo: React.FC<PayerInfoProps> = ({ }) => {
                         return (  // <-- Add return here
                             <div className='border flex flex-row my-2 rounded justify-between'>
                                 <div className='flex flex-row p-2 justify-between text-xs flex-grow' key={p.id}>  {/* Add a key for list rendering */}
-                                    <div className='my-auto'>{p.name}</div>
+                                    <div className='my-auto'>{friendList.find(user=>user.id===p.id)?.name}</div>
                                    {expense.pay_preference === 'equal' && <div>RM {p.amount}</div>}
                                    {expense.pay_preference === 'custom' && 
                                    <div>RM

@@ -1,7 +1,6 @@
 // DisplayPayer.tsx
 import React, { useState } from 'react';
 import { useExpense } from '@/context/ExpenseContext';
-import { SplitFriend } from '@/types/SplitFriend';
 
 interface DisplayPayerProps {
 
@@ -10,12 +9,12 @@ interface DisplayPayerProps {
 const DisplayPayer: React.FC<DisplayPayerProps> = ({}) => {
 //   const { expense, userData } = useExpense();
   const { friendList, expense, addPayer } = useExpense();
-  const [selectedFriend, setSelectedFriend] = useState<Omit<SplitFriend, 'amount'> | null>(null);
+  const [selectedFriend, setSelectedFriend] = useState<string | null>(null);
 
 
   // Handle when a user selects a friend to add to the split
-  const handleSelectFriend = (friend: Omit<SplitFriend, 'amount'>) => {
-    if (!expense.payer.some(f => f.id === friend.id)) {
+  const handleSelectFriend = (friend:string) => {
+    if (!expense.payer.some(f => f.id === friend)) {
       addPayer(friend);
       setSelectedFriend(null); // Clear the selected friend
     }
@@ -25,12 +24,12 @@ const DisplayPayer: React.FC<DisplayPayerProps> = ({}) => {
     <div className="flex flex-col w-full my-2">
       <select
         id="friend"
-        value={selectedFriend?.id || ''}
+        value={selectedFriend || ''}
         onChange={(e) => {
           const friend = friendList.find(f => f.id === e.target.value);
           if (friend) {
-            setSelectedFriend(friend);
-            handleSelectFriend(friend);
+            setSelectedFriend(friend.id);
+            handleSelectFriend(friend.id);
           }
         }}
         className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none"
@@ -46,7 +45,7 @@ const DisplayPayer: React.FC<DisplayPayerProps> = ({}) => {
       </select>
       {selectedFriend && (
         <p className="mt-2 text-green-600">
-          {selectedFriend.name} has been added to the split!
+          {friendList.find(user=>user.id===selectedFriend)?.name} has been added to the split!
         </p>
       )}
     </div>
