@@ -17,3 +17,7 @@
         font-family: 'Noto Color Emoji', sans-serif; 
     }
 }
+
+:root {
+    --primary: rgb(67 56 202);
+  }
