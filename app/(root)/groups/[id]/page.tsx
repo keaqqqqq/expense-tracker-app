@@ -99,7 +99,6 @@ export default async function GroupDetailsPage({ params }: GroupDetailsPageProps
       }, total);
     }, 0);
 
-    console.log('Group balances: ' + JSON.stringify(userBalances))
     return (
       <div>
         <ExpenseProvider 

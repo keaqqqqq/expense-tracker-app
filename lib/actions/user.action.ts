@@ -62,45 +62,6 @@ export const fetchUserData = async (uid: string) => {
   }
 };
 
-// export const saveFriendship = async (requesterId: string, addresseeEmail: string) => {
-//   try {
-//     const usersRef = collection(db, 'Users');
-//     const q = query(usersRef, where('email', '==', addresseeEmail));
-//     const userSnapshot = await getDocs(q);
-    
-//     const invitationToken = generateInviteToken();
-    
-//     if (!userSnapshot.empty) {
-//       const existingUser = userSnapshot.docs[0];
-//       const friendshipData = {
-//         requester_id: requesterId,
-//         addressee_id: existingUser.id,
-//         status: 'PENDING',
-//         created_at: serverTimestamp()
-//       };
-      
-//       await addDoc(collection(db, 'Friendships'), friendshipData);
-//       return { success: true, type: 'friendship_request' };
-//     } else {
-//       const invitationData = {
-//         requester_id: requesterId,
-//         addressee_email: addresseeEmail,
-//         status: 'PENDING',
-//         invitation_token: invitationToken,
-//         created_at: serverTimestamp(),
-//         expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 
-//         email_sent: false 
-//       };
-      
-//       await addDoc(collection(db, 'Invitations'), invitationData);
-//       return { success: true, type: 'invitation_sent' };
-//     }
-//   } catch (error) {
-//     console.error('Error in saveFriendship:', error);
-//     throw error;
-//   }
-// };
-
 export const saveFriendship = async (requesterId: string, addresseeEmail: string) => {
   try {
     // First get the potential addressee's user record
@@ -677,6 +638,7 @@ export const loadFriends = async (uid: string): Promise<Friend[]> => {
       }
     });
 
+    
     const friends = (await Promise.all(friendPromises))
       .filter((friend): friend is Friend => friend !== null);
     return friends;
@@ -1104,8 +1066,6 @@ export async function fetchUserBalances(userId: string) {
         }
       });
     }
-
-    console.log('Fetched balances:', balances);
     return balances;
   } catch (error) {
     console.error('Error fetching user balances:', error);
