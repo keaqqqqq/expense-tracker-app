@@ -31,23 +31,25 @@ const TopBar: React.FC<TopBarProps> = ({ name: initialName, image: initialImage 
           className="bg-white text-black px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
         />
         <div className="ml-4 flex items-center">
-          {displayImage ? (
+        {displayImage ? (
             <div className="relative w-8 h-8">
-              <Image
-                src={displayImage}
-                alt="Profile"
-                fill
-                className="rounded-full object-cover"
-                sizes="32px"
-              />
+                <img
+                    src={displayImage}
+                    alt="Profile"
+                    className="w-full h-full rounded-full object-cover"
+                    onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = '/default-avatar.jpg'; // Fallback image path
+                    }}
+                />
             </div>
-          ) : (
+        ) : (
             <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-              <span className="text-gray-500 text-sm">
-                {displayName?.[0] || '?'}
-              </span>
+                <span className="text-gray-500 text-sm">
+                    {displayName?.[0] || '?'}
+                </span>
             </div>
-          )}
+        )}
           <span className="hidden md:block font-semibold truncate ml-2 max-w-[200px]">
             {displayName}
           </span>
