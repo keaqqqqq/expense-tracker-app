@@ -78,6 +78,7 @@ interface AddGroupProps {
         id: string;
         balance: number;
       }>;
+      image?: string;
     }>;
   };
   groupId?: string;
@@ -122,7 +123,8 @@ export default function AddGroup({
       id: currentUserId,
       email: email || '',
       name: name || '',
-      balances: []
+      balances: [], 
+      image: currentUserImage || ''    
     }]
   });
 
@@ -134,7 +136,8 @@ export default function AddGroup({
         id: member.id,
         name: member.name,
         email: member.email,
-        balances: member.balances
+        balances: member.balances,
+        image: member.image || '' 
       })));
   
       const emailOnlyMembers = otherMembers
@@ -300,13 +303,12 @@ export default function AddGroup({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // When updating formData, we need to preserve the creator and include all members
       const updatedFormData = {
         ...formData,
         members: [
-          formData.members[0], // Keep the creator (first member)
-          ...members, // Include all other members
-          ...invitedEmails.map(emailAddr => ({ // Include invited emails
+          formData.members[0], 
+          ...members, 
+          ...invitedEmails.map(emailAddr => ({ 
             email: emailAddr,
             balances: []
           }))
@@ -327,7 +329,6 @@ export default function AddGroup({
         closeModal();
       }
   
-      // Reset form after submission
       setFormData({
         type: 'trip',
         name: '',
@@ -352,12 +353,9 @@ export default function AddGroup({
   if (!isOpen) return null;
 
   const filteredFriends = friends.filter(friend => 
-    // Check if friend's name includes search term
     friend.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
-    // Check if friend is not already a member (check both arrays)
     !members.some(member => member.id === friend.id) &&
     !formData.members.some(member => member.id === friend.id) &&
-    // Also ensure it's not the current user
     friend.id !== currentUserId
   );
 
@@ -454,16 +452,22 @@ export default function AddGroup({
                 <div className="space-y-2">
                   
                 {isEditing ? (
-                  // For editing: show the creator from editData
                   <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-md">
-
+                    {currentUserImage ? (
+                      <img 
+                        src={currentUserImage}
+                        alt={name || email}
+                        className="w-6 h-6 rounded-full object-cover"
+                      />
+                    ) : (
+                      <UserCircle className="w-6 h-6 text-gray-400" />
+                    )}
                     <span className="text-xs">
                       {editData?.members[0].name || editData?.members[0].email}
                       {editData?.members[0].id === currentUserId && " (You)"}
                     </span>
                   </div>
                 ) : (
-                  // For new group: show current user
                   <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-md">
                     {currentUserImage ? (
                       <img 
@@ -480,7 +484,6 @@ export default function AddGroup({
                   </div>
                 )}
 
-                  {/* Show other members */}
                   {members.map(member => (
                     <div key={member.id || member.email} className="flex items-center justify-between bg-gray-50 p-2 rounded-md">
                       <div className="flex items-center gap-2">
