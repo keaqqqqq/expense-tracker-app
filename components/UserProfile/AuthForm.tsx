@@ -9,7 +9,9 @@ import { addDoc, collection, query, where, getDocs, getDoc, doc, updateDoc, arra
 import { db } from '@/firebase/config';
 import { Timestamp } from 'firebase/firestore';
 import { Users, UserPlus2, LogIn } from 'lucide-react';
-
+import { fetchUserData } from '@/lib/actions/user.action';
+import { acceptFriendshipAndAddToGroup } from '@/lib/actions/user.action';
+const fugaz = Fugaz_One({ subsets: ['latin'], weight: ['400'] });
 
 interface InvitationData {
     token: string;
@@ -21,8 +23,71 @@ interface InvitationData {
 
 interface InvitationDetails {
     requesterName: string;
+    requesterImage: string | null;
     groupName?: string;
 }
+
+const InvitationHeader: React.FC<{
+    type: 'GROUP_INVITE' | 'FRIEND_INVITE',
+    details: InvitationDetails
+}> = ({ type, details }) => (
+    <div className="bg-indigo-50 rounded-xl p-6 text-center relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 transform translate-x-16 -translate-y-16">
+            <div className="absolute inset-0 bg-indigo-100 rounded-full opacity-50"></div>
+        </div>
+        <div className="relative">
+            <div className="flex flex-col items-center space-y-3">
+                <div className="relative">
+                    {details.requesterImage ? (
+                        <img 
+                            src={details.requesterImage} 
+                            alt={details.requesterName}
+                            className="w-20 h-20 rounded-full border-4 border-white shadow-lg object-cover"
+                            onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.src = '/default-avatar.jpg'; // Fallback image
+                            }}
+                        />
+                    ) : (
+                        <div className="w-20 h-20 rounded-full bg-indigo-100 flex items-center justify-center">
+                            <Users className="h-10 w-10 text-indigo-500" />
+                        </div>
+                    )}
+                    <div className="absolute -bottom-2 -right-2 bg-white rounded-full p-2 shadow-lg">
+                        {type === 'GROUP_INVITE' ? (
+                            <Users className="h-5 w-5 text-indigo-500" />
+                        ) : (
+                            <UserPlus2 className="h-5 w-5 text-indigo-500" />
+                        )}
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 className="text-xl font-bold text-gray-900">
+                        Welcome! 👋
+                    </h4>
+                    {type === 'GROUP_INVITE' ? (
+                        <div className="mt-2 space-y-1">
+                            <div className="flex items-center justify-center space-x-2">
+                                <span className="text-indigo-700 text-lg font-medium">
+                                    {details.requesterName}
+                                </span>
+                                <span className="text-gray-600">invited you to join</span>
+                            </div>
+                            <p className="text-xl font-semibold text-indigo-900">
+                                {details.groupName}
+                            </p>
+                        </div>
+                    ) : (
+                        <p className="text-indigo-700 text-lg mt-2">
+                            {details.requesterName} wants to connect with you!
+                        </p>
+                    )}
+                </div>
+            </div>
+        </div>
+    </div>
+);
 
 export default function AuthForm() {
     const [email, setEmail] = useState('');
@@ -31,25 +96,53 @@ export default function AuthForm() {
     const [isRegister, setIsRegister] = useState(false);
     const [authenticating, setAuthenticating] = useState(false);
     const [invitationData, setInvitationData] = useState<InvitationData | null>(null);
-    const { signup, login, currentUser} = useAuth();
-    const router = useRouter(); 
     const [invitationDetails, setInvitationDetails] = useState<InvitationDetails | null>(null);
     const [loading, setLoading] = useState(true);
+    const { signup, login, currentUser} = useAuth();
+    const router = useRouter();
+
     useEffect(() => {
-        const storedInvitation = localStorage.getItem('invitationData');
-        if (storedInvitation) {
+        async function fetchInvitationDetails() {
+            const storedInvitation = localStorage.getItem('invitationData');
+            if (!storedInvitation) {
+                setLoading(false);
+                return;
+            }
+
             const parsedData = JSON.parse(storedInvitation);
             setInvitationData(parsedData);
-            if (parsedData.type === 'FRIEND_INVITE') {
-                setEmail(parsedData.email || '');
+
+            try {
+                // Fetch requester details
+                const requesterData = await fetchUserData(parsedData.requesterId);
+                
+                let details: InvitationDetails = {
+                    requesterName: requesterData?.name || 'Someone',
+                    requesterImage: requesterData?.image || null
+                };
+
+                // Check if it's a group invite (either from Invitations or GroupInvites)
+                if (parsedData.type === 'GROUP_INVITE' && parsedData.groupId) {
+                    const groupDoc = await getDoc(doc(db, 'Groups', parsedData.groupId));
+                    const groupData = groupDoc.data();
+                    details.groupName = groupData?.name;
+                }
+
+                setInvitationDetails(details);
+
+                if (parsedData.type === 'FRIEND_INVITE') {
+                    setEmail(parsedData.email || '');
+                }
                 setRequesterId(parsedData.requesterId || '');
+            } catch (error) {
+                console.error('Error fetching invitation details:', error);
             }
-            if (parsedData.type === 'GROUP_INVITE') {
-                setRequesterId(parsedData.requesterId || '');
-            }
+            setLoading(false);
         }
+
+        fetchInvitationDetails();
     }, []);
-    
+
     async function acceptInvitationAndFriendship(currentUserUid: string) {
         try {            
             const invitationsRef = collection(db, 'Invitations');
@@ -72,15 +165,46 @@ export default function AuthForm() {
     
             const newFriendshipRef = await addDoc(collection(db, 'Friendships'), friendshipData);
 
+            if (invitationData?.group_name) {
+                const groupsRef = collection(db, 'Groups');
+                const groupsSnapshot = await getDocs(groupsRef);
+
+                for (const groupDoc of groupsSnapshot.docs) {
+                    const groupData = groupDoc.data();
+                    const pendingMember = groupData.pending_members?.find(
+                        (member: any) => member.email === email
+                    );
+
+                    if (pendingMember) {
+                        const userDoc = await getDoc(doc(db, 'Users', currentUserUid));
+                        if (!userDoc.exists()) throw new Error('User not found');
+                        const userData = userDoc.data();
+
+                        const newMember = {
+                            id: currentUserUid,
+                            name: userData.name,
+                            email: userData.email,
+                            image: userData.image || ''
+                        };
+
+                        const updatedPendingMembers = (groupData.pending_members || [])
+                            .filter((member: any) => member.email !== email);
+
+                        await updateDoc(groupDoc.ref, {
+                            members: arrayUnion(newMember),
+                            pending_members: updatedPendingMembers
+                        });
+                        break;
+                    }
+                }
+            }
+
             await updateDoc(invitationDoc.ref, {
                 status: 'ACCEPTED',
                 accepted_at: Timestamp.now()
             });
 
-            return {
-                success: true,
-                friendshipId: newFriendshipRef.id
-            };
+            return { success: true, friendshipId: newFriendshipRef.id };
         } catch (error) {
             console.error('Error in acceptInvitationAndFriendship:', error);
             throw error;
@@ -89,77 +213,46 @@ export default function AuthForm() {
 
     async function handleGroupInviteAcceptance(currentUserUid: string) {
         try {
-            if (!invitationData?.groupId || !invitationData?.requesterId) {
-                throw new Error('Missing group ID or requester ID');
-            }
-    
-            const friendshipsRef = collection(db, 'Friendships');
-            const existingFriendshipQuery1 = query(
-                friendshipsRef,
-                where('requester_id', '==', invitationData.requesterId),
-                where('addressee_id', '==', currentUserUid),
-                where('status', '==', 'ACCEPTED')
-            );
-            const existingFriendshipQuery2 = query(
-                friendshipsRef,
-                where('requester_id', '==', currentUserUid),
-                where('addressee_id', '==', invitationData.requesterId),
-                where('status', '==', 'ACCEPTED')
-            );
-    
-            const [friendship1Snap, friendship2Snap] = await Promise.all([
-                getDocs(existingFriendshipQuery1),
-                getDocs(existingFriendshipQuery2)
-            ]);
-    
-            if (friendship1Snap.empty && friendship2Snap.empty) {
-                const friendshipData = {
-                    addressee_id: currentUserUid,
-                    requester_id: invitationData.requesterId,
-                    created_at: Timestamp.now(),
-                    status: 'ACCEPTED'
-                };
-                await addDoc(collection(db, 'Friendships'), friendshipData);
-            }
-    
-            const groupDoc = await getDoc(doc(db, 'Groups', invitationData.groupId));
-            if (!groupDoc.exists()) {
-                throw new Error('Group not found');
-            }
-    
-            const groupData = groupDoc.data();
-            const isAlreadyMember = groupData.members.some(
-                (member: any) => member.id === currentUserUid
-            );
-    
-            if (isAlreadyMember) {
-                throw new Error('Already a member of this group');
-            }
-    
+            if (!invitationData?.groupId) return;
+
             const userDoc = await getDoc(doc(db, 'Users', currentUserUid));
-            if (!userDoc.exists()) {
-                throw new Error('User not found');
-            }
-                
+            if (!userDoc.exists()) throw new Error('User not found');
+            
             const userData = userDoc.data();
+
+            // Create friendship if it doesn't exist
+            const friendshipData = {
+                addressee_id: currentUserUid,
+                requester_id: invitationData.requesterId,
+                created_at: Timestamp.now(),
+                status: 'ACCEPTED'
+            };
+
+            await addDoc(collection(db, 'Friendships'), friendshipData);
+
+            // Add to group
+            const groupRef = doc(db, 'Groups', invitationData.groupId);
+            const groupDoc = await getDoc(groupRef);
+
+            if (!groupDoc.exists()) throw new Error('Group not found');
+
             const newMember = {
                 id: currentUserUid,
                 name: userData.name,
                 email: userData.email,
                 image: userData.image || ''
             };
-    
-            await updateDoc(doc(db, 'Groups', invitationData.groupId), {
+
+            await updateDoc(groupRef, {
                 members: arrayUnion(newMember)
             });
-    
+
             return { success: true };
         } catch (error) {
-            console.error('Error handling group invite acceptance:', error);
+            console.error('Error in handleGroupInviteAcceptance:', error);
             throw error;
         }
     }
-
     async function handleSubmit() {
         if (!email || !password || password.length < 6) {
             return;
@@ -211,99 +304,20 @@ export default function AuthForm() {
         setAuthenticating(false);
     }
 
-    const getInvitationMessage = () => {
-        if (!invitationData || !invitationDetails) return null;
-        
-        if (invitationData.type === 'GROUP_INVITE') {
-            return `${invitationDetails.requesterName} has invited you to join "${invitationDetails.groupName}"! 🎉`;
-        }
-        return `${invitationDetails.requesterName} wants to connect with you on our platform!`;
-    };
-
-    useEffect(() => {
-        async function fetchInvitationDetails() {
-            const storedInvitation = localStorage.getItem('invitationData');
-            if (!storedInvitation) {
-                setLoading(false);
-                return;
-            }
-
-            const parsedData = JSON.parse(storedInvitation);
-            setInvitationData(parsedData);
-
-            try {
-                // Fetch requester details
-                const requesterDoc = await getDoc(doc(db, 'Users', parsedData.requesterId));
-                const requesterData = requesterDoc.data();
-                
-                let details: InvitationDetails = {
-                    requesterName: requesterData?.name || 'Someone'
-                };
-
-                // If it's a group invite, fetch group details
-                if (parsedData.type === 'GROUP_INVITE' && parsedData.groupId) {
-                    const groupDoc = await getDoc(doc(db, 'Groups', parsedData.groupId));
-                    const groupData = groupDoc.data();
-                    details.groupName = groupData?.name;
-                }
-
-                setInvitationDetails(details);
-
-                if (parsedData.type === 'FRIEND_INVITE') {
-                    setEmail(parsedData.email || '');
-                    setRequesterId(parsedData.requesterId || '');
-                }
-                if (parsedData.type === 'GROUP_INVITE') {
-                    setRequesterId(parsedData.requesterId || '');
-                }
-            } catch (error) {
-                console.error('Error fetching invitation details:', error);
-            }
-            setLoading(false);
-        }
-
-        fetchInvitationDetails();
-    }, []);
-
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin h-8 w-8 border-4 border-indigo-500 rounded-full border-t-transparent mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading...</p>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className='min-h-screen flex flex-col justify-center items-center p-4 bg-gradient-to-b from-white to-indigo-50'>
             <div className='w-full max-w-md bg-white rounded-2xl shadow-xl p-8'>
                 {invitationData && invitationDetails && (
                     <div className="mb-8">
-                        <div className="bg-indigo-50 rounded-xl p-6 text-center relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-32 h-32 transform translate-x-16 -translate-y-16">
-                                <div className="absolute inset-0 bg-indigo-100 rounded-full opacity-50"></div>
-                            </div>
-                            <div className="relative">
-                                {invitationData.type === 'GROUP_INVITE' ? (
-                                    <Users className="h-12 w-12 text-indigo-500 mx-auto mb-4" />
-                                ) : (
-                                    <UserPlus2 className="h-12 w-12 text-indigo-500 mx-auto mb-4" />
-                                )}
-                                <h4 className="text-xl font-bold text-gray-900 mb-2">
-                                    Welcome! 👋
-                                </h4>
-                                <p className="text-indigo-700 text-lg">
-                                    {getInvitationMessage()}
-                                </p>
-                            </div>
-                        </div>
+                        <InvitationHeader 
+                            type={invitationData.type as 'GROUP_INVITE' | 'FRIEND_INVITE'} 
+                            details={invitationDetails}
+                        />
                     </div>
                 )}
 
                 <div className="text-center mb-8">
-                    <h3 className={'text-3xl sm:text-4xl '}>
+                    <h3 className={'text-3xl sm:text-4xl ' + fugaz.className}>
                         {isRegister ? 'Create Account' : 'Welcome Back'}
                     </h3>
                     <p className="text-gray-600 mt-2">
@@ -336,7 +350,7 @@ export default function AuthForm() {
                             authenticating ? (
                                 <span className="flex justify-center items-center">
                                     <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <circle className="opacity-25" cx="12" cy="12"r="10" stroke="currentColor" strokeWidth="4"></circle>
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                     </svg>
                                     Processing...
@@ -362,6 +376,11 @@ export default function AuthForm() {
                         </button>
                     </p>
                 </div>
+            </div>
+            
+            {/* Optional: Add version or branding */}
+            <div className="mt-8 text-center text-gray-500 text-sm">
+                <p>© {new Date().getFullYear()} Your Platform. All rights reserved.</p>
             </div>
         </div>
     );

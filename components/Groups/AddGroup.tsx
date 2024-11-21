@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useState, useRef, useEffect } from 'react';
 import { Search, UserCircle, Plane, Home, Heart, PartyPopper, Briefcase, MoreHorizontal } from 'lucide-react';
-import { Group, GroupMember, GroupType, Balance } from '@/types/Group';
+import { Group, GroupMember, GroupType } from '@/types/Group';
 import { Friend } from '@/types/Friend';
 import { ToastState } from '@/types/Toast';
 import { saveGroup, updateGroup } from '@/lib/actions/user.action';
@@ -107,6 +107,7 @@ export default function AddGroup({
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewImage, setPreviewImage] = useState<string>('');
+  const [members, setMembers] = useState<GroupMember[]>([]);
   const [toast, setToast] = useState<ToastState>({
     show: false,
     message: '',
@@ -127,69 +128,43 @@ export default function AddGroup({
 
   useEffect(() => {
     if (isEditing && editData) {
-      const memberIds = editData.members
-        .filter(member => member.id && member.id !== currentUserId)
-        .map(member => member.id) as string[];
-
-      const initialFriends = friends.filter(friend =>
-        memberIds.includes(friend.id)
-      );
-
-      const initialEmails = editData.members
-        .filter(member => !member.id && member.email && member.email !== email)
+      const [creator, ...otherMembers] = editData.members;
+  
+      setMembers(otherMembers.map(member => ({
+        id: member.id,
+        name: member.name,
+        email: member.email,
+        balances: member.balances
+      })));
+  
+      const emailOnlyMembers = otherMembers
+        .filter(member => !member.id && member.email)
         .map(member => member.email as string);
-
-      setSelectedFriends(initialFriends);
-      setInvitedEmails(initialEmails);
-
-      // Find creator's data with their balances
-      const creatorData = editData.members.find(member => member.id === currentUserId);
-
+  
+      setInvitedEmails(emailOnlyMembers);
+  
       setFormData(prev => ({
         ...prev,
         type: editData.type,
         name: editData.name,
         image: editData.image || '',
-        members: [
-          {
+        members: [creator, ...otherMembers] 
+      }));
+  
+      if (editData.image) {
+        setPreviewImage(editData.image);
+      }} else {
+        setFormData(prev => ({
+          ...prev,
+          members: [{
             id: currentUserId,
             email: email || '',
             name: name || '',
-            balances: (creatorData?.balances || []).map(balance => ({
-              id: balance.id,
-              balance: balance.balance
-            }))
-          },
-          ...initialFriends.map(friend => {
-            const originalMemberData = editData.members.find(m => m.id === friend.id);
-            return {
-              id: friend.id,
-              email: friend.email,
-              name: friend.name,
-              balances: (originalMemberData?.balances || []).map(balance => ({
-                id: balance.id,
-                balance: balance.balance
-              }))
-            };
-          }),
-          ...initialEmails.map(email => {
-            const originalMemberData = editData.members.find(m => m.email === email);
-            return {
-              email,
-              balances: (originalMemberData?.balances || []).map(balance => ({
-                id: balance.id,
-                balance: balance.balance
-              }))
-            };
-          })
-        ]
-      }));
-
-      if (editData.image) {
-        setPreviewImage(editData.image);
-      }
+            balances: []
+          }]
+        }));
     }
-  }, [isEditing, editData, friends, currentUserId, email, name]);
+  }, [isEditing, editData, currentUserId, email, name]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -283,76 +258,58 @@ export default function AddGroup({
   };
 
   const handleFriendSelect = (friend: Friend) => {
-    setSelectedFriends(prev => [...prev, friend]);
+    // Check both members array and formData.members array
+    if (members.some(member => member.id === friend.id) || 
+        formData.members.some(member => member.id === friend.id)) {
+      setEmailError('This user is already a member of the group');
+      return;
+    }
+  
+    const newMember: GroupMember = {
+      id: friend.id,
+      name: friend.name,
+      email: friend.email,
+      image: friend.image,
+      balances: []
+    };
+  
+    setMembers(prev => [...prev, newMember]);
     setShowFriendsList(false);
     setSearchTerm('');
-
-    setFormData(prev => {
-      // Preserve existing member balances
-      const existingMembers = prev.members.filter(member =>
-        member.id !== friend.id
-      );
   
-      return {
-        ...prev,
-        members: [
-          ...existingMembers,
-          {
-            id: friend.id,
-            email: friend.email,
-            name: friend.name,
-            image: friend.image,
-            balances: []
-          }
-        ]
-      };
-    });
+    setFormData(prev => ({
+      ...prev,
+      members: [...prev.members, newMember]
+    }));
   };
+  
 
-  const handleRemoveFriend = (friendId: string) => {
-    setSelectedFriends(prev => prev.filter(f => f.id !== friendId));
-    setFormData(prev => {
-      // Get all existing members except the one being removed
-      const remainingMembers = prev.members.filter(member => 
-        member.id !== friendId
-      );
-      
-      return {
-        ...prev,
-        members: remainingMembers
-      };
-    });
+  const handleRemoveMember = (memberId?: string, memberEmail?: string) => {
+    setMembers(prev => prev.filter(m => 
+      (memberId ? m.id !== memberId : m.email !== memberEmail)
+    ));
+    
+    setFormData(prev => ({
+      ...prev,
+      members: prev.members.filter(m => 
+        (memberId ? m.id !== memberId : m.email !== memberEmail)
+      )
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // When updating formData, we need to preserve the creator and include all members
       const updatedFormData = {
         ...formData,
         members: [
-          {
-            id: currentUserId,
-            email: email || '',
-            name: name || '',
-            balances: formData.members.find(m => m.id === currentUserId)?.balances || []
-          },
-          ...selectedFriends.map(friend => {
-            const existingMember = formData.members.find(m => m.id === friend.id);
-            return {
-              id: friend.id,
-              email: friend.email,
-              name: friend.name,
-              image: friend.image,
-              balances: existingMember?.balances || []
-            };
-          }),
-          ...invitedEmails.map(emailAddr => {
-            const existingMember = formData.members.find(m => m.email === emailAddr);
-            return {
-              email: emailAddr,
-              balances: existingMember?.balances || []
-            };
-          })
+          formData.members[0], // Keep the creator (first member)
+          ...members, // Include all other members
+          ...invitedEmails.map(emailAddr => ({ // Include invited emails
+            email: emailAddr,
+            balances: []
+          }))
         ]
       };
   
@@ -370,6 +327,7 @@ export default function AddGroup({
         closeModal();
       }
   
+      // Reset form after submission
       setFormData({
         type: 'trip',
         name: '',
@@ -381,6 +339,7 @@ export default function AddGroup({
           balances: []
         }]
       });
+      setMembers([]);
       setSelectedFriends([]);
       setInvitedEmails([]);
       setPreviewImage('');
@@ -392,9 +351,14 @@ export default function AddGroup({
 
   if (!isOpen) return null;
 
-  const filteredFriends = friends.filter(friend =>
-    friend.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-    !selectedFriends.some(selected => selected.id === friend.id)
+  const filteredFriends = friends.filter(friend => 
+    // Check if friend's name includes search term
+    friend.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
+    // Check if friend is not already a member (check both arrays)
+    !members.some(member => member.id === friend.id) &&
+    !formData.members.some(member => member.id === friend.id) &&
+    // Also ensure it's not the current user
+    friend.id !== currentUserId
   );
 
   const creatorMember = editData?.members.find(member => member.id === currentUserId);
@@ -457,7 +421,7 @@ export default function AddGroup({
                         <img 
                           src={previewImage}
                           alt="Group avatar"
-                          className="w-15 h-15 rounded-full object-cover"
+                          className="w-20 h-20 rounded-full object-cover"
                         />
                       ) : (
                         <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center">
@@ -486,46 +450,65 @@ export default function AddGroup({
   
               <div className="space-y-3">
                 <label className="block text-xs font-medium">Members</label>
-                
-                <div className="mb-2">
+
+                <div className="space-y-2">
+                  
+                {isEditing ? (
+                  // For editing: show the creator from editData
                   <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-md">
-                    {creatorData.image ? (
+
+                    <span className="text-xs">
+                      {editData?.members[0].name || editData?.members[0].email}
+                      {editData?.members[0].id === currentUserId && " (You)"}
+                    </span>
+                  </div>
+                ) : (
+                  // For new group: show current user
+                  <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-md">
+                    {currentUserImage ? (
                       <img 
-                        src={creatorData.image}
-                        alt={creatorData.name}
+                        src={currentUserImage}
+                        alt={name || email}
                         className="w-6 h-6 rounded-full object-cover"
                       />
                     ) : (
                       <UserCircle className="w-6 h-6 text-gray-400" />
                     )}
-                    <span className="text-xs">{creatorData.name}</span>
+                    <span className="text-xs">
+                      {name || email} (You)
+                    </span>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  {selectedFriends.map(friend => (
-                    <div key={friend.id} className="flex items-center justify-between bg-gray-50 p-2 rounded-md">
+                )}
+
+                  {/* Show other members */}
+                  {members.map(member => (
+                    <div key={member.id || member.email} className="flex items-center justify-between bg-gray-50 p-2 rounded-md">
                       <div className="flex items-center gap-2">
-                        {friend.image && (
+                        {member.image ? (
                           <img 
-                            src={friend.image} 
-                            alt={friend.name} 
+                            src={member.image} 
+                            alt={member.name} 
                             className="w-6 h-6 rounded-full object-cover"
                           />
+                        ) : (
+                          <UserCircle className="w-6 h-6 text-gray-400" />
                         )}
-                        <span className="text-xs">{friend.name}</span>
+                        <span className="text-xs">
+                          {member.name || member.email}
+                          {member.id === currentUserId && " (You)"}
+                        </span>
                       </div>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleRemoveFriend(friend.id)}
-                        className=" text-xs"
+                        onClick={() => handleRemoveMember(member.id, member.email)}
+                        className="text-xs"
                       >
                         Remove
                       </Button>
                     </div>
                   ))}
-                </div>
 
                 {invitedEmails.map(invitedEmail => (
                   <div key={invitedEmail} className="flex items-center justify-between bg-gray-50 p-2 rounded-md">
@@ -568,18 +551,27 @@ export default function AddGroup({
                           className="flex items-center gap-2 p-2 hover:bg-gray-100 cursor-pointer"
                           onClick={() => handleFriendSelect(friend)}
                         >
-                          {friend.image && (
+                          {friend.image ? (
                             <img 
                               src={friend.image} 
                               alt={friend.name} 
                               className="w-6 h-6 rounded-full object-cover"
                             />
+                          ) : (
+                            <UserCircle className="w-6 h-6 text-gray-400" />
                           )}
                           <span className="text-xs">{friend.name}</span>
                         </div>
                       ))}
                     </div>
                   )}
+
+                  {showFriendsList && filteredFriends.length === 0 && searchTerm && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg p-2">
+                      <p className="text-xs text-gray-500">No available friends found</p>
+                    </div>
+                  )}
+              </div>
 
               <div className="space-y-2">
                 <div className="relative">

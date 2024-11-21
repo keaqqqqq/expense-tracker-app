@@ -125,7 +125,7 @@ const ManageGroup = ({
         closeModal={() => setIsEditModalOpen(false)}
         currentUserId={currentUserId}
         currentUserImage={currentUserImage}
-        friends={processedFriends} // Pass the processed friends array
+        friends={processedFriends} 
         email={currentUserEmail}
         onSuccess={handleEditSuccess}
         isEditing={true}
