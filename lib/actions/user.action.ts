@@ -1441,8 +1441,7 @@ export const getOrCreateGroupInviteLink = async (groupId: string, requesterId: s
     const q = query(
       groupInvitesRef,
       where('group_id', '==', groupId),
-      where('requester_id', '==', requesterId),
-      where('status', '==', 'PENDING')
+      where('requester_id', '==', requesterId)
     );
 
     const snapshot = await getDocs(q);
@@ -1451,7 +1450,6 @@ export const getOrCreateGroupInviteLink = async (groupId: string, requesterId: s
       const inviteData = {
         requester_id: requesterId,
         group_id: groupId,
-        status: 'PENDING',
         invitation_token: Math.random().toString(36).substring(7),
         created_at: serverTimestamp()
       };
@@ -1471,8 +1469,7 @@ export const validateGroupInvite = async (token: string) => {
   try {
     const q = query(
       collection(db, 'GroupInvites'),
-      where('invitation_token', '==', token),
-      where('status', '==', 'PENDING')
+      where('invitation_token', '==', token)
     );
 
     const snapshot = await getDocs(q);
