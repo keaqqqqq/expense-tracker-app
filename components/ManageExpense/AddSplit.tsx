@@ -12,7 +12,7 @@ const AddSplit: React.FC = () => {
   // Handle when a user selects a friend to add to the split
   const handleSelectFriend = (friend: Omit<SplitFriend, 'amount'>) => {
     if (!expense.splitter.some(f => f.id === friend.id)) {
-      addFriendToSplit(friend);
+      addFriendToSplit(friend.id);
       setSelectedFriend(null); // Clear the selected friend
     }
   };
@@ -20,12 +20,7 @@ const AddSplit: React.FC = () => {
   const handleSelectGroup = (group: Group) => {
     group.members.forEach((m)=>{
       if (!expense.splitter.some(f => f.id === m.id)) {
-        addFriendToSplit({
-          name: m.name || "",
-          email: m.email || '',
-          id: m.id || "",
-          image: m.image || ""
-        });
+        addFriendToSplit(m.id || '');
         console.log(m);
         setSelectedFriend(null); // Clear the selected friend
       }

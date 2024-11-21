@@ -3,7 +3,7 @@ import { useExpense } from '@/context/ExpenseContext'; // Access the ExpenseCont
 import DisplaySplitter from './DisplaySplitter';
 
 const WeightSplit: React.FC = () => {
-    const { expense, removeFriendFromSplit, updateFriendAmount, setSplitData } = useExpense(); // Access the expense context
+    const { expense, removeFriendFromSplit, updateFriendAmount, setSplitData, friendList } = useExpense(); // Access the expense context
 
     // Initialize weights state for each friend
     const initialWeights = expense.splitter.reduce((acc, friend) => {
@@ -16,17 +16,6 @@ const WeightSplit: React.FC = () => {
     const totalExpense = expense.amount; // Total amount of the expense
     const totalWeight = Object.values(weights).reduce((acc, curr) => acc + curr, 0); // Sum of all weights
 
-    // Calculate the amounts based on weights
-    const userAmounts = expense.splitter.map(friend => {
-        const friendWeight = weights[friend.id] || 0;
-        const amount = totalWeight > 0
-            ? ((friendWeight / totalWeight) * totalExpense).toFixed(2)
-            : '0.00'; // Avoid division by zero
-        return {
-            name: friend.name,
-            amount,
-        };
-    });
 
     // Handle weight change for each friend
     const handleWeightChange = (friendId: string, value: number) => {
@@ -100,12 +89,15 @@ const WeightSplit: React.FC = () => {
         
     }, [weights, totalWeight, totalExpense, expense.splitter.length]);
 
-    const renderFriends = expense.splitter.map((friend) => (
-        <div key={friend.id}>
+    const renderFriends = expense.splitter.map((friend) => {
+        const friendInfo = friendList.find(user => user.id === friend.id);
+        if(friendInfo){
+
+        return(<div key={friend.id}>
             <div className="flex flex-row border rounded my-2">
             <DisplaySplitter
                     key={friend.id}
-                    friend={friend}
+                    friend={{...friendInfo, amount:friend.amount}}
                     handleRemoveFriend={handleRemoveFriend}
                 />
             </div>
@@ -119,8 +111,9 @@ const WeightSplit: React.FC = () => {
                     min="0"
                 />
             </div>
-        </div>
-    ));
+        </div>)
+        }
+    });
 
     return (
         <div className="my-2">

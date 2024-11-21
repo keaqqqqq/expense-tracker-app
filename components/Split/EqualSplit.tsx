@@ -5,7 +5,7 @@ import DisplaySplitter from './DisplaySplitter';
 
 
 const EqualSplit: React.FC = () => {
-    const { expense, removeFriendFromSplit, updateFriendAmount, setSplitData } = useExpense(); // Get removeFriendFromSplit from context
+    const { expense, removeFriendFromSplit, updateFriendAmount, setSplitData, friendList } = useExpense(); // Get removeFriendFromSplit from context
 
     // Function to remove a friend from the split
     const handleRemoveFriend = (friendId: string) => {
@@ -24,16 +24,20 @@ const EqualSplit: React.FC = () => {
     }, [expense.splitter])
 
     const renderFriends = expense.splitter.map((friend) => {
-        return (
-            <div className="flex flex-row border rounded" key={friend.id}>
-                <DisplaySplitter
-                    key={friend.id}
-                    friend={friend}
-                    handleRemoveFriend={handleRemoveFriend}
-                />
-            </div>
-
-        );
+        let friendInfo = friendList.find(user => user.id === friend.id)
+        if(friendInfo){
+            return (
+                <div className="flex flex-row border rounded" key={friend.id}>
+                    <DisplaySplitter
+                        key={friend.id}
+                        friend={{...friendInfo, amount: friend.amount}}
+                        handleRemoveFriend={handleRemoveFriend}
+                    />
+                </div>
+    
+            );
+        }
+        return null
     });
 
     return (

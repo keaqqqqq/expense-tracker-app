@@ -1,6 +1,7 @@
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { ExpenseProvider } from "@/context/ExpenseContext";
+import { TransactionProvider } from "@/context/TransactionContext";
 export default function RootLayout({
   children,
 }: {
@@ -10,9 +11,11 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <AuthProvider>
-              <ExpenseProvider>
-            {children}
-              </ExpenseProvider>
+          <ExpenseProvider>
+            <TransactionProvider>
+              {children}
+            </TransactionProvider>
+          </ExpenseProvider>
         </AuthProvider>
       </body>
     </html>

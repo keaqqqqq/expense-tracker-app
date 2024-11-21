@@ -33,9 +33,9 @@ interface ExpenseContextType {
     addExpense: (expense: Omit<Expense, 'id'>) => void;
     editExpense: (expense: Expense) => void;
     deleteExpense: (id: string) => void;
-    addFriendToSplit: (friend: Omit<SplitFriend, 'amount'>) => void;
+    addFriendToSplit: (id: string) => void;
     removeFriendFromSplit: (friendId: string) => void;
-    addPayer: (friend: Omit<SplitFriend, 'amount'>) => void;
+    addPayer: (id: string) => void;
     removePayer: (friendId: string) => void;
     updateFriendAmount: (friendId: string, amount: number) => void;
     updatePayerAmount: (friendId: string, amount: number) => void;
@@ -284,18 +284,18 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
             // Get payer and receiver user documents
             const payerRef = doc(db, "Users", payerId);
             const receiverRef = doc(db, "Users", receiverId);
-    
+
             // Update the payer's balance (subtract the amount they paid)
             const payerSnapshot = await getDoc(payerRef);
             if (payerSnapshot.exists()) {
-            console.log("updating payer balance")
+                console.log("updating payer balance")
 
                 const payerData = payerSnapshot.data();
-                const payerBalances: {id:string, balance:number}[] = payerData?.balances || []; // Ensure payerBalances is typed as Balance[]
+                const payerBalances: { id: string, balance: number }[] = payerData?.balances || []; // Ensure payerBalances is typed as Balance[]
                 if (payerBalances) {
                     // Check if the balances array exists and if the payer already has a balance entry
                     const payerBalanceIndex = payerBalances.findIndex(balance => balance.id === receiverId);
-                
+
                     if (payerBalanceIndex !== -1) {
                         // If payer balance exists, subtract the amount
                         payerBalances[payerBalanceIndex].balance += amount;
@@ -306,7 +306,7 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
                             balance: amount  // Initialize the balance with the deducted amount
                         });
                     }
-                
+
                     // Now, update the document with the new balances array
                     await updateDoc(payerRef, { balances: payerBalances });
                     console.log(payerBalances);
@@ -317,58 +317,58 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
                         id: receiverId,  // The payer ID
                         balance: amount  // Initialize the balance with the deducted amount
                     }];
-                    
+
                     // Create a new balances array and update the document
                     await updateDoc(payerRef, { balances: newBalance });
                     console.log(newBalance);
                     console.log(`Payer's balance created for user ${payerId}`);
                 }
-                
+
             }
-    
+
             // Update the receiver's balance (add the amount they received)
             const receiverSnapshot = await getDoc(receiverRef);
             if (receiverSnapshot.exists()) {
                 console.log("updating receiver balance")
-    
-                    const receiverData = receiverSnapshot.data();
-                    const receiverBalances: {id:string, balance:number}[] = receiverData?.balances || []; // Ensure receiverBalances is typed as Balance[]
-                    if (receiverBalances) {
-                        // Check if the balances array exists and if the receiver already has a balance entry
-                        const receiverBalanceIndex = receiverBalances.findIndex(balance => balance.id === payerId);
-                    
-                        if (receiverBalanceIndex !== -1) {
-                            // If receiver balance exists, subtract the amount
-                            receiverBalances[receiverBalanceIndex].balance -= amount;
-                        } else {
-                            // If receiver balance does not exist, create a new balance entry
-                            receiverBalances.push({
-                                id: payerId,  // The receiver ID
-                                balance: -amount  // Initialize the balance with the deducted amount
-                            });
-                        }
-                    
-                        // Now, update the document with the new balances array
-                        await updateDoc(receiverRef, { balances: receiverBalances });
-                        console.log(receiverBalances)
-                        console.log(`receiver's balance updated for user ${receiverId}`);
+
+                const receiverData = receiverSnapshot.data();
+                const receiverBalances: { id: string, balance: number }[] = receiverData?.balances || []; // Ensure receiverBalances is typed as Balance[]
+                if (receiverBalances) {
+                    // Check if the balances array exists and if the receiver already has a balance entry
+                    const receiverBalanceIndex = receiverBalances.findIndex(balance => balance.id === payerId);
+
+                    if (receiverBalanceIndex !== -1) {
+                        // If receiver balance exists, subtract the amount
+                        receiverBalances[receiverBalanceIndex].balance -= amount;
                     } else {
-                        // If the receiverBalances array doesn't exist at all, create it
-                        const newBalance = [{
+                        // If receiver balance does not exist, create a new balance entry
+                        receiverBalances.push({
                             id: payerId,  // The receiver ID
                             balance: -amount  // Initialize the balance with the deducted amount
-                        }];
-                        
-                        // Create a new balances array and update the document
-                        await updateDoc(receiverRef, { balances: newBalance });
-                        console.log(newBalance);
-                        console.log(`receiver's balance created for user ${receiverId}`);
+                        });
                     }
-                    
+
+                    // Now, update the document with the new balances array
+                    await updateDoc(receiverRef, { balances: receiverBalances });
+                    console.log(receiverBalances)
+                    console.log(`receiver's balance updated for user ${receiverId}`);
+                } else {
+                    // If the receiverBalances array doesn't exist at all, create it
+                    const newBalance = [{
+                        id: payerId,  // The receiver ID
+                        balance: -amount  // Initialize the balance with the deducted amount
+                    }];
+
+                    // Create a new balances array and update the document
+                    await updateDoc(receiverRef, { balances: newBalance });
+                    console.log(newBalance);
+                    console.log(`receiver's balance created for user ${receiverId}`);
                 }
+
+            }
             console.log("done updating");
 
-    
+
         } catch (error) {
             console.error("Error updating user balances:", error);
         }
@@ -388,16 +388,10 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
                 pay_preference: '',
                 splitter: [{
                     id: currentUser.uid,
-                    name: userData.name,
-                    email: userData.email,
-                    image: userData.image,
                     amount: 0
                 }],
                 payer: [{
                     id: currentUser.uid,
-                    name: userData.name,
-                    email: userData.email,
-                    image: userData.image,
                     amount: 0
                 }]
             });
@@ -509,10 +503,10 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
     };
 
     // Split-related functions
-    const addFriendToSplit = (friend: Omit<SplitFriend, 'amount'>) => {
+    const addFriendToSplit = (id: string) => {
         setExpense(prev => ({
             ...prev,
-            splitter: [...prev.splitter, { ...friend, amount: 0 }]
+            splitter: [...prev.splitter, { id, amount: 0 }]
         }));
     };
 
@@ -524,10 +518,10 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
     };
 
     // Payer-related functions
-    const addPayer = (friend: Omit<SplitFriend, 'amount'>) => {
+    const addPayer = (id: string) => {
         setExpense(prev => ({
             ...prev,
-            payer: [...prev.payer, { ...friend, amount: 0 }] // Initialize payer amount to 0
+            payer: [...prev.payer, { id, amount: 0 }] // Initialize payer amount to 0
         }));
     };
 
@@ -609,16 +603,10 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
                     pay_preference: '',
                     splitter: [{
                         id: currentUser.uid,
-                        name: newUserData.name,
-                        email: newUserData.email,
-                        image: newUserData.image,
                         amount: 0
                     }],
                     payer: [{
                         id: currentUser.uid,
-                        name: newUserData.name,
-                        email: newUserData.email,
-                        image: newUserData.image,
                         amount: 0
                     }]
                 });

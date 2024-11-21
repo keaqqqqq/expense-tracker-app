@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import DisplaySplitter from './DisplaySplitter';
 
 const ExtraSplit: React.FC = () => {
-    const { expense, removeFriendFromSplit, updateFriendAmount, setSplitData } = useExpense(); // Access the expense context
+    const { expense, removeFriendFromSplit, updateFriendAmount, setSplitData, friendList } = useExpense(); // Access the expense context
 
     // State to track adjustments for each friend (using their id as key)
     const [adjustments, setAdjustments] = useState<{ [key: string]: number }>({});
@@ -88,12 +88,14 @@ const ExtraSplit: React.FC = () => {
 
 
     // Render the selected expense.splitter with their adjusted amounts
-    const renderFriends = expense.splitter.map((friend) => (
+    const renderFriends = expense.splitter.map((friend) => {
+        const friendInfo = friendList.find(user => user.id === friend.id);
+        if(friendInfo){
         <div key={friend.id}>
             <div className="flex flex-row border rounded my-2">
                 <DisplaySplitter
                     key={friend.id}
-                    friend={friend}
+                    friend={{...friendInfo, amount: friend.amount}}
                     handleRemoveFriend={handleRemoveFriend}
                 />
             </div>
@@ -107,7 +109,9 @@ const ExtraSplit: React.FC = () => {
                 />
             </div>
         </div>
-    ));
+        }
+        return null;
+    });
 
     return (
         <div className="my-2">

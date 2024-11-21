@@ -42,4 +42,5 @@ const ExpenseCategories = [
     { value: "contingency_fund", label: "Contingency Fund" },
 ];
 
+
 export default ExpenseCategories;

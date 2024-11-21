@@ -3,7 +3,7 @@ import { useExpense } from '@/context/ExpenseContext'; // Access the ExpenseCont
 import DisplaySplitter from './DisplaySplitter';
 
 const ManualSplit: React.FC = () => {
-    const { expense, removeFriendFromSplit, updateFriendAmount, setSplitData } = useExpense(); // Access the expense context
+    const { expense, removeFriendFromSplit, updateFriendAmount, setSplitData, friendList } = useExpense(); // Access the expense context
 
     // State to hold the amounts entered for each friend
     const [amounts, setAmounts] = useState<{ [key: string]: number }>({});
@@ -56,16 +56,16 @@ const ManualSplit: React.FC = () => {
         }
 
     };
-    useEffect(()=>{
-        if(expense.id && expense.split_data){
-            expense.split_data.forEach((d)=>{
+    useEffect(() => {
+        if (expense.id && expense.split_data) {
+            expense.split_data.forEach((d) => {
                 setAmounts((prev) => ({
                     ...prev,
                     [d.id]: d.value, // Ensure values are between 0 and 100
                 }));
             })
-        }        
-    },[]);
+        }
+    }, []);
     // Reset the amount for a specific friend when the "x" button is clicked
     const handleResetAmount = (friendId: string) => {
         setAmounts((prevAmounts) => {
@@ -108,34 +108,37 @@ const ManualSplit: React.FC = () => {
     }, [amounts, expense.splitter.length]);
 
     // Render expense.splitter list with the entered amounts or calculated ones
-    const renderFriends = expense.splitter.map((friend, index) => (
-        <div key={friend.id}>
-            <div className="flex flex-row border rounded my-2">
-            <DisplaySplitter
-                    key={friend.id}
-                    friend={friend}
-                    handleRemoveFriend={handleRemoveFriend}
-                />
-            </div>
-            <div className="flex flex-row border rounded my-2">
-                <p className="border-r p-2 m-0 text-center text-gray-500 font-normal hover:bg-gray-100">Amount</p>
-                <input
-                    className="focus:outline-indigo-600 p-2 w-full"
-                    type="number"
-                    value={amounts[friend.id] || ''} // Allow empty input for amounts
-                    onChange={(e) => handleAmountChange(friend.id, e.target.value)} // Handle amount change
-                />
-                {amounts[friend.id] !== undefined && (
-                    <button
-                        className="p-2 text-gray-500"
-                        onClick={() => handleResetAmount(friend.id)} // Reset the amount when clicked
-                    >
-                        x
-                    </button>
-                )}
-            </div>
-        </div>
-    ));
+    const renderFriends = expense.splitter.map((friend, index) => {
+        const friendInfo = friendList.find(user => user.id === friend.id);
+        if (friendInfo) {
+            return (<div key={friend.id}>
+                <div className="flex flex-row border rounded my-2">
+                    <DisplaySplitter
+                        key={friend.id}
+                        friend={{ ...friendInfo, amount: friend.amount }}
+                        handleRemoveFriend={handleRemoveFriend}
+                    />
+                </div>
+                <div className="flex flex-row border rounded my-2">
+                    <p className="border-r p-2 m-0 text-center text-gray-500 font-normal hover:bg-gray-100">Amount</p>
+                    <input
+                        className="focus:outline-indigo-600 p-2 w-full"
+                        type="number"
+                        value={amounts[friend.id] || ''} // Allow empty input for amounts
+                        onChange={(e) => handleAmountChange(friend.id, e.target.value)} // Handle amount change
+                    />
+                    {amounts[friend.id] !== undefined && (
+                        <button
+                            className="p-2 text-gray-500"
+                            onClick={() => handleResetAmount(friend.id)} // Reset the amount when clicked
+                        >
+                            x
+                        </button>
+                    )}
+                </div>
+            </div>)
+        }
+    });
 
     return (
         <div className="my-2">

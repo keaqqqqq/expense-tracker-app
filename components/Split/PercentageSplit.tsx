@@ -3,7 +3,7 @@ import { useExpense } from '@/context/ExpenseContext'; // Access the ExpenseCont
 import DisplaySplitter from './DisplaySplitter';
 
 const PercentageSplit: React.FC = () => {
-    const { expense, removeFriendFromSplit, updateFriendAmount, setSplitData } = useExpense(); // Access the expense context
+    const { expense, removeFriendFromSplit, updateFriendAmount, setSplitData, friendList } = useExpense(); // Access the expense context
 
     // Initialize the percentage state for each friend
     const initialPercentages = expense.splitter.reduce((acc, friend) => {
@@ -75,28 +75,38 @@ const PercentageSplit: React.FC = () => {
     },[]);
 
     // Render the list of expense.splitter with their percentage inputs and calculated amounts
-    const renderFriends = expense.splitter.map((friend) => (
-        <div key={friend.id}>
-            <div className="flex flex-row border rounded my-2">
-            <DisplaySplitter
-                    key={friend.id}
-                    friend={friend}
-                    handleRemoveFriend={handleRemoveFriend}
-                />
-            </div>
-            <div className="flex flex-row border rounded my-2">
-                <p className="w-8 border-r py-2 m-0 text-center hover:bg-gray-100">%</p>
-                <input
-                    className="focus:outline-indigo-600 p-2 w-full"
-                    type="number"
-                    value={percentages[friend.id]}
-                    onChange={(e) => handlePercentageChange(friend.id, Number(e.target.value))}
-                    min="0"
-                    max="100"
-                />
-            </div>
-        </div>
-    ));
+    const renderFriends = expense.splitter.map((splitterFriend) => {
+        // Find the friend info from the friendList
+        const friendInfo = friendList.find(friend => friend.id === splitterFriend.id);
+    
+        // Check if the friend information exists
+        if (friendInfo) {
+            return (
+                <div key={splitterFriend.id}>
+                    <div className="flex flex-row border rounded my-2">
+                        <DisplaySplitter
+                            key={splitterFriend.id}
+                            friend={{ ...friendInfo, amount: splitterFriend.amount }}
+                            handleRemoveFriend={handleRemoveFriend}
+                        />
+                    </div>
+                    <div className="flex flex-row border rounded my-2">
+                        <p className="w-8 border-r py-2 m-0 text-center hover:bg-gray-100">%</p>
+                        <input
+                            className="focus:outline-indigo-600 p-2 w-full"
+                            type="number"
+                            value={percentages[splitterFriend.id]}
+                            onChange={(e) => handlePercentageChange(splitterFriend.id, Number(e.target.value))}
+                            min="0"
+                            max="100"
+                        />
+                    </div>
+                </div>
+            );
+        }
+    
+        return null; // Return null if the friendInfo is not found
+    });
 
     return (
         <div className="my-2">

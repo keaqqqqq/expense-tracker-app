@@ -31,8 +31,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, closeModal }) => {
         <Dialog open={isOpen} onClose={closeModal} className="relative z-30">
             <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
             <div className="fixed inset-0 overflow-y-auto">
-                <div className="flex items-start justify-center p-4 h-full">
-                    <div className="flex flex-col justify-start max-w-3xl w-full"> {/* Wrapper for spacing */}
+                <div className="min-h-full flex items-center justify-center p-4">
                         <DialogPanel className="rounded bg-white my-4 mx-2 sm:mx-0"> {/* Only margin at top/bottom */}
 
                             <DialogTitle className="font-semibold text-sm border-b px-5 py-3">New Expense</DialogTitle>
@@ -57,7 +56,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, closeModal }) => {
                             </div>
                             }
                         </DialogPanel>
-                    </div>
                 </div>
             </div>
         </Dialog>

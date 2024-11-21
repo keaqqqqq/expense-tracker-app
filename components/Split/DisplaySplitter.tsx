@@ -3,7 +3,7 @@ import React from 'react';
 
 // Define the type for the props
 interface DisplaySplitterProps {
-    friend: SplitFriend;
+    friend: SplitFriend & {amount:number};
     handleRemoveFriend: (id: string) => void;
 }
 
