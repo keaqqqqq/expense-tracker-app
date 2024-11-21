@@ -19,17 +19,16 @@ interface ManageGroupProps {
     members: Array<{ id?: string; email?: string; name?: string; }>;
   };
   currentUserId: string;
-  groupFriends: Array<Friend>; // Changed from friends to groupFriends
+  groupFriends: Array<Friend>; 
   currentUserEmail: string;
-  currentUserImage?: string; // Add this prop
+  currentUserImage?: string; 
 }
 
 const ManageGroup = ({ 
   groupId, 
-  inviteLink, 
   groupData,
   currentUserId,
-  groupFriends, // Changed prop name
+  groupFriends, 
   currentUserEmail,
   currentUserImage
 }: ManageGroupProps) => {

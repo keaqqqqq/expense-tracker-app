@@ -49,7 +49,6 @@ export default async function GroupDetailsPage({ params }: GroupDetailsPageProps
     const inviteToken = await getOrCreateGroupInviteLink(params.id, uid);
     const inviteLink = inviteToken ? `https://keaqqqqq.com/invite?token=${inviteToken}` : '';
 
-
     const memberIds = group.members
       .map(member => typeof member === 'string' ? member : member.id)
       .filter((id): id is string => id !== undefined);
@@ -74,7 +73,6 @@ export default async function GroupDetailsPage({ params }: GroupDetailsPageProps
     }));
   const usersData = Object.fromEntries(usersDataArray);
   
-  // Transform to Friend type
   const groupFriends = friendships
     .filter(rel => rel.type === 'friendship' && rel.status === 'ACCEPTED')
     .map(rel => {
@@ -98,6 +96,7 @@ export default async function GroupDetailsPage({ params }: GroupDetailsPageProps
         return subTotal;
       }, total);
     }, 0);
+
 
     return (
       <div>
@@ -133,12 +132,7 @@ export default async function GroupDetailsPage({ params }: GroupDetailsPageProps
                   groupId={params.id}
                   groupName={group.name}
                   inviteLink={inviteLink}
-                  groupData={{
-                    type: group.type,
-                    name: group.name,
-                    image: group.image,
-                    members: group.members
-                  }}
+                  groupData={group}
                   currentUserId={uid}
                   groupFriends={groupFriends}  
                   currentUserEmail={usersData[uid]?.email || ''}
@@ -147,7 +141,7 @@ export default async function GroupDetailsPage({ params }: GroupDetailsPageProps
                   <div className="mt-4">
                   <Balances
                     type="group"
-                    groupData={group}    // Pass the group data
+                    groupData={group}   
                     currentUserId={uid}
                     groupId={params.id}
                   />

@@ -536,7 +536,6 @@ export const acceptFriendshipAndAddToGroup = async (
     const friendshipData = friendshipDoc.data();
     const groupId = friendshipData.related_group_id;
 
-    // Update friendship status first
     await updateDoc(friendshipRef, {
       status: 'ACCEPTED',
       accepted_at: serverTimestamp()
@@ -555,23 +554,20 @@ export const acceptFriendshipAndAddToGroup = async (
 
       const groupData = groupDoc.data();
 
-      // Ensure member structure is consistent
       const newMember = {
         id: currentUserId,
         email: userData.email || '',
         name: userData.name || '',
         image: userData.image || '',
-        status: 'ACCEPTED'  // Add explicit status
+        status: 'ACCEPTED'  
       };
 
-      // Remove from pending members first
       const updatedPendingMembers = (groupData.pending_members || [])
         .filter((member: any) => 
           member.id !== currentUserId && 
           member.email !== userData.email
         );
 
-      // Then add to active members
       await updateDoc(groupRef, {
         members: arrayUnion(newMember),
         pending_members: updatedPendingMembers
