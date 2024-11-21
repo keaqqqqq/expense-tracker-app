@@ -4,30 +4,23 @@ import ManageExpensesHeader from './ManageExpensesHeader';
 import Button from './Button';
 import ExpensesList from './ExpensesList';
 import ExpenseModal from './ExpenseModal';
+import TransactionModal from '../Transaction/TransactionModal';
+import { useTransaction } from '@/context/TransactionContext';
 
 
 const ManageExpense: React.FC = () => {
     const buttonClassName = "border rounded text-gray-800 hover:bg-gray-200";
-    const [isOpen, setIsOpen] = useState<boolean>(false);
-
-    const openModal = () => {
-        setIsOpen(true);
-    };
-
-    const closeModal = () => {
-        setIsOpen(false);
-    };
+    const [expIsOpen, setExpIsOpen] = useState<boolean>(false);
+    const [transIsOpen, setTransIsOpen] = useState<boolean>(false);
+    const {setTransaction} = useTransaction();
+ 
 
     return (
         <div>
-            <ManageExpensesHeader openModal={openModal} />
-            <div>
-                <Button className={`${buttonClassName} ml-0`}>Expense</Button>
-                <Button className={buttonClassName}>Recurring</Button>
-                <Button className={buttonClassName}>Uploads</Button>
-            </div>
-            <ExpensesList />
-            <ExpenseModal isOpen={isOpen} closeModal={closeModal} />
+            <ManageExpensesHeader openExpModal={()=>setExpIsOpen(true)} openTransModal={()=>setTransIsOpen(true)} />
+            <ExpensesList setIsOpen={setExpIsOpen}/>
+            <ExpenseModal isOpen={expIsOpen} closeModal={()=>setExpIsOpen(false)} />
+            <TransactionModal isOpen={transIsOpen} closeModal={()=>setTransIsOpen(false)}/>
         </div>
     );
 };

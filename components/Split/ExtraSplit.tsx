@@ -1,21 +1,31 @@
 import { useExpense } from '@/context/ExpenseContext';
 import React, { useEffect, useState } from 'react';
+import DisplaySplitter from './DisplaySplitter';
 
 const ExtraSplit: React.FC = () => {
-    const { expense, removeFriendFromSplit, updateFriendAmount } = useExpense(); // Access the expense context
-    
+    const { expense, removeFriendFromSplit, updateFriendAmount, setSplitData, friendList } = useExpense(); // Access the expense context
+
     // State to track adjustments for each friend (using their id as key)
     const [adjustments, setAdjustments] = useState<{ [key: string]: number }>({});
 
-    // Set initial adjustments state based on the expense.spliter list
+    // Set initial adjustments state based on the expense.splitter list
     useEffect(() => {
-        const initialAdjustments = expense.spliter.reduce((acc, friend) => {
+        const initialAdjustments = expense.splitter.reduce((acc, friend) => {
             acc[friend.id] = 0; // Initialize adjustments for each friend to 0
             return acc;
         }, {} as { [key: string]: number });
 
         setAdjustments(initialAdjustments);
+        if (expense.id && expense.split_data) {
+            expense.split_data.forEach((d) => {
+                setAdjustments((prev) => ({
+                    ...prev,
+                    [d.id]: d.value, // Ensure values are between 0 and 100
+                }));
+            })
+        }
     }, []);
+    
 
     // Function to remove a friend from the split
     const handleRemoveFriend = (friendId: string) => {
@@ -29,6 +39,11 @@ const ExtraSplit: React.FC = () => {
             return newAdjustments;
         });
 
+        if (expense.split_data) {
+            const updatedSplitData = expense.split_data.filter((data) => data.id !== friendId);
+            setSplitData(updatedSplitData); // Update the split data
+        }
+
     };
 
     // Handle adjustment changes for each friend
@@ -37,38 +52,52 @@ const ExtraSplit: React.FC = () => {
             ...prev,
             [friendId]: value,
         }));
+
+        if (expense.split_data) {
+            // Update split_data by checking if the id already exists
+            const updatedSplitData = expense.split_data.map((data) =>
+                data.id === friendId
+                    ? { ...data, value } // Update the existing entry
+                    : data
+            );
+
+            // If friendId doesn't exist in split_data, add a new entry
+            if (!expense.split_data.some((data) => data.id === friendId)) {
+                updatedSplitData.push({ id: friendId, value });
+            }
+
+            setSplitData(updatedSplitData); // Set the updated split data
+        } else {
+            // If split_data doesn't exist yet, initialize it with the new entry
+            setSplitData([{ id: friendId, value }]);
+        }
     };
 
     // Calculate total adjustments and the remainder
     const totalAdjustments = Object.values(adjustments).reduce((acc, curr) => acc + curr, 0);
     const remainingAmount = expense.amount - totalAdjustments;
-    const splitAmount = remainingAmount / expense.spliter.length;
+    const splitAmount = remainingAmount / expense.splitter.length;
 
     // Update each friend's adjusted amount in the context
     useEffect(() => {
-        expense.spliter.forEach((friend) => {
+        expense.splitter.forEach((friend) => {
             const adjustedAmount = (adjustments[friend.id] || 0) + splitAmount;
             updateFriendAmount(friend.id, adjustedAmount); // Update the amount in the context
         });
-    }, [adjustments, splitAmount, expense.spliter.length]);
+    }, [adjustments, splitAmount, expense.splitter.length]);
 
-    
-    // Render the selected expense.spliter with their adjusted amounts
-    const renderFriends = expense.spliter.map((friend) => (
+
+    // Render the selected expense.splitter with their adjusted amounts
+    const renderFriends = expense.splitter.map((friend) => {
+        const friendInfo = friendList.find(user => user.id === friend.id);
+        if(friendInfo){
         <div key={friend.id}>
             <div className="flex flex-row border rounded my-2">
-                <div className="flex flex-row w-full justify-between content-center px-2">
-                    <p className="my-auto">{friend.name}</p>
-                    <p className="my-auto">
-                        {((adjustments[friend.id] || 0) + splitAmount).toFixed(2)} RM
-                    </p>
-                </div>
-                <button
-                    className="w-8 border-l py-2 m-0 text-center hover:bg-gray-100"
-                    onClick={() => handleRemoveFriend(friend.id)} // Trigger the removal when clicked
-                >
-                    x
-                </button>
+                <DisplaySplitter
+                    key={friend.id}
+                    friend={{...friendInfo, amount: friend.amount}}
+                    handleRemoveFriend={handleRemoveFriend}
+                />
             </div>
             <div className="flex flex-row border rounded my-2">
                 <p className="w-8 border-r py-2 m-0 text-center hover:bg-gray-100">+</p>
@@ -80,7 +109,9 @@ const ExtraSplit: React.FC = () => {
                 />
             </div>
         </div>
-    ));
+        }
+        return null;
+    });
 
     return (
         <div className="my-2">
@@ -90,7 +121,7 @@ const ExtraSplit: React.FC = () => {
                 </div>
                 <div><b className="font-bold">Total adjustments:</b> RM {totalAdjustments.toFixed(2)}</div>
                 <div><b className="font-bold">Remaining amount to split:</b> RM {remainingAmount.toFixed(2)}</div>
-                <div><b className="font-bold">Amount per user:</b> RM {splitAmount.toFixed(2)}</div>
+                <div><b className="font-bold">Amount per friend:</b> RM {splitAmount.toFixed(2)}</div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 my-2">
                 {renderFriends}

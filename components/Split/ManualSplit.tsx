@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useExpense } from '@/context/ExpenseContext'; // Access the ExpenseContext
+import DisplaySplitter from './DisplaySplitter';
 
 const ManualSplit: React.FC = () => {
-    const { expense, removeFriendFromSplit, updateFriendAmount } = useExpense(); // Access the expense context
+    const { expense, removeFriendFromSplit, updateFriendAmount, setSplitData, friendList } = useExpense(); // Access the expense context
 
     // State to hold the amounts entered for each friend
     const [amounts, setAmounts] = useState<{ [key: string]: number }>({});
@@ -10,13 +11,32 @@ const ManualSplit: React.FC = () => {
     // Total expense from the context
     const totalExpense = expense.amount;
 
-    // Handle changes to user amounts
+    // Handle changes to friend amounts
     const handleAmountChange = (friendId: string, value: string) => {
         const newValue = value === '' ? 0 : parseFloat(value); // Convert to number or set to 0
         setAmounts((prevAmounts) => ({
             ...prevAmounts,
             [friendId]: newValue,
         }));
+
+        if (expense.split_data) {
+            // Update split_data by checking if the id already exists
+            const updatedSplitData = expense.split_data.map((data) =>
+                data.id === friendId
+                    ? { ...data, value: newValue } // Update the existing entry
+                    : data
+            );
+
+            // If friendId doesn't exist in split_data, add a new entry
+            if (!expense.split_data.some((data) => data.id === friendId)) {
+                updatedSplitData.push({ id: friendId, value: newValue });
+            }
+
+            setSplitData(updatedSplitData); // Set the updated split data
+        } else {
+            // If split_data doesn't exist yet, initialize it with the new entry
+            setSplitData([{ id: friendId, value: newValue }]);
+        }
     };
 
     const handleRemoveFriend = (friendId: string) => {
@@ -30,8 +50,22 @@ const ManualSplit: React.FC = () => {
             return newAmounts;
         });
 
-    };
+        if (expense.split_data) {
+            const updatedSplitData = expense.split_data.filter((data) => data.id !== friendId);
+            setSplitData(updatedSplitData); // Update the split data
+        }
 
+    };
+    useEffect(() => {
+        if (expense.id && expense.split_data) {
+            expense.split_data.forEach((d) => {
+                setAmounts((prev) => ({
+                    ...prev,
+                    [d.id]: d.value, // Ensure values are between 0 and 100
+                }));
+            })
+        }
+    }, []);
     // Reset the amount for a specific friend when the "x" button is clicked
     const handleResetAmount = (friendId: string) => {
         setAmounts((prevAmounts) => {
@@ -39,21 +73,26 @@ const ManualSplit: React.FC = () => {
             delete newAmounts[friendId]; // Remove the entered amount for this friend
             return newAmounts;
         });
+
+        if (expense.split_data) {
+            const updatedSplitData = expense.split_data.filter((data) => data.id !== friendId);
+            setSplitData(updatedSplitData); // Update the split data
+        }
     };
 
     // Calculate the total entered amount
     const totalEnteredAmount = Object.values(amounts).reduce((acc, amount) => acc + amount, 0);
 
-    // Calculate amounts owed by users who haven't entered a value
+    // Calculate amounts owed by friends who haven't entered a value
     const calculateAmounts = () => {
         const remainingAmount = totalExpense - totalEnteredAmount;
-        const friendsWithoutAmount = expense.spliter.filter(friend => !(friend.id in amounts)).length;
+        const friendsWithoutAmount = expense.splitter.filter(friend => !(friend.id in amounts)).length;
 
-        // Distribute the remaining amount equally among users who haven't entered an amount
-        const perUserAmount = friendsWithoutAmount > 0 ? remainingAmount / friendsWithoutAmount : 0;
+        // Distribute the remaining amount equally among friends who haven't entered an amount
+        const perfriendAmount = friendsWithoutAmount > 0 ? remainingAmount / friendsWithoutAmount : 0;
 
-        return expense.spliter.map((friend) => {
-            return amounts[friend.id] !== undefined ? amounts[friend.id] : perUserAmount; // Return entered amount or calculated amount
+        return expense.splitter.map((friend) => {
+            return amounts[friend.id] !== undefined ? amounts[friend.id] : perfriendAmount; // Return entered amount or calculated amount
         });
     };
 
@@ -61,49 +100,45 @@ const ManualSplit: React.FC = () => {
 
     // Update each friend's amount in the context
     useEffect(() => {
-        expense.spliter.forEach((friend) => {
-            const adjustedAmount = amounts[friend.id] !== undefined ? amounts[friend.id] : calculatedAmounts[expense.spliter.findIndex(f => f.id === friend.id)];
+        expense.splitter.forEach((friend) => {
+            const adjustedAmount = amounts[friend.id] !== undefined ? amounts[friend.id] : calculatedAmounts[expense.splitter.findIndex(f => f.id === friend.id)];
             updateFriendAmount(friend.id, adjustedAmount); // Update the amount in the context
         });
         console.log(expense);
-    }, [amounts, expense.spliter.length]);
+    }, [amounts, expense.splitter.length]);
 
-    // Render expense.spliter list with the entered amounts or calculated ones
-    const renderFriends = expense.spliter.map((friend, index) => (
-        <div key={friend.id}>
-            <div className="flex flex-row border rounded my-2">
-                <div className="flex flex-row w-full justify-between content-center px-2">
-                    <p className="my-auto">{friend.name}</p>
-                    <p className="my-auto">
-                        {calculatedAmounts[index].toFixed(2)} RM
-                    </p>
+    // Render expense.splitter list with the entered amounts or calculated ones
+    const renderFriends = expense.splitter.map((friend, index) => {
+        const friendInfo = friendList.find(user => user.id === friend.id);
+        if (friendInfo) {
+            return (<div key={friend.id}>
+                <div className="flex flex-row border rounded my-2">
+                    <DisplaySplitter
+                        key={friend.id}
+                        friend={{ ...friendInfo, amount: friend.amount }}
+                        handleRemoveFriend={handleRemoveFriend}
+                    />
                 </div>
-                <button
-                    className="w-8 border-l py-2 m-0 text-center hover:bg-gray-100"
-                    onClick={() => handleRemoveFriend(friend.id)} // Remove friend when clicked
-                >
-                    x
-                </button>
-            </div>
-            <div className="flex flex-row border rounded my-2">
-                <p className="border-r p-2 m-0 text-center text-gray-500 font-normal hover:bg-gray-100">Amount</p>
-                <input
-                    className="focus:outline-indigo-600 p-2 w-full"
-                    type="number"
-                    value={amounts[friend.id] || ''} // Allow empty input for amounts
-                    onChange={(e) => handleAmountChange(friend.id, e.target.value)} // Handle amount change
-                />
-                {amounts[friend.id] !== undefined && (
-                    <button
-                        className="ml-2 text-red-500"
-                        onClick={() => handleResetAmount(friend.id)} // Reset the amount when clicked
-                    >
-                        x
-                    </button>
-                )}
-            </div>
-        </div>
-    ));
+                <div className="flex flex-row border rounded my-2">
+                    <p className="border-r p-2 m-0 text-center text-gray-500 font-normal hover:bg-gray-100">Amount</p>
+                    <input
+                        className="focus:outline-indigo-600 p-2 w-full"
+                        type="number"
+                        value={amounts[friend.id] || ''} // Allow empty input for amounts
+                        onChange={(e) => handleAmountChange(friend.id, e.target.value)} // Handle amount change
+                    />
+                    {amounts[friend.id] !== undefined && (
+                        <button
+                            className="p-2 text-gray-500"
+                            onClick={() => handleResetAmount(friend.id)} // Reset the amount when clicked
+                        >
+                            x
+                        </button>
+                    )}
+                </div>
+            </div>)
+        }
+    });
 
     return (
         <div className="my-2">
