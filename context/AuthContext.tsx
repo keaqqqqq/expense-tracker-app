@@ -1,8 +1,8 @@
 'use client';
-import { User, createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut, updateProfile, EmailAuthProvider, reauthenticateWithCredential, updatePassword, verifyBeforeUpdateEmail } from 'firebase/auth';
+import { User, createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut, updateProfile, EmailAuthProvider, reauthenticateWithCredential, updatePassword, verifyBeforeUpdateEmail, signInWithPopup } from 'firebase/auth';
 import { DocumentData, doc, getDoc, setDoc} from 'firebase/firestore';
 import React, { useContext, useState, useEffect, ReactNode } from 'react';
-import { auth , db} from '../firebase/config';
+import { auth , db, googleProvider} from '../firebase/config';
 interface AuthContextType {
   currentUser: User | null;
   userDataObj: DocumentData | null;
@@ -10,6 +10,7 @@ interface AuthContextType {
   signup: (email: string, password: string) => Promise<any>;
   logout: () => Promise<void>;
   login: (email: string, password: string) => Promise<any>;
+  signInWithGoogle: () => Promise<any>;
   loading: boolean;
   isProfileComplete: boolean; 
   setIsProfileComplete: React.Dispatch<React.SetStateAction<boolean>>;
@@ -74,6 +75,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const login = (email: string, password: string) => {
     return signInWithEmailAndPassword(auth, email, password);
+  };
+
+  const signInWithGoogle = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      
+      // Check if user exists in Firestore
+      const userRef = doc(db, 'Users', user.uid);
+      const userDoc = await getDoc(userRef);
+      
+      if (!userDoc.exists()) {
+        // Create new user document if it doesn't exist
+        const userData = {
+          name: user.displayName,
+          email: user.email,
+          image: user.photoURL,
+        };
+        await setDoc(userRef, userData);
+        setUserDataObj(userData);
+        setIsProfileComplete(true);
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error signing in with Google:', error);
+      throw error;
+    }
   };
 
   const logout = async (): Promise<void> => {
@@ -190,6 +219,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signup,
     logout,
     login,
+    signInWithGoogle,
     loading,
     isProfileComplete,
     setIsProfileComplete, 
