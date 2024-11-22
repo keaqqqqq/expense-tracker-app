@@ -2,7 +2,7 @@ import React, { Suspense } from 'react';
 import { fetchUserData } from '@/lib/actions/user.action';
 import ExpenseList from '@/components/ExpenseList';
 import { serializeFirebaseData } from '@/lib/utils';
-import type { GroupedTransactions, Transaction } from '@/types/ExpenseList';
+import type { GroupedTransactions } from '@/types/ExpenseList';
 import { ExpenseProvider } from '@/context/ExpenseListContext';
 import { fetchTransactions } from '@/lib/actions/user.action';
 import { cookies } from "next/headers";
@@ -16,6 +16,7 @@ import { fetchUserBalances, fetchGroupBalances, settleBalance } from '@/lib/acti
 import { BalancesProvider } from '@/context/BalanceContext';
 import Balances from '@/components/Balances/Balance';
 import ExpenseCard from '@/components/ExpenseCard';
+import { Transaction } from '@/types/Transaction';
 interface Props {
   params: {
     id: string;
@@ -120,7 +121,6 @@ async function FriendDetails({ params }: Props) {
 
     const usersDataArray = await Promise.all(usersDataPromises);
     const usersData = Object.fromEntries(usersDataArray);
-
     const balance = initialTransactions.reduce((total: number, group: GroupedTransactions) => {
       return group.transactions.reduce((subTotal: number, transaction: Transaction) => {
         if (transaction.payer_id === params.id) {
@@ -133,8 +133,6 @@ async function FriendDetails({ params }: Props) {
     }, 0);
 
     const userData = serializeFirebaseData(rawUserData);
-    console.log('FRIEND PAGE USER DATA:' + JSON.stringify(userData))
-    console.log('User balances: ' + userBalances);
       return (
         <ExpenseProvider 
           initialTransactions={initialTransactions}
