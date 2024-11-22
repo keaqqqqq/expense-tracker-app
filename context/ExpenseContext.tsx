@@ -22,6 +22,7 @@ interface ExpenseContextType {
     setUserData: (userData: Omit<SplitFriend, 'amount'> | null) => void;
     setExpense: (expense: Omit<Expense, 'id'>) => void;
     setDescription: (description: string) => void;
+    setGroup: (group: string |'') => void;
     setPayPreference: (pay_preference: string) => void;
     setSplitPreference: (split_preference: string) => void;
     setAmount: (amount: number) => void;
@@ -159,7 +160,7 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
                             payer_id: usersNet[i].id,
                             receiver_id: usersNet[j].id,
                             created_at: serverTimestamp(),  // Firestore's timestamp
-                            type: 'testing 1', // Add a type if needed
+                            type: 'expense', // Add a type if needed
                         });
                         usersNet[j].amountOwed = total;
                         usersNet[i].amountOwed = 0;
@@ -169,7 +170,7 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
                             payer_id: usersNet[i].id,
                             receiver_id: usersNet[j].id,
                             created_at: serverTimestamp(),
-                            type: 'testing 1',
+                            type: 'expense',
                         });
                         usersNet[i].amountOwed = total;
                         usersNet[j].amountOwed = 0;
@@ -179,7 +180,7 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
                             payer_id: usersNet[i].id,
                             receiver_id: usersNet[j].id,
                             created_at: serverTimestamp(),
-                            type: 'testing 1',
+                            type: 'expense',
                         });
                         usersNet[i].amountOwed = 0;
                         usersNet[j].amountOwed = 0;
@@ -194,7 +195,7 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
                             payer_id: usersNet[j].id,
                             receiver_id: usersNet[i].id,
                             created_at: serverTimestamp(),
-                            type: 'testing 1',
+                            type: 'expense',
                         });
                         usersNet[i].amountOwed = total;
                         usersNet[j].amountOwed = 0;
@@ -204,7 +205,7 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
                             payer_id: usersNet[j].id,
                             receiver_id: usersNet[i].id,
                             created_at: serverTimestamp(),
-                            type: 'testing 1',
+                            type: 'expense',
                         });
                         usersNet[j].amountOwed = total;
                         usersNet[i].amountOwed = 0;
@@ -214,7 +215,7 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
                             payer_id: usersNet[j].id,
                             receiver_id: usersNet[i].id,
                             created_at: serverTimestamp(),
-                            type: 'testing 1',
+                            type: 'expense',
                         });
                         usersNet[i].amountOwed = 0;
                         usersNet[j].amountOwed = 0;
@@ -231,7 +232,7 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
                 await addDoc(collection(db, "Transactions"), {
                     ...trans,
                     expense_id: response.id,  // Optional: If you want to store the response id
-                    group_id: response.group_id, // Optional: If you want to store the group id
+                    group_id: response.group_id || '' , // Optional: If you want to store the group id
                 });
                 await updateUserBalance(trans.payer_id, trans.receiver_id, trans.amount);
             }
@@ -250,7 +251,7 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
             const transactionsRef = collection(db, "Transactions");
             const q = query(
                 transactionsRef,
-                where("type", "==", "testing 1"),
+                where("type", "==", "expense"),
                 where("expense_id", "==", expenseId)
             );
 
@@ -413,6 +414,8 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
             return;
         }
 
+        console.log('new expense: ' + JSON.stringify(newExpense))
+
         try {
             const response = await createExpenseAPI({
                 ...newExpense,
@@ -492,6 +495,10 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
 
     const setAmount = (amount: number) => {
         setExpense(prev => ({ ...prev, amount }));
+    };
+    
+    const setGroup = (group: string| '') => {
+        setExpense(prev => ({ ...prev, group_id:group }));
     };
 
     const setDate = (date: string) => {
@@ -631,6 +638,7 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
             resetExpense,
             setUserData,
             setExpense,
+            setGroup,
             setSplitData,
             setDescription,
             setPayPreference,

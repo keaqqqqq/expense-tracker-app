@@ -7,7 +7,9 @@ import { Friend } from '@/types/Friend';
 import { serializeFirebaseData } from '../utils';
 import { FirestoreGroupData } from '@/types/Group';
 import { GroupMember } from '@/types/Group';
-import { Expense, GroupedTransactions, Transaction,  } from '@/types/ExpenseList';
+import { GroupedTransactions } from '@/types/ExpenseList';
+import { Expense } from '@/types/Expense';
+import { Transaction } from '@/types/Transaction';
 export const updateUserProfile = async (
   currentUser: User | null,
   name: string,
@@ -831,7 +833,7 @@ export const fetchTransactions = async (currentUserId: string, friendId: string)
       transactionsRef,
       where('payer_id', '==', currentUserId),
       where('receiver_id', '==', friendId),
-      where('group_id', '==', null),
+      where('group_id', '==', ''),
       orderBy('created_at', 'desc')
     );
     
@@ -840,7 +842,7 @@ export const fetchTransactions = async (currentUserId: string, friendId: string)
       transactionsRef,
       where('payer_id', '==', friendId),
       where('receiver_id', '==', currentUserId),
-      where('group_id', '==', null),
+      where('group_id', '==', ''),
       orderBy('created_at', 'desc')
     );
 

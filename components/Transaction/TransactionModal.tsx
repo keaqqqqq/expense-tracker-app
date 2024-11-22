@@ -44,7 +44,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal 
   const handleCreateTransaction = async () => {
     const group_id = (expenseGroup ? expenseGroup : (selectedGroup ? selectedGroup : null))
     const expense_id = (selectedExpense ? selectedExpense : 'direct-payment')
-    const type = (selectedExpense ? 'test settle' : 'test direct-payment');
+    const type = (selectedExpense ? 'settle' : '');
     if (amount && selectedDate && payer && receiver)
       await createTransaction({
         amount,
@@ -61,7 +61,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal 
   const handleEditTransaction = async () => {
     const group_id = (expenseGroup ? expenseGroup : selectedGroup ? selectedGroup : null)
     const expense_id = (selectedExpense ? selectedExpense : 'direct-payment')
-    const type = (selectedExpense ? 'test settle' : 'test direct-payment');
+    const type = (selectedExpense ? 'settle' : '');
     if (amount && selectedDate && payer && receiver && transaction?.id)
       await editTransaction({
         id: transaction.id,

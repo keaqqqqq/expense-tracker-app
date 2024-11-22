@@ -4,7 +4,7 @@ import { useExpense } from '@/context/ExpenseContext';
 import { Group } from '@/types/Group';
 
 const AddSplit: React.FC = () => {
-  const { friendList, expense, addFriendToSplit , groupList} = useExpense();
+  const { friendList, expense, addFriendToSplit , groupList, setGroup} = useExpense();
   const [selectedFriend, setSelectedFriend] = useState<Omit<SplitFriend, 'amount'> | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<Group|null>(null);
   
@@ -18,10 +18,10 @@ const AddSplit: React.FC = () => {
   };
   
   const handleSelectGroup = (group: Group) => {
+    setGroup(group.id);
     group.members.forEach((m)=>{
       if (!expense.splitter.some(f => f.id === m.id)) {
         addFriendToSplit(m.id || '');
-        console.log(m);
         setSelectedFriend(null); // Clear the selected friend
       }
     })

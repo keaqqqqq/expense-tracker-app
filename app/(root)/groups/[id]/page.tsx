@@ -3,7 +3,7 @@ import ExpenseCard from '@/components/ExpenseCard';
 import { getGroupDetails, fetchGroupTransactions, fetchUserData } from '@/lib/actions/user.action';
 import ExpenseList from '@/components/ExpenseList';
 import { serializeFirebaseData } from '@/lib/utils';
-import type { GroupedTransactions, Transaction } from '@/types/ExpenseList';
+import type { GroupedTransactions } from '@/types/ExpenseList';
 import { ExpenseProvider } from '@/context/ExpenseListContext';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -13,6 +13,7 @@ import Balances from '@/components/Balances/Balance';
 import { fetchGroupBalances } from '@/lib/actions/user.action';
 import { BalancesProvider } from '@/context/BalanceContext';
 import { getOrCreateGroupInviteLink } from '@/lib/actions/user.action';
+import { Transaction } from '@/types/Transaction';
 interface GroupDetailsPageProps {
   params: {
     id: string;

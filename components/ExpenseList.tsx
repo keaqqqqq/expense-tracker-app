@@ -1,9 +1,10 @@
 'use client'
 import React, { useState } from 'react';
 import { ChevronDown, Utensils, Edit2, DollarSign, User, Receipt } from 'lucide-react';
-import type { GroupedTransactions, Transaction, Expense } from '@/types/ExpenseList';
-import { useExpense } from '@/context/ExpenseListContext';
-
+import type { GroupedTransactions} from '@/types/ExpenseList';
+import { useExpenseList } from '@/context/ExpenseListContext';
+import { Expense } from '@/types/Expense';
+import { Transaction } from '@/types/Transaction';
 interface ExpenseItemProps {
   groupedTransactions: GroupedTransactions;
   onEdit: (id: string) => void;
@@ -14,15 +15,11 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
   const [isExpanded, setIsExpanded] = useState(false);
   const { expense, transactions } = groupedTransactions;
   const isDirectPayment = transactions[0]?.expense_id === 'direct-payment';
-  const { usersData } = useExpense();
+  const { usersData } = useExpenseList();
 
   const getUserData = (userId: string) => {
-    if (isDirectPayment) {
+    if (isDirectPayment || expense?.splitter || expense?.payer) {
       return usersData[userId];
-    }
-    if (expense?.splitter || expense?.payer) {
-      return expense.splitter?.find(user => user.id === userId) || 
-             expense.payer?.find(user => user.id === userId);
     }
     return undefined;
   };
@@ -64,12 +61,10 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
     
     expense?.splitter?.forEach(user => allUsers.add(user.id));
 
-    const splitAmount = totalAmount / (expense?.splitter?.length || 1);
-
     const participants = Array.from(allUsers).map(userId => {
       const paidAmount = expense?.payer?.find(p => p.id === userId)?.amount || 0;
 
-      const owedAmount = expense?.splitter?.find(s => s.id === userId) ? splitAmount : 0;
+      const owedAmount = expense?.splitter?.find(s => s.id === userId)?.amount || 0;
 
       const balance = paidAmount - owedAmount;
 
@@ -96,8 +91,8 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
       return 1;  
     };
 
-    const priorityA = getPriority(a.type);
-    const priorityB = getPriority(b.type);
+    const priorityA = getPriority(a.type || '');
+    const priorityB = getPriority(b.type || '');
     
     return priorityA - priorityB;
   });
@@ -126,30 +121,33 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
     if (!expense?.payer) return null;
     return (
       <div className="flex items-center gap-2">
-        {expense.payer.map((payer, index) => (
-          <React.Fragment key={payer.id}>
-            <div className="flex items-center gap-1.5">
-              <div className="w-5 h-5 rounded-full overflow-hidden bg-gray-200 relative">
-                {payer.image ? (
-                  <img src={payer.image} alt={payer.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <User className="w-3 h-3 text-gray-500" />
-                  </div>
-                )}
+        {expense.payer.map((payer, index) => {
+          const userData = getUserData(payer.id);
+          return (
+            <React.Fragment key={payer.id}>
+              <div className="flex items-center gap-1.5">
+                <div className="w-5 h-5 rounded-full overflow-hidden bg-gray-200 relative">
+                  {userData?.image ? (
+                    <img src={userData.image} alt={userData.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <User className="w-3 h-3 text-gray-500" />
+                    </div>
+                  )}
+                </div>
+                <span className="text-xs text-gray-600">
+                  {payer.id === currentUserId ? 'You' : userData?.name || payer.id}
+                </span>
               </div>
-              <span className="text-xs text-gray-600">
-                {payer.id === currentUserId ? 'You' : payer.name}
-              </span>
-            </div>
-            {index < expense.payer.length - 1 && (
-              <span className="text-gray-400">,</span>
-            )}
-          </React.Fragment>
-        ))}
+              {index < expense.payer.length - 1 && (
+                <span className="text-gray-400">,</span>
+              )}
+            </React.Fragment>
+          );
+        })}
         <span className="text-gray-400 text-xs">paid</span>
         <span className="text-xs text-gray-600">
-        RM {expense.amount}
+          RM {expense.amount}
         </span>
       </div>
     );
@@ -243,7 +241,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                 RM {summary.totalAmount}
               </span>
               <button 
-                onClick={() => onEdit(expense?.expense_id || transactions[0].payer_id)}
+                onClick={() => onEdit(expense?.id || transactions[0].payer_id)}
                 className="p-1 text-gray-400 hover:text-gray-600"
               >
                 <Edit2 className="w-3 h-3" />
@@ -510,10 +508,10 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                         <span className="text-xs text-gray-600">{participant.name}</span>
                       </div>
                       <span className="text-xs text-gray-600 text-right">
-                        RM {participant.paid.toFixed(2)}
+                        RM {participant.paid}
                       </span>
                       <span className="text-xs text-gray-600 text-right">
-                        RM {participant.owed.toFixed(2)}
+                        RM {participant.owed}
                       </span>
                       <span className={`text-xs text-gray-600 text-right ${
                         participant.balance > 0 
@@ -523,7 +521,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                             : 'text-gray-900'
                       }`}>
                         {participant.balance > 0 ? '+' : ''}
-                        RM {participant.balance.toFixed(2)}
+                        RM {participant.balance}
                       </span>
                     </React.Fragment>
                   ))}
@@ -540,9 +538,13 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
 };
 
 const ExpenseList: React.FC<{ currentUserId: string }> = ({ currentUserId }) => {
-  const { groupedTransactions } = useExpense();
+  const { groupTransactions, groupedTransactions } = useExpenseList();
+  
+  const transactions = groupTransactions?.length > 0 ? groupTransactions : groupedTransactions;
+  
+  console.log('Current Transactions:', transactions);
 
-  if (!groupedTransactions || groupedTransactions.length === 0) {
+  if (!transactions || transactions.length === 0) {
     return (
       <div className="mt-4">
         <div className="space-y-4">
@@ -555,7 +557,10 @@ const ExpenseList: React.FC<{ currentUserId: string }> = ({ currentUserId }) => 
                 No Transactions Yet
               </h3>
               <p className="text-xs text-gray-500 max-w-sm">
-                You haven't shared any expenses with this friend yet. Create a new expense to start tracking your shared spending!
+                {groupTransactions?.length >= 0 
+                  ? "This group doesn't have any expenses yet. Create a new expense to start tracking group spending!"
+                  : "You haven't shared any expenses yet. Create a new expense to start tracking your spending!"
+                }
               </p>
             </div>
           </div>
@@ -567,9 +572,9 @@ const ExpenseList: React.FC<{ currentUserId: string }> = ({ currentUserId }) => 
   return (
     <div className="mt-4">
       <div className="space-y-4">
-        {groupedTransactions.map((group: GroupedTransactions, index: number) => (
+        {transactions.map((group: GroupedTransactions, index: number) => (
           <ExpenseItem 
-            key={group.expense?.expense_id || `direct-payment-${index}`}
+            key={group.expense?.id || `payment-${index}`}
             groupedTransactions={group}
             currentUserId={currentUserId}
             onEdit={(id: string) => console.log('Edit:', id)}
