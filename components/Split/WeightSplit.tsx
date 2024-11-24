@@ -45,7 +45,8 @@ const WeightSplit: React.FC = () => {
     };
 
     useEffect(()=>{
-        if(expense.id && expense.split_data){
+        setWeights({});
+        if(expense.split_data){
             expense.split_data.forEach((d)=>{
                 setWeights((prev) => ({
                     ...prev,
@@ -53,7 +54,7 @@ const WeightSplit: React.FC = () => {
                 }));
             })
         }        
-    },[]);
+    },[expense.split_data?.length]);
 
     const handleRemoveFriend = (friendId: string) => {
         // Remove the friend from the split
@@ -87,7 +88,7 @@ const WeightSplit: React.FC = () => {
         });
         console.log(expense)
         
-    }, [weights, totalWeight, totalExpense, expense.splitter.length]);
+    }, [weights, totalWeight, totalExpense, expense.splitter.length, expense.split_data?.length]);
 
     const renderFriends = expense.splitter.map((friend) => {
         const friendInfo = friendList.find(user => user.id === friend.id);

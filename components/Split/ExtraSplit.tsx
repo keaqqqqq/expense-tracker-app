@@ -16,7 +16,7 @@ const ExtraSplit: React.FC = () => {
         }, {} as { [key: string]: number });
 
         setAdjustments(initialAdjustments);
-        if (expense.id && expense.split_data) {
+        if (expense.split_data) {
             expense.split_data.forEach((d) => {
                 setAdjustments((prev) => ({
                     ...prev,
@@ -24,7 +24,8 @@ const ExtraSplit: React.FC = () => {
                 }));
             })
         }
-    }, []);
+    }, [expense.split_data?.length]);
+
     
 
     // Function to remove a friend from the split
@@ -84,14 +85,14 @@ const ExtraSplit: React.FC = () => {
             const adjustedAmount = (adjustments[friend.id] || 0) + splitAmount;
             updateFriendAmount(friend.id, adjustedAmount); // Update the amount in the context
         });
-    }, [adjustments, splitAmount, expense.splitter.length]);
+    }, [adjustments, splitAmount, expense.splitter.length, expense.split_data?.length]);
 
 
     // Render the selected expense.splitter with their adjusted amounts
     const renderFriends = expense.splitter.map((friend) => {
         const friendInfo = friendList.find(user => user.id === friend.id);
         if(friendInfo){
-        <div key={friend.id}>
+            return( <div key={friend.id}>
             <div className="flex flex-row border rounded my-2">
                 <DisplaySplitter
                     key={friend.id}
@@ -108,7 +109,7 @@ const ExtraSplit: React.FC = () => {
                     onChange={(e) => handleAdjustmentChange(friend.id, Number(e.target.value))}
                 />
             </div>
-        </div>
+        </div>)
         }
         return null;
     });

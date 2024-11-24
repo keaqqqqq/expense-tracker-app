@@ -14,15 +14,17 @@ interface ExpenseContextType {
     expense: Expense;
     expenses: (Expense & { id: string })[];
     friendList: Omit<SplitFriend, 'amount'>[];
+    initialFriendList: Omit<SplitFriend, 'amount'>[];
     groupList: Group[];
     loading: boolean;
     error: string | null;
     userData: Omit<SplitFriend, 'amount'> | null;
+    setFriendList: (friendList:Omit<SplitFriend, 'amount'>[])=>void;
     resetExpense: () => void;
     setUserData: (userData: Omit<SplitFriend, 'amount'> | null) => void;
     setExpense: (expense: Omit<Expense, 'id'>) => void;
     setDescription: (description: string) => void;
-    setGroup: (group: string |'') => void;
+    setGroup: (group_id: string |'') => void;
     setPayPreference: (pay_preference: string) => void;
     setSplitPreference: (split_preference: string) => void;
     setAmount: (amount: number) => void;
@@ -56,6 +58,7 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
     const { currentUser } = useAuth(); // Get the currentUser from AuthContext
     const [expenses, setExpenses] = useState<(Expense & { id: string })[]>([]);
     const [friendList, setFriendList] = useState<Omit<SplitFriend, 'amount'>[]>([]);
+    const [initialFriendList, setInitialFriendList] = useState<Omit<SplitFriend, 'amount'>[]>([]);
     const [groupList, setGroupList] = useState<Group[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -581,8 +584,9 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
         setExpense(prev => ({ ...prev, amount }));
     };
     
-    const setGroup = (group: string| '') => {
-        setExpense(prev => ({ ...prev, group_id:group }));
+    const setGroup = (group_id: string| '') => {
+        console.log("setting group to id:", group_id);
+        setExpense(prev => ({ ...prev, group_id }));
     };
 
     const setDate = (date: string) => {
@@ -675,6 +679,12 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
                 });
                 const groups = await getGroups(newUserData.email);
                 setGroupList(groups);
+                setInitialFriendList([...friends, {
+                    id: currentUser.uid,
+                    name: newUserData.name,
+                    email: newUserData.email,
+                    image: newUserData.image
+                }]);
                 setFriendList([...friends, {
                     id: currentUser.uid,
                     name: newUserData.name,
@@ -715,10 +725,12 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
             expense,
             expenses,
             friendList,
+            initialFriendList,
             groupList,
             loading,
             error,
             userData,
+            setFriendList,
             resetExpense,
             setUserData,
             setExpense,
