@@ -234,7 +234,11 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
                     expense_id: response.id,  // Optional: If you want to store the response id
                     group_id: response.group_id || '' , // Optional: If you want to store the group id
                 });
-                await updateUserBalance(trans.payer_id, trans.receiver_id, trans.amount);
+                if(response.group_id){
+                    await updateGroupBalance(trans.payer_id, trans.receiver_id, response.group_id, trans.amount);
+                }else{
+                    await updateUserBalance(trans.payer_id, trans.receiver_id, trans.amount);
+                }
             }
             console.log("Transactions stored successfully!");
         } catch (error) {
@@ -268,7 +272,11 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
                 const amount = transactionData.amount;
 
                 // Update balances for both payer and receiver in the users collection
-                await updateUserBalance(payerId, receiverId, -amount);
+                if(transactionData.group_id){
+                    await updateGroupBalance(payerId, receiverId, transactionData.group_id, -amount);
+                }else{
+                    await updateUserBalance(payerId, receiverId, -amount);
+                }
                 await deleteDoc(docRef);  // Delete the document
                 console.log(`Transaction with ID ${docSnapshot.id} deleted.`);
             }
@@ -372,6 +380,82 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
 
         } catch (error) {
             console.error("Error updating user balances:", error);
+        }
+    };
+
+    const updateGroupBalance = async (payerId: string, receiverId: string, groupId: string, amount: number) => {
+        try {
+            console.log("updating group balance");
+            // Get group document reference
+            const groupRef = doc(db, "Groups", groupId);
+            const groupSnapshot = await getDoc(groupRef);
+    
+            // If group doesn't exist, throw error
+            if (!groupSnapshot.exists()) {
+                throw new Error(`Group ${groupId} does not exist`);
+            }
+    
+            const groupData = groupSnapshot.data();
+            const members:{id:string, balances:{id:string, balance:number}[]}[] = groupData?.members || [];
+    
+            // Find payer and receiver in group members
+            const payerMember = members.find(member => member.id === payerId);
+            const receiverMember = members.find(member => member.id === receiverId);
+    
+            // If either payer or receiver is not in the group, update user balance instead
+            if (!payerMember || !receiverMember) {
+                console.log("Either payer or receiver not in group, updating user balance instead");
+                await updateUserBalance(payerId, receiverId, amount);
+                return;
+            }
+    
+            // Update payer's balance in group
+            if (!payerMember.balances) {
+                payerMember.balances = [];
+            }
+    
+            const payerBalanceIndex = payerMember.balances.findIndex(balance => balance.id === receiverId);
+            if (payerBalanceIndex !== -1) {
+                // If balance exists, update it
+                payerMember.balances[payerBalanceIndex].balance += amount;
+            } else {
+                // If balance doesn't exist, create new entry
+                payerMember.balances.push({
+                    id: receiverId,
+                    balance: amount
+                });
+            }
+    
+            // Update receiver's balance in group
+            if (!receiverMember.balances) {
+                receiverMember.balances = [];
+            }
+    
+            const receiverBalanceIndex = receiverMember.balances.findIndex(balance => balance.id === payerId);
+            if (receiverBalanceIndex !== -1) {
+                // If balance exists, update it
+                receiverMember.balances[receiverBalanceIndex].balance -= amount;
+            } else {
+                // If balance doesn't exist, create new entry
+                receiverMember.balances.push({
+                    id: payerId,
+                    balance: -amount
+                });
+            }
+    
+            // Update the group document with new member balances
+            const updatedMembers = members.map(member => {
+                if (member.id === payerId) return payerMember;
+                if (member.id === receiverId) return receiverMember;
+                return member;
+            });
+    
+            await updateDoc(groupRef, { members: updatedMembers });
+            console.log("Group balances updated successfully");
+    
+        } catch (error) {
+            console.error("Error updating group balances:", error);
+            throw error;
         }
     };
 
