@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Users, User, Check } from 'lucide-react';
 import ExpenseModal from './ManageExpense/ExpenseModal';
+
 interface ExpenseCardProps {
   name: string;
   amount: number;
@@ -9,7 +10,9 @@ interface ExpenseCardProps {
   memberCount?: number;
   avatarUrl?: string;
   groupType?: string;
-  imageUrl?: string;  
+  imageUrl?: string;
+  friendId?: string;
+  groupId?: string; 
 }
 
 const ExpenseCard = ({ 
@@ -19,7 +22,9 @@ const ExpenseCard = ({
   memberCount,
   avatarUrl,
   groupType,
-  imageUrl
+  imageUrl,
+  friendId,
+  groupId
 }: ExpenseCardProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const isPositive = amount >= 0;
@@ -113,8 +118,11 @@ const ExpenseCard = ({
       </div>
 
       <ExpenseModal 
-        isOpen={isModalOpen}
+        isOpen={isModalOpen} 
         closeModal={closeModal}
+        friendId={friendId}
+        groupId={groupId}
+        refreshAll={false}
       />
     </>
   );

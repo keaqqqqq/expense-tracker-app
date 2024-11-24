@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import Button from "./Button";
 import SplitTab from "../Split/SplitTab";
@@ -10,51 +10,94 @@ import { useExpenseList } from '@/context/ExpenseListContext';
 interface ExpenseModalProps {
     isOpen: boolean;
     closeModal: () => void;
+    refreshAll?: boolean;
+    friendId?: string | string[];
+    groupId?: string | string[]; 
 }
 
-const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, closeModal }) => {
-    const {expense, addExpense, deleteExpense, editExpense, resetExpense} = useExpense();
-    const { refreshTransactions, refreshGroupTransactions } = useExpenseList();
+const ExpenseModal: React.FC<ExpenseModalProps> = ({ 
+    isOpen, 
+    closeModal, 
+    refreshAll = false,
+    friendId, 
+    groupId
+}) => {
+    const { expense, addExpense, deleteExpense, editExpense, resetExpense } = useExpense();
+    const { 
+        refreshTransactions, 
+        refreshGroupTransactions, 
+        refreshAllTransactions 
+    } = useExpenseList();
 
-    const handleRefresh = async (friendId?: string, groupId?: string) => {
-        if (groupId) {
-            await refreshGroupTransactions(groupId);
+    const handleRefresh = async () => {
+        const participantIds = Array.from(new Set(
+            expense.splitter.map(s => s.id)
+            .concat(expense.payer.map(p => p.id))
+        )).filter(id => id !== expense.created_by);
+    
+        // Convert friendId and groupId to arrays if they're strings
+        const friendIds = friendId 
+            ? Array.isArray(friendId) ? friendId : [friendId]
+            : [];
+            
+        const groupIds = groupId
+            ? Array.isArray(groupId) ? groupId : [groupId]
+            : [];
+    
+        // Combine all participant IDs
+        const allParticipantIds = Array.from(new Set([
+            ...participantIds,
+            ...friendIds
+        ]));
+    
+        if (refreshAll) {
+            // Refresh all transactions with both participant IDs and group IDs
+            await refreshAllTransactions(allParticipantIds, groupIds);
+        } else {
+            // Handle group refreshes first if present
+            if (groupId) {
+                // Always use single group refresh for better consistency
+                if (Array.isArray(groupId)) {
+                    // If multiple groups, refresh one by one
+                    for (const gId of groupId) {
+                        await refreshGroupTransactions(gId);
+                    }
+                } else {
+                    await refreshGroupTransactions(groupId);
+                }
+            }
+    
+            // Then handle individual refreshes
+            if (friendId) {
+                if (Array.isArray(friendId)) {
+                    await refreshAllTransactions(friendId);
+                } else {
+                    await refreshTransactions(friendId);
+                }
+            } else if (participantIds.length === 1) {
+                await refreshTransactions(participantIds[0]);
+            } else if (participantIds.length > 1) {
+                await refreshAllTransactions(participantIds);
+            }
         }
-        if (friendId) {
-            await refreshTransactions(friendId);
-        }
-    };
-
-    const getFriendId = () => {
-        return expense.splitter.find(s => s.id !== expense.created_by)?.id || 
-               expense.payer.find(p => p.id !== expense.created_by)?.id;
     };
 
     const handleCreate = async () => {
         await addExpense(expense);
-        const friendId = getFriendId();
-        const groupId = expense.group_id;
-        
-        await handleRefresh(friendId, groupId);
+        await handleRefresh();
         closeModal();
     };
      
     const handleEdit = async () => {
         await editExpense(expense);
-        const friendId = getFriendId();
-        const groupId = expense.group_id;
-
-        await handleRefresh(friendId, groupId);
+        await handleRefresh();
         closeModal();
     };
      
     const handleDelete = async () => {
         if(expense.id){
-            const friendId = getFriendId();
-            const groupId = expense.group_id;
-            
             await deleteExpense(expense.id);
-            await handleRefresh(friendId, groupId);
+            await handleRefresh();
         }
         closeModal();
     };

@@ -846,30 +846,90 @@ export const fetchTransactions = async (currentUserId: string, friendId: string)
       orderBy('created_at', 'desc')
     );
 
-    // Fetch both sets of transactions
-    const [currentUserPayerSnapshot, friendPayerSnapshot] = await Promise.all([
+    // Query where current user is both payer and receiver
+    const currentUserSelfQ = query(
+      transactionsRef,
+      where('payer_id', '==', currentUserId),
+      where('receiver_id', '==', currentUserId),
+      where('group_id', '==', ''),
+      orderBy('created_at', 'desc')
+    );
+
+    // Query where friend is both payer and receiver
+    const friendSelfQ = query(
+      transactionsRef,
+      where('payer_id', '==', friendId),
+      where('receiver_id', '==', friendId),
+      where('group_id', '==', ''),
+      orderBy('created_at', 'desc')
+    );
+
+    const [currentUserPayerSnapshot, friendPayerSnapshot, currentUserSelfSnapshot, friendSelfSnapshot] = await Promise.all([
       getDocs(currentUserPayerQ),
-      getDocs(friendPayerQ)
+      getDocs(friendPayerQ),
+      getDocs(currentUserSelfQ),
+      getDocs(friendSelfQ)
     ]);
 
-    // Combine and serialize transactions immediately
-    const transactions = [...currentUserPayerSnapshot.docs, ...friendPayerSnapshot.docs]
+    // Get all transactions first
+    const allTransactions = [
+      ...currentUserPayerSnapshot.docs, 
+      ...friendPayerSnapshot.docs,
+      ...currentUserSelfSnapshot.docs,
+      ...friendSelfSnapshot.docs
+    ]
       .map(doc => ({
         ...serializeFirebaseData(doc.data()) as Transaction,
-        id: doc.id // Include the document ID
-      }))
+        id: doc.id 
+      }));
+
+    // Filter and validate transactions
+    const validTransactions = await Promise.all(
+      allTransactions.map(async (transaction) => {
+        // If it's a direct payment, only include if it's between current user and friend
+        if (transaction.expense_id === 'direct-payment' || !transaction.expense_id) {
+          return (
+            (transaction.payer_id === currentUserId && transaction.receiver_id === friendId) ||
+            (transaction.payer_id === friendId && transaction.receiver_id === currentUserId)
+          ) ? transaction : null;
+        }
+
+        // For regular transactions and self-transactions, validate against the expense
+        try {
+          const expense = await fetchExpenseData(transaction.expense_id);
+          
+          if (!expense) return null;
+
+          const involvedUserIds = [
+            ...(expense.payer?.map(p => p.id) || []),
+            ...(expense.splitter?.map(s => s.id) || [])
+          ];
+
+          // Only include the transaction if both users are involved in the expense
+          const bothUsersInvolved = 
+            involvedUserIds.includes(currentUserId) && 
+            involvedUserIds.includes(friendId);
+
+          return bothUsersInvolved ? transaction : null;
+
+        } catch (error) {
+          console.error(`Error fetching expense ${transaction.expense_id}:`, error);
+          return null;
+        }
+      })
+    );
+
+    // Remove nulls and duplicates
+    const transactions = validTransactions
+      .filter((t): t is Transaction => t !== null)
       .filter((transaction, index, self) =>
-        index === self.findIndex(t =>
-          t.id === transaction.id // Use document ID for uniqueness check
-        )
+        index === self.findIndex(t => t.id === transaction.id)
       );
 
-    // Group transactions with unique keys for direct payments
     const groupedTransactions: { [key: string]: Transaction[] } = {};
     for (const transaction of transactions) {
-      // Create a unique key using both timestamp and document ID for direct payments
       const key = transaction.expense_id === 'direct-payment' || !transaction.expense_id
-        ? `direct-payment-${transaction.id}` // Use document ID instead of timestamp
+        ? `direct-payment-${transaction.id}` 
         : transaction.expense_id;
       
       if (!groupedTransactions[key]) {
@@ -878,12 +938,10 @@ export const fetchTransactions = async (currentUserId: string, friendId: string)
       groupedTransactions[key].push(transaction);
     }
 
-    // Create the final grouped result
     const result: GroupedTransactions[] = await Promise.all(
       Object.entries(groupedTransactions).map(async ([key, transactions]) => {
         let expense: Expense | undefined;
 
-        // Only fetch expense data if it's not a direct payment
         if (!key.startsWith('direct-payment')) {
           expense = await fetchExpenseData(key);
         }
@@ -903,7 +961,7 @@ export const fetchTransactions = async (currentUserId: string, friendId: string)
     return result.sort((a, b) => {
       const aDate = new Date(a.transactions[0].created_at).getTime();
       const bDate = new Date(b.transactions[0].created_at).getTime();
-      return bDate - aDate; // Sort in descending order (most recent first)
+      return bDate - aDate;
     });
 
   } catch (error) {
@@ -1436,5 +1494,219 @@ export const validateGroupInvite = async (token: string) => {
   } catch (error) {
     console.error('Error validating group invite:', error);
     return null;
+  }
+};
+
+// export const getPersonalExpenses = async (userId: string): Promise<GroupedTransactions[]> => {
+//   try {
+//     const expensesRef = collection(db, 'Expenses');
+//     const personalExpensesQuery = query(
+//       expensesRef,
+//       where('created_by', '==', userId),
+//       where('splitter', '==', []), 
+//       orderBy('date', 'desc')
+//     );
+
+//     const snapshot = await getDocs(personalExpensesQuery);
+    
+//     const personalExpenses = snapshot.docs.map(doc => {
+//       const data = doc.data();
+//       return {
+//         expense: {
+//           id: doc.id,
+//           description: data.description,
+//           category: data.category,
+//           amount: data.amount,
+//           date: data.date,
+//           created_by: data.created_by,
+//         },
+//         transactions: [{
+//           id: doc.id,
+//           amount: data.amount,
+//           type: 'expense',
+//           created_at: data.date,
+//           payer_id: data.created_by,
+//           receiver_id: data.created_by,
+//           expense_id: doc.id
+//         }]
+//       };
+//     });
+
+//     return personalExpenses;
+//   } catch (error) {
+//     console.error('Error fetching personal expenses:', error);
+//     return [];
+//   }
+// };
+
+export const fetchAllTransactions = async (
+  currentUserId: string,
+  friendIds?: string[],
+  groupIds?: string[]
+): Promise<GroupedTransactions[]> => {
+  try {
+    const transactionsRef = collection(db, 'Transactions');
+    const queries = [];
+    const handledExpenseIds = new Set<string>();
+    
+    // Handle friend-related transactions
+    if (friendIds?.length) {
+      for (const friendId of friendIds) {
+        // Current user as payer, friend as receiver
+        queries.push(query(
+          transactionsRef,
+          where('payer_id', '==', currentUserId),
+          where('receiver_id', '==', friendId),
+          where('group_id', '==', ''),
+          orderBy('created_at', 'desc')
+        ));
+        
+        // Friend as payer, current user as receiver
+        queries.push(query(
+          transactionsRef,
+          where('payer_id', '==', friendId),
+          where('receiver_id', '==', currentUserId),
+          where('group_id', '==', ''),
+          orderBy('created_at', 'desc')
+        ));
+      }
+    }
+
+    // Add a single query for all self-transactions
+    queries.push(query(
+      transactionsRef,
+      where('payer_id', '==', currentUserId),
+      where('receiver_id', '==', currentUserId),
+      where('group_id', '==', ''),
+      orderBy('created_at', 'desc')
+    ));
+
+    // Handle group transactions
+    if (groupIds?.length) {
+      for (const groupId of groupIds) {
+        queries.push(query(
+          transactionsRef,
+          where('group_id', '==', groupId),
+          orderBy('created_at', 'desc')
+        ));
+      }
+    }
+
+    // If no specific friends or groups, fetch all transactions involving current user
+    if (!friendIds?.length && !groupIds?.length) {
+      queries.push(
+        query(
+          transactionsRef,
+          where('payer_id', '==', currentUserId),
+          orderBy('created_at', 'desc')
+        ),
+        query(
+          transactionsRef,
+          where('receiver_id', '==', currentUserId),
+          orderBy('created_at', 'desc')
+        )
+      );
+    }
+
+    // Execute all queries in parallel
+    const snapshots = await Promise.all(queries.map(q => getDocs(q)));
+    
+    // Combine transactions, tracking expense IDs to avoid duplicates
+    const allTransactions = snapshots
+      .flatMap(snapshot => 
+        snapshot.docs.map(doc => ({
+          ...serializeFirebaseData(doc.data()) as Transaction,
+          id: doc.id
+        }))
+      )
+      .filter(transaction => {
+        // For self-transactions, only include them once per expense
+        if (transaction.payer_id === transaction.receiver_id) {
+          const expenseId = transaction.expense_id || transaction.id;
+          if (handledExpenseIds.has(expenseId)) {
+            return false;
+          }
+          handledExpenseIds.add(expenseId);
+        }
+        return true;
+      })
+      .filter((transaction, index, self) =>
+        index === self.findIndex(t => t.id === transaction.id)
+      );
+
+    // Group transactions
+    const groupedTransactions: { [key: string]: Transaction[] } = {};
+    
+    for (const transaction of allTransactions) {
+      const key = !transaction.expense_id || transaction.expense_id === 'direct-payment'
+        ? `direct-payment-${transaction.id}`
+        : transaction.expense_id;
+      
+      if (!groupedTransactions[key]) {
+        groupedTransactions[key] = [];
+      }
+      groupedTransactions[key].push(transaction);
+    }
+
+    // Create final grouped result with expense data
+    const result: GroupedTransactions[] = await Promise.all(
+      Object.entries(groupedTransactions).map(async ([key, transactions]) => {
+        let expense: Expense | undefined;
+        
+        if (!key.startsWith('direct-payment')) {
+          try {
+            expense = await fetchExpenseData(key);
+            
+            // If this is a self-transaction expense, fetch all related self-transactions
+            if (expense && transactions.some(t => t.payer_id === t.receiver_id)) {
+              const selfTransactionsQ = query(
+                transactionsRef,
+                where('expense_id', '==', key),
+                where('type', '==', 'expense'),
+                where('group_id', '==', ''),
+                orderBy('created_at', 'desc')
+              );
+              
+              const selfTransactionsSnapshot = await getDocs(selfTransactionsQ);
+              const selfTransactions = selfTransactionsSnapshot.docs
+                .map(doc => ({
+                  ...serializeFirebaseData(doc.data()) as Transaction,
+                  id: doc.id
+                }))
+                .filter(t => t.payer_id === t.receiver_id);
+              
+              // Add any missing self-transactions
+              selfTransactions.forEach(t => {
+                if (!transactions.some(existingT => existingT.id === t.id)) {
+                  transactions.push(t);
+                }
+              });
+            }
+          } catch (error) {
+            console.error(`Error fetching expense ${key}:`, error);
+          }
+        }
+
+        return {
+          expense,
+          transactions: transactions.sort((a, b) => {
+            if (a.type === 'settle' && b.type !== 'settle') return -1;
+            if (a.type !== 'settle' && b.type === 'settle') return 1;
+            return 0;
+          })
+        };
+      })
+    );
+
+    // Sort by most recent transaction
+    return result.sort((a, b) => {
+      const aDate = new Date(a.transactions[0].created_at).getTime();
+      const bDate = new Date(b.transactions[0].created_at).getTime();
+      return bDate - aDate;
+    });
+
+  } catch (error) {
+    console.error('Error fetching all transactions:', error);
+    return [];
   }
 };

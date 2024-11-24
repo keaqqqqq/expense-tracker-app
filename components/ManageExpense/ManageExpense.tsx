@@ -1,26 +1,43 @@
 'use client'
 import React, { useState } from 'react';
 import ManageExpensesHeader from './ManageExpensesHeader';
-import Button from './Button';
-import ExpensesList from './ExpensesList';
+import ExpenseList from '../ExpenseList';
 import ExpenseModal from './ExpenseModal';
 import TransactionModal from '../Transaction/TransactionModal';
-import { useTransaction } from '@/context/TransactionContext';
 
+interface ManageExpenseProps {
+    uid: string;
+    friendIds?: string | string[];
+    groupIds?: string | string[]; 
+}
 
-const ManageExpense: React.FC = () => {
-    const buttonClassName = "border rounded text-gray-800 hover:bg-gray-200";
+const ManageExpense: React.FC<ManageExpenseProps> = ({ 
+    uid, 
+    friendIds,
+    groupIds, // Add to destructuring
+    
+}) => {
     const [expIsOpen, setExpIsOpen] = useState<boolean>(false);
     const [transIsOpen, setTransIsOpen] = useState<boolean>(false);
-    const {setTransaction} = useTransaction();
- 
 
     return (
         <div>
-            <ManageExpensesHeader openExpModal={()=>setExpIsOpen(true)} openTransModal={()=>setTransIsOpen(true)} />
-            <ExpensesList setIsOpen={setExpIsOpen}/>
-            <ExpenseModal isOpen={expIsOpen} closeModal={()=>setExpIsOpen(false)} />
-            <TransactionModal isOpen={transIsOpen} closeModal={()=>setTransIsOpen(false)}/>
+            <ManageExpensesHeader 
+                openExpModal={() => setExpIsOpen(true)} 
+                openTransModal={() => setTransIsOpen(true)} 
+            />
+            <ExpenseList currentUserId={uid} showAll={true} />
+            <ExpenseModal 
+                isOpen={expIsOpen} 
+                closeModal={() => setExpIsOpen(false)} 
+                friendId={friendIds}
+                refreshAll={true}
+                groupId={groupIds} // Pass groupIds to modal
+            />
+            <TransactionModal 
+                isOpen={transIsOpen} 
+                closeModal={() => setTransIsOpen(false)}
+            />
         </div>
     );
 };

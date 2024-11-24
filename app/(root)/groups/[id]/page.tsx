@@ -54,24 +54,38 @@ export default async function GroupDetailsPage({ params }: GroupDetailsPageProps
       .map(member => typeof member === 'string' ? member : member.id)
       .filter((id): id is string => id !== undefined);
 
-    const transactionUserIds = initialTransactions
-      .flatMap(group => group.transactions)
-      .flatMap(t => [t.payer_id, t.receiver_id])
-      .filter((id): id is string => id !== undefined);
+      const transactionUserIds = initialTransactions.flatMap(group => {
+        const transactionUsers = group.transactions.flatMap(t => [t.payer_id, t.receiver_id]);
+        const expenseUsers = group.expense ? [
+          ...(group.expense.payer?.map(p => p.id) || []),
+          ...(group.expense.splitter?.map(s => s.id) || [])
+        ] : [];
+        return [...transactionUsers, ...expenseUsers];
+      }).filter((id): id is string => id !== undefined);
 
     const friendIds = friendships
     .filter(rel => rel.type === 'friendship' && rel.status === 'ACCEPTED')
     .map(rel => rel.role === 'requester' ? rel.addressee_id : rel.requester_id) as string[];
+
+    const allUserIds = new Set([
+      uid,
+      ...memberIds, // group members
+      ...transactionUserIds, // users from transactions
+      ...friendIds // accepted friends
+    ]);
   
-    const usersDataArray = await Promise.all([uid, ...friendIds].map(async (userId) => {
-      try {
-        const userData = await fetchUserData(userId);
-        return [userId, serializeFirebaseData(userData)];
-      } catch (error) {
-        console.error(`Error fetching user ${userId}:`, error);
-        return [userId, { id: userId, name: userId }];
-      }
-    }));
+    const usersDataArray = await Promise.all(
+      Array.from(allUserIds).map(async (userId) => {
+        try {
+          const userData = await fetchUserData(userId);
+          return [userId, serializeFirebaseData(userData)];
+        } catch (error) {
+          console.error(`Error fetching user ${userId}:`, error);
+          return [userId, { id: userId, name: userId }];
+        }
+      })
+    );
+
   const usersData = Object.fromEntries(usersDataArray);
   
   const groupFriends = friendships
@@ -120,6 +134,7 @@ export default async function GroupDetailsPage({ params }: GroupDetailsPageProps
                   memberCount={group.members.length}
                   groupType={group.type}
                   imageUrl={group.image}
+                  groupId={params.id}
                 />
                 <Suspense fallback={<div className="text-center">Loading expenses...</div>}>
                   <ExpenseList currentUserId={uid}/>
