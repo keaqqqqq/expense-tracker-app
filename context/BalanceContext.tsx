@@ -10,13 +10,11 @@ import { db } from '../firebase/config';
 import { doc, onSnapshot, collection } from 'firebase/firestore';
 import Toast from '@/components/Toast';
 
-// Basic balance interface for 1:1 balances
 interface Balance {
   balance: number;
   id: string;
 }
 
-// Interface for group member balances
 interface GroupBalance {
   groupId: string;
   userId: string;
@@ -29,7 +27,6 @@ interface GroupBalance {
   memberEmail: string;
 }
 
-// Interface for friend's group balances
 interface FriendGroupBalance {
   groupId: string;
   groupName: string;
@@ -39,12 +36,12 @@ interface FriendGroupBalance {
   memberName: string;
 }
 
-// Context state interface
 interface BalancesContextState {
   balances: Balance[];
   groupBalances: GroupBalance[];
   friendGroupBalances: FriendGroupBalance[];
   isLoading: boolean;
+  totalBalance: number;
   toast: {
     message: string;
     type: 'success' | 'error';
@@ -56,6 +53,7 @@ interface BalancesContextValue extends BalancesContextState {
   refreshBalances: (userId: string, friendId?: string) => Promise<void>;
   handleSettleBalance: (currentUserId: string, targetId: string, type: 'friend' | 'group') => Promise<void>;
   setToast: (message: string, type: 'success' | 'error') => void;
+  calculateTotalBalance: (friendId: string) => number;
 }
 
 interface BalancesProviderProps {
@@ -82,8 +80,22 @@ export function BalancesProvider({
     groupBalances: initialGroupBalances,
     friendGroupBalances: initialFriendGroupBalances,
     isLoading: false,
+    totalBalance: 0,
     toast: null
   });
+
+  const calculateTotalBalance = useCallback((friendId: string) => {
+    const directBalance = state.balances.find(balance => balance.id === friendId)?.balance || 0;
+    
+    const groupBalancesSum = state.friendGroupBalances.reduce((sum, groupBalance) => {
+      if (groupBalance.memberId === friendId) {
+        return sum + (groupBalance.balance || 0);
+      }
+      return sum;
+    }, 0);
+
+    return directBalance + groupBalancesSum;
+  }, [state.balances, state.friendGroupBalances]);
 
   useEffect(() => {
     if (!userId) return;
@@ -211,7 +223,8 @@ export function BalancesProvider({
         updateBalances,
         refreshBalances,
         handleSettleBalance,
-        setToast
+        setToast,
+        calculateTotalBalance
       }}
     >
       {children}

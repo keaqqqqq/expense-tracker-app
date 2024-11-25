@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Users, User, Check } from 'lucide-react';
 import ExpenseModal from './ManageExpense/ExpenseModal';
-
+import { useBalances } from '@/context/BalanceContext';
 interface ExpenseCardProps {
   name: string;
   amount: number;
@@ -17,7 +17,7 @@ interface ExpenseCardProps {
 
 const ExpenseCard = ({ 
   name, 
-  amount, 
+  amount: initialAmount,
   type = 'user',
   memberCount,
   avatarUrl,
@@ -27,13 +27,16 @@ const ExpenseCard = ({
   groupId
 }: ExpenseCardProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const isPositive = amount >= 0;
-  const isSettled = amount === 0;
+  const { calculateTotalBalance, refreshBalances } = useBalances();
+  const displayAmount = type === 'user' && friendId ? calculateTotalBalance(friendId) : initialAmount;
+  const isPositive = displayAmount >= 0;
+  const isSettled = displayAmount === 0;
   
   const displayImage = type === 'user' ? avatarUrl : imageUrl;
   
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
+
   
   return (
     <>
@@ -91,8 +94,8 @@ const ExpenseCard = ({
                   </>
                 ) : (
                   isPositive 
-                    ? `Owes you $${Math.abs(amount).toFixed(2)}`
-                    : `You owe $${Math.abs(amount).toFixed(2)}`
+                ? `Owes you $${Math.abs(displayAmount).toFixed(2)}`
+                : `You owe $${Math.abs(displayAmount).toFixed(2)}`
                 )}
               </div>
             </div>

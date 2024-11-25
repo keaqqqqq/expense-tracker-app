@@ -15,6 +15,7 @@ export interface FriendGroupBalance {
   memberImage: string;
   memberEmail: string;
   balance: number;
+
 }
 export interface FriendBalance {
   friendId: string;
