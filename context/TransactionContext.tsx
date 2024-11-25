@@ -12,7 +12,7 @@ interface TransactionContextType {
     transaction: Transaction | null;
     friendList: Omit<SplitFriend, 'amount'>[];
     groupList: Group[];
-    setTransaction: (transaction: Transaction) => void;
+    setTransaction: (transaction: Transaction| null) => void;
     updateGroupList: (friendId?: string, expenseId?: string) => void;
     createTransaction: (transaction: Omit<Transaction, 'id'>) => void;
     editTransaction: (transaction: Transaction) => void;
@@ -53,9 +53,7 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
 
         await addDoc(collection(db, "Transactions"), newTransaction);
         await updateUserBalance(newTransaction.payer_id, newTransaction.receiver_id, newTransaction.amount);
-
-        // For now, just update the transaction state with a fake ID (or use real logic)
-        setTransaction({ ...newTransaction, id: 'new-id' });
+        setTransaction(null);
     }
 
     const updateUserBalance = async (payerId: string, receiverId: string, amount: number) => {
@@ -194,6 +192,7 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
             console.error('Error updating transaction:', error);
             // Optionally, handle the error (show toast, set error state, etc.)
         }
+        setTransaction(null);
     };
 
     // Return the provider with the context value

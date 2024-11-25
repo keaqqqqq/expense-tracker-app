@@ -57,15 +57,16 @@ const ManualSplit: React.FC = () => {
 
     };
     useEffect(() => {
-        if (expense.id && expense.split_data) {
+        setAmounts({});
+        if (expense.split_data) {
             expense.split_data.forEach((d) => {
                 setAmounts((prev) => ({
                     ...prev,
-                    [d.id]: d.value, // Ensure values are between 0 and 100
+                    [d.id]: d.value, 
                 }));
             })
         }
-    }, []);
+    }, [expense.split_data?.length]);
     // Reset the amount for a specific friend when the "x" button is clicked
     const handleResetAmount = (friendId: string) => {
         setAmounts((prevAmounts) => {
@@ -105,7 +106,7 @@ const ManualSplit: React.FC = () => {
             updateFriendAmount(friend.id, adjustedAmount); // Update the amount in the context
         });
         console.log(expense);
-    }, [amounts, expense.splitter.length]);
+    }, [amounts, expense.splitter.length, expense.split_data?.length]);
 
     // Render expense.splitter list with the entered amounts or calculated ones
     const renderFriends = expense.splitter.map((friend, index) => {

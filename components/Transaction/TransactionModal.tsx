@@ -423,7 +423,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal 
             <div className="bg-gray-100 rounded-b-lg text-xs font-semibold flex justify-end px-2 py-3">
               <Button
                 className="border rounded bg-white mx-1"
-                onClick={closeModal}
+                onClick={()=>{closeModal();resetTransaction()}}
               >
                 Cancel
               </Button>
