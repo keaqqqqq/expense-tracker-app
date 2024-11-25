@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import Button from "./Button";
 import SplitTab from "../Split/SplitTab";
@@ -6,7 +6,7 @@ import CreateExpenseForm from "./CreateExpensesForm";
 import AddSplit from './AddSplit';
 import { useExpense } from '@/context/ExpenseContext';
 import { useExpenseList } from '@/context/ExpenseListContext';
-
+import Toast from '../Toast';
 interface ExpenseModalProps {
     isOpen: boolean;
     closeModal: () => void;
@@ -29,13 +29,22 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
         refreshAllTransactions 
     } = useExpenseList();
 
+    const [toast, setToast] = useState<{
+        show: boolean;
+        message: string;
+        type: 'success' | 'error';
+    }>({
+        show: false,
+        message: '',
+        type: 'success'
+    });
+
     const handleRefresh = async () => {
         const participantIds = Array.from(new Set(
             expense.splitter.map(s => s.id)
             .concat(expense.payer.map(p => p.id))
         )).filter(id => id !== expense.created_by);
     
-        // Convert friendId and groupId to arrays if they're strings
         const friendIds = friendId 
             ? Array.isArray(friendId) ? friendId : [friendId]
             : [];
@@ -44,21 +53,16 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
             ? Array.isArray(groupId) ? groupId : [groupId]
             : [];
     
-        // Combine all participant IDs
         const allParticipantIds = Array.from(new Set([
             ...participantIds,
             ...friendIds
         ]));
     
         if (refreshAll) {
-            // Refresh all transactions with both participant IDs and group IDs
             await refreshAllTransactions(allParticipantIds, groupIds);
         } else {
-            // Handle group refreshes first if present
             if (groupId) {
-                // Always use single group refresh for better consistency
                 if (Array.isArray(groupId)) {
-                    // If multiple groups, refresh one by one
                     for (const gId of groupId) {
                         await refreshGroupTransactions(gId);
                     }
@@ -67,7 +71,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 }
             }
     
-            // Then handle individual refreshes
             if (friendId) {
                 if (Array.isArray(friendId)) {
                     await refreshAllTransactions(friendId);
@@ -83,21 +86,61 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
     };
 
     const handleCreate = async () => {
-        await addExpense(expense);
-        await handleRefresh();
-        closeModal();
+        try {
+            await addExpense(expense);
+            await handleRefresh();
+            setToast({
+                show: true,
+                message: 'Expense created successfully',
+                type: 'success'
+            });
+            closeModal();
+        } catch (error) {
+            setToast({
+                show: true,
+                message: 'Failed to create expense',
+                type: 'error'
+            });
+        }
     };
      
     const handleEdit = async () => {
-        await editExpense(expense);
-        await handleRefresh();
-        closeModal();
+        try {
+            await editExpense(expense);
+            await handleRefresh();
+            setToast({
+                show: true,
+                message: 'Expense updated successfully',
+                type: 'success'
+            });
+            closeModal();
+        } catch (error) {
+            setToast({
+                show: true,
+                message: 'Failed to update expense',
+                type: 'error'
+            });
+        }
     };
      
     const handleDelete = async () => {
         if(expense.id){
-            await deleteExpense(expense.id);
-            await handleRefresh();
+            try {
+                await deleteExpense(expense.id);
+                await handleRefresh();
+                setToast({
+                    show: true,
+                    message: 'Expense deleted successfully',
+                    type: 'success'
+                });
+            } catch (error) {
+                setToast({
+                    show: true,
+                    message: 'Failed to delete expense',
+                    type: 'error'
+                });
+                return;
+            }
         }
         closeModal();
     };
@@ -108,6 +151,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
     };
 
     return (
+        <>
         <Dialog open={isOpen} onClose={handleClose} className="relative z-30">
             <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
             <div className="fixed inset-0 overflow-y-auto">
@@ -141,6 +185,14 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 </div>
             </div>
         </Dialog>
+        {toast.show && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(prev => ({ ...prev, show: false }))}
+                />
+            )}
+        </>
     );
 }
 

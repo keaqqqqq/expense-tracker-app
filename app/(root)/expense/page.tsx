@@ -46,19 +46,15 @@ const ExpensePage = async () => {
             .map(group => group.id)
             .filter((id): id is string => id !== undefined);
 
-        // Fetch all transactions at once
         const allTransactions = await fetchAllTransactions(uid, friendIds, groupIds);
 
-        // Get all unique user IDs from transactions and groups
         const userIds = new Set<string>([uid]); 
         allTransactions.forEach(group => {
-            // Add IDs from transactions
             group.transactions.forEach(t => {
                 userIds.add(t.payer_id);
                 userIds.add(t.receiver_id);
             });
             
-            // Add IDs from expense payers and splitters if they exist
             if (group.expense) {
                 group.expense.payer?.forEach(p => userIds.add(p.id));
                 group.expense.splitter?.forEach(s => userIds.add(s.id));

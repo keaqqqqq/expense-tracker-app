@@ -103,13 +103,11 @@ async function FriendDetails({ params }: Props) {
 
     const userIds = new Set<string>();
     initialTransactions.forEach((group: GroupedTransactions) => {
-      // Add IDs from transactions
       group.transactions.forEach((transaction: Transaction) => {
         userIds.add(transaction.payer_id);
         userIds.add(transaction.receiver_id);
       });
       
-      // Add IDs from expense payers and splitters
       if (group.expense) {
         group.expense.payer?.forEach(payer => {
           userIds.add(payer.id);
@@ -120,7 +118,6 @@ async function FriendDetails({ params }: Props) {
       }
     });
     
-    // Fetch data for all involved users
     const usersDataPromises = Array.from(userIds).map(async (userId) => {
       try {
         const userData = await fetchUserData(userId);

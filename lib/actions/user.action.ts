@@ -798,16 +798,13 @@ export async function getGroupDetails(groupId: string): Promise<Group | null> {
 
 export const fetchExpenseData = async (expenseId: string): Promise<Expense | undefined> => {
   try {
-    // Instead of querying by field, get the document directly by ID
     const expenseDoc = doc(db, 'Expenses', expenseId);
     const expenseSnapshot = await getDoc(expenseDoc);
 
     if (!expenseSnapshot.exists()) return undefined;
 
-    // Serialize the data right when we get it from Firestore
     const rawData = expenseSnapshot.data();
 
-    // Convert Firebase Timestamp to JavaScript Date
     if (rawData.date instanceof Timestamp) {
       rawData.date = rawData.date.toDate();
     }
@@ -828,7 +825,6 @@ export const fetchTransactions = async (currentUserId: string, friendId: string)
   try {
     const transactionsRef = collection(db, 'Transactions');
     
-    // Query where current user is payer and friend is receiver
     const currentUserPayerQ = query(
       transactionsRef,
       where('payer_id', '==', currentUserId),
@@ -837,7 +833,6 @@ export const fetchTransactions = async (currentUserId: string, friendId: string)
       orderBy('created_at', 'desc')
     );
     
-    // Query where friend is payer and current user is receiver
     const friendPayerQ = query(
       transactionsRef,
       where('payer_id', '==', friendId),
@@ -846,7 +841,6 @@ export const fetchTransactions = async (currentUserId: string, friendId: string)
       orderBy('created_at', 'desc')
     );
 
-    // Query where current user is both payer and receiver
     const currentUserSelfQ = query(
       transactionsRef,
       where('payer_id', '==', currentUserId),
@@ -855,7 +849,6 @@ export const fetchTransactions = async (currentUserId: string, friendId: string)
       orderBy('created_at', 'desc')
     );
 
-    // Query where friend is both payer and receiver
     const friendSelfQ = query(
       transactionsRef,
       where('payer_id', '==', friendId),
@@ -871,7 +864,6 @@ export const fetchTransactions = async (currentUserId: string, friendId: string)
       getDocs(friendSelfQ)
     ]);
 
-    // Get all transactions first
     const allTransactions = [
       ...currentUserPayerSnapshot.docs, 
       ...friendPayerSnapshot.docs,
@@ -883,10 +875,8 @@ export const fetchTransactions = async (currentUserId: string, friendId: string)
         id: doc.id 
       }));
 
-    // Filter and validate transactions
     const validTransactions = await Promise.all(
       allTransactions.map(async (transaction) => {
-        // If it's a direct payment, only include if it's between current user and friend
         if (transaction.expense_id === 'direct-payment' || !transaction.expense_id) {
           return (
             (transaction.payer_id === currentUserId && transaction.receiver_id === friendId) ||
@@ -894,7 +884,6 @@ export const fetchTransactions = async (currentUserId: string, friendId: string)
           ) ? transaction : null;
         }
 
-        // For regular transactions and self-transactions, validate against the expense
         try {
           const expense = await fetchExpenseData(transaction.expense_id);
           
@@ -905,7 +894,6 @@ export const fetchTransactions = async (currentUserId: string, friendId: string)
             ...(expense.splitter?.map(s => s.id) || [])
           ];
 
-          // Only include the transaction if both users are involved in the expense
           const bothUsersInvolved = 
             involvedUserIds.includes(currentUserId) && 
             involvedUserIds.includes(friendId);
@@ -919,7 +907,6 @@ export const fetchTransactions = async (currentUserId: string, friendId: string)
       })
     );
 
-    // Remove nulls and duplicates
     const transactions = validTransactions
       .filter((t): t is Transaction => t !== null)
       .filter((transaction, index, self) =>
@@ -957,7 +944,6 @@ export const fetchTransactions = async (currentUserId: string, friendId: string)
       })
     );
 
-    // Sort the final result by the most recent transaction in each group
     return result.sort((a, b) => {
       const aDate = new Date(a.transactions[0].created_at).getTime();
       const bDate = new Date(b.transactions[0].created_at).getTime();
@@ -974,7 +960,6 @@ export const fetchGroupTransactions = async (groupId: string): Promise<GroupedTr
   try {
     const transactionsRef = collection(db, 'Transactions');
     
-    // Single query for all group transactions
     const groupTransactionsQ = query(
       transactionsRef,
       where('group_id', '==', groupId),
@@ -982,7 +967,6 @@ export const fetchGroupTransactions = async (groupId: string): Promise<GroupedTr
     );
 
     const groupTransactionsSnapshot = await getDocs(groupTransactionsQ);
-    // Serialize transactions
     const transactions = groupTransactionsSnapshot.docs
       .map(doc => {
         const data = doc.data();
@@ -999,7 +983,6 @@ export const fetchGroupTransactions = async (groupId: string): Promise<GroupedTr
         )
       );
 
-    // Group transactions
     const groupedTransactions: { [key: string]: Transaction[] } = {};
     for (const transaction of transactions) {
       const key = transaction.expense_id || 'direct-payment';
@@ -1009,7 +992,6 @@ export const fetchGroupTransactions = async (groupId: string): Promise<GroupedTr
       groupedTransactions[key].push(transaction);
     }
 
-    // Create the final grouped result
     const result: GroupedTransactions[] = await Promise.all(
       Object.entries(groupedTransactions).map(async ([key, transactions]) => {
         let expense: Expense | undefined;
@@ -1068,9 +1050,7 @@ export const removeFriend = async (currentUserId: string, friendId: string) => {
 
     const batch = writeBatch(db);
     docs.forEach((doc) => {
-      // First update status to trigger listeners
       batch.update(doc.ref, { status: 'REMOVED' });
-      // Then delete
       batch.delete(doc.ref);
     });
     await batch.commit();
@@ -1202,10 +1182,8 @@ export async function updateUserBalance(userId: string, friendId: string, newBal
     const balanceIndex = balances.findIndex((b: Balance) => b.id === friendId);
     
     if (balanceIndex === -1) {
-      // Add new balance
       balances.push({ id: friendId, balance: newBalance });
     } else {
-      // Update existing balance
       balances[balanceIndex].balance = newBalance;
     }
 
@@ -1238,7 +1216,6 @@ export async function updateGroupBalance(groupId: string, userId: string, newBal
       throw new Error('User not found in group');
     }
 
-    // Update member's balance
     if (!members[memberIndex].balances) {
       members[memberIndex].balances = [];
     }
@@ -1267,13 +1244,11 @@ export async function settleBalance(
 ) {
   try {
     if (type === 'friend') {
-      // Update both users' balances to 0
       await Promise.all([
         updateUserBalance(userId, targetId, 0),
         updateUserBalance(targetId, userId, 0)
       ]);
     } else {
-      // Update group balance to 0
       await updateGroupBalance(targetId, userId, 0);
     }
     return true;
@@ -1299,28 +1274,25 @@ export const updateGroup = async (groupId: string, groupData: Omit<Group, 'id'>,
       groupData.members.map(async (member) => {
         if (!member.email) return member;
 
-        // If it's the creator
         if (member.email === groupData.members[0].email) {
           const creatorDoc = await getDoc(doc(db, 'Users', requesterId));
           if (!creatorDoc.exists()) throw new Error('Creator user not found');
           
           const creatorData = creatorDoc.data();
-          // Find creator's existing balances from current group
           const existingCreator = currentGroup.members.find((m: any) => m.id === requesterId);
           return {
             id: requesterId,
             name: creatorData.name,
             email: member.email,
-            balances: existingCreator?.balances || [] // Preserve creator's balances
+            balances: existingCreator?.balances || [] 
           };
         }
 
-        // If member already exists in the group
         if (currentMembers.has(member.email)) {
           const existingMember = currentGroup.members.find((m: any) => m.email === member.email);
           if (existingMember) return {
             ...existingMember,
-            balances: existingMember.balances || [] // Preserve existing member's balances
+            balances: existingMember.balances || [] 
           };
         }
 
@@ -1344,7 +1316,6 @@ export const updateGroup = async (groupId: string, groupData: Omit<Group, 'id'>,
           const friendshipAcceptedSnapshot = await getDocs(friendshipAcceptedQuery);
 
           if (friendshipAcceptedSnapshot.empty) {
-            // Handle pending friendship case
             const friendshipPendingQuery = query(
               collection(db, 'Friendships'),
               where('requester_id', 'in', [requesterId, userId]),
@@ -1377,20 +1348,18 @@ export const updateGroup = async (groupId: string, groupData: Omit<Group, 'id'>,
               name: userData.name,
               status: 'PENDING_FRIENDSHIP',
               message: 'Friendship request sent',
-              balances: [] // New pending friend starts with empty balances
+              balances: [] 
             };
           }
 
-          // Check if this user was previously in the group to preserve their balances
           const existingMember = currentGroup.members.find((m: any) => m.id === userId);
           return {
             id: userId,
             name: userData.name,
             email: member.email,
-            balances: existingMember?.balances || [] // Preserve balances if they existed before
+            balances: existingMember?.balances || [] 
           };
         } else {
-          // Handle invitation case
           const invitationToken = generateInviteToken();
           const invitationData = {
             requester_id: requesterId,
@@ -1410,7 +1379,7 @@ export const updateGroup = async (groupId: string, groupData: Omit<Group, 'id'>,
             email: member.email,
             invitation_token: invitationToken,
             status: 'PENDING_INVITATION',
-            balances: [] // New invited member starts with empty balances
+            balances: [] 
           };
         }
       })
@@ -1432,7 +1401,7 @@ export const updateGroup = async (groupId: string, groupData: Omit<Group, 'id'>,
       name: groupData.name,
       type: groupData.type,
       image: groupData.image,
-      members: activeMembers, // Now includes preserved balances
+      members: activeMembers, 
       updated_at: serverTimestamp(),
       pending_members: [...pendingFriendships, ...pendingInvitations]
     });

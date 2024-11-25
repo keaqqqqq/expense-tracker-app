@@ -56,19 +56,15 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps & {
     try {
       if (!currentUser) return;
   
-      // Fetch transactions for the friend
       const freshTransactions = await fetchTransactions(currentUser.uid, friendId);
   
-      // Update state with new transactions
       setGroupedTransactions(prevTransactions => {
-        // Remove all transactions involving the refreshed friend
         const existingTransactions = prevTransactions.filter(transaction => 
           !transaction.transactions.some(t => 
             t.payer_id === friendId || t.receiver_id === friendId
           )
         );
   
-        // Add new transactions
         return [...existingTransactions, ...freshTransactions];
       });
     } catch (error) {
@@ -86,12 +82,10 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps & {
       const freshGroupTransactions = await fetchGroupTransactions(groupId);
       
       setGroupTransactions(prevTransactions => {
-        // Remove the old group transactions
         const filteredTransactions = prevTransactions.filter(group => 
           !group.transactions.some(t => t.group_id === groupId)
         );
         
-        // Add the fresh transactions
         return [...filteredTransactions, ...freshGroupTransactions];
       });
     } catch (error) {
@@ -112,22 +106,17 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps & {
         groupIds
       );
 
-      // Update all transactions state
       setAllTransactions(freshAllTransactions);
 
-      // Handle group transactions first if groupIds are provided
       if (groupIds?.length) {
-        // Filter out relevant group transactions
         const relevantGroupTransactions = freshAllTransactions.filter(group =>
           group.transactions.some(t => 
             groupIds.includes(t.group_id || '')
           )
         );
         
-        // Set group transactions directly without merging with previous state
         setGroupTransactions(relevantGroupTransactions);
 
-        // For groupedTransactions, exclude the ones we just put in groupTransactions
         const nonGroupTransactions = freshAllTransactions.filter(group =>
           !group.transactions.some(t => 
             groupIds.includes(t.group_id || '')
@@ -135,7 +124,6 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps & {
         );
         setGroupedTransactions(nonGroupTransactions);
       } else {
-        // If no groupIds, just update groupedTransactions normally
         setGroupedTransactions(freshAllTransactions);
       }
 

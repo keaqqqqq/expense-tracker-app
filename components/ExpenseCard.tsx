@@ -39,7 +39,6 @@ const ExpenseCard = ({
     <>
       <div className="w-full max-w-7xl p-3 bg-white rounded-lg shadow gap-6 ">
         <div className="flex justify-between items-center">
-          {/* Left side - Profile info */}
           <div className="flex items-center gap-4">
             <div className="relative">
               <div className="w-12 h-12 bg-gray-200 rounded-full overflow-hidden">
@@ -99,7 +98,6 @@ const ExpenseCard = ({
             </div>
           </div>
 
-          {/* Right side - Buttons */}
           <div className="flex gap-3">
             <button 
               onClick={openModal}

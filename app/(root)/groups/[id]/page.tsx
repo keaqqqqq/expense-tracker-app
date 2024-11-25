@@ -69,9 +69,9 @@ export default async function GroupDetailsPage({ params }: GroupDetailsPageProps
 
     const allUserIds = new Set([
       uid,
-      ...memberIds, // group members
-      ...transactionUserIds, // users from transactions
-      ...friendIds // accepted friends
+      ...memberIds, 
+      ...transactionUserIds, 
+      ...friendIds 
     ]);
   
     const usersDataArray = await Promise.all(

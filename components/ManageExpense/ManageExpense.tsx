@@ -14,7 +14,7 @@ interface ManageExpenseProps {
 const ManageExpense: React.FC<ManageExpenseProps> = ({ 
     uid, 
     friendIds,
-    groupIds, // Add to destructuring
+    groupIds, 
     
 }) => {
     const [expIsOpen, setExpIsOpen] = useState<boolean>(false);
@@ -32,7 +32,7 @@ const ManageExpense: React.FC<ManageExpenseProps> = ({
                 closeModal={() => setExpIsOpen(false)} 
                 friendId={friendIds}
                 refreshAll={true}
-                groupId={groupIds} // Pass groupIds to modal
+                groupId={groupIds} 
             />
             <TransactionModal 
                 isOpen={transIsOpen} 

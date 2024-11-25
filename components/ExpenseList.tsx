@@ -160,28 +160,21 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
     if (isDirectPayment) return true;
     if (isPersonalExpense) return true;
   
-    // Find all expense transactions (lendings)
     const expenseTransactions = transactions.filter(t => t.type === 'expense');
     
-    // Find all settlement transactions
     const settleTransactions = transactions.filter(t => t.type === 'settle');
   
-    // For each person who borrowed (received) money in the expense
     const borrowers = new Set(expenseTransactions.map(t => t.receiver_id));
     
-    // Check if each borrower has fully settled their debt
     return Array.from(borrowers).every(borrowerId => {
-      // Calculate how much this person borrowed in total
       const borrowedAmount = expenseTransactions
         .filter(t => t.receiver_id === borrowerId)
         .reduce((sum, t) => sum + t.amount, 0);
   
-      // Calculate how much this person has paid back
       const paidAmount = settleTransactions
         .filter(t => t.payer_id === borrowerId)
         .reduce((sum, t) => sum + t.amount, 0);
   
-      // Consider settled if the paid amount matches the borrowed amount
       return Math.abs(paidAmount - borrowedAmount) < 0.01;
     });
   };
@@ -227,9 +220,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
           )}
         </div>
 
-          {/* Main content row */}
           <div className="flex justify-between items-start">
-            {/* Left section with expand button */}
             <div className="flex items-center gap-4">
               <button 
                 onClick={() => setIsExpanded(!isExpanded)}
@@ -253,7 +244,6 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
               )}
             </div>
 
-            {/* Right section with amount and edit */}
             <div className="flex items-center gap-4">
               <span className="font-medium text-sm">
                 RM {summary.totalAmount}
@@ -267,11 +257,9 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
             </div>
           </div>
 
-          {/* Expanded content */}
           {isExpanded && (
             <div className="mt-4 space-y-4">
 
-              {/* Transaction details */}
               <div className="space-y-3">
                 {!isDirectPayment && (
                   <div className="flex flex-col gap-2">
@@ -283,10 +271,8 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                   </div>
                 )}
 
-                {/* Individual Transactions Section */}
                 {!isDirectPayment && (
                   <div className="flex flex-col gap-2">
-                    {/* Lending Section */}
                     <div className="flex flex-col gap-2">
                       {sortedTransactions
                         .filter(t => t.type === 'expense')
@@ -366,7 +352,6 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                         })}
                     </div>
 
-                        {/* Settlements Section */}
                         {sortedTransactions.filter(t => t.type === 'settle').length > 0 && (
                           <div className="flex flex-col gap-2">
                             <div className="flex items-center gap-2 text-xs text-gray-400">
@@ -441,7 +426,6 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                   </div>
                 )}
 
-                  {/* Direct Payment Display */}
                   {isDirectPayment && sortedTransactions.map(transaction => {
                   const payerData = getUserData(transaction.payer_id);
                   const receiverData = getUserData(transaction.receiver_id);
@@ -497,7 +481,6 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                   );
                 })}
 
-              {/* Summary section */}
                 <div className="flex items-center gap-2 text-xs text-gray-400">
                   <span>Split Summary</span>
                   <div className="flex-1 border-b border-dashed border-gray-200">
@@ -599,7 +582,6 @@ const ExpenseList: React.FC<{ currentUserId: string; showAll?: boolean }> = ({ c
     );
   }
 
-  // Render the transactions
   return (
     <div className="mt-4">
       <div className="space-y-4">
