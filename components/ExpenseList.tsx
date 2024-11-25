@@ -1,5 +1,5 @@
 'use client'
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ChevronDown, Utensils, Edit2, DollarSign, User, Receipt } from 'lucide-react';
 import type { GroupedTransactions} from '@/types/ExpenseList';
 import { useExpenseList } from '@/context/ExpenseListContext';
@@ -16,18 +16,19 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
   const { expense, transactions } = groupedTransactions;
   const isDirectPayment = transactions[0]?.expense_id === 'direct-payment';
   const { usersData } = useExpenseList();
-
+  const isPersonalExpense = expense?.splitter.length === 0;
   const getUserData = (userId: string) => {
-    if (isDirectPayment || expense?.splitter || expense?.payer) {
+    if (isDirectPayment || expense?.splitter || expense?.payer ) {
       return usersData[userId];
     }
     return undefined;
   };
-
+  console.log('Expense: ' + JSON.stringify(expense))
   const getDisplayName = (userId: string) => {
     return userId === currentUserId ? 'You' : getUserData(userId)?.name || userId;
   };
 
+  console.log('Expense: ' + expense)
   const calculateSummary = () => {
     if (isDirectPayment) {
       const transaction = transactions[0];
@@ -157,18 +158,26 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
 
   const isSettled = () => {
     if (isDirectPayment) return true;
-    
-    const totalSettlements = transactions
-      .filter(t => t.type === 'settle')
-      .reduce((sum, t) => sum + t.amount, 0);
+    if (isPersonalExpense) return true;
   
-    const totalNegativeBalance = summary.participants
-      .filter(participant => participant.balance < 0)
-      .reduce((sum, participant) => sum + Math.abs(participant.balance), 0);
+    const expenseTransactions = transactions.filter(t => t.type === 'expense');
     
-    return Math.abs(totalSettlements - totalNegativeBalance) < 0.01; 
+    const settleTransactions = transactions.filter(t => t.type === 'settle');
+  
+    const borrowers = new Set(expenseTransactions.map(t => t.receiver_id));
+    
+    return Array.from(borrowers).every(borrowerId => {
+      const borrowedAmount = expenseTransactions
+        .filter(t => t.receiver_id === borrowerId)
+        .reduce((sum, t) => sum + t.amount, 0);
+  
+      const paidAmount = settleTransactions
+        .filter(t => t.payer_id === borrowerId)
+        .reduce((sum, t) => sum + t.amount, 0);
+  
+      return Math.abs(paidAmount - borrowedAmount) < 0.01;
+    });
   };
-
   return (
     <div className="w-full max-w-7xl">
     <div className="text-sm text-gray-500 mb-1 px-3 flex justify-between items-center">
@@ -177,7 +186,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
           ? new Date(expense.date).toLocaleDateString('en-GB')
           : new Date(transactions[0].created_at).toLocaleDateString('en-GB')}
       </span>
-      {!isDirectPayment && (
+      {!isDirectPayment && !isPersonalExpense && (
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${isSettled() ? 'bg-green-400' : 'bg-red-400'}`} />
           <span className="text-xs">
@@ -189,29 +198,29 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
 
     <div className={`bg-white rounded-lg shadow ${
       isDirectPayment 
-        ? 'border-l-4 border-indigo-600' 
+      ? 'border-l-4 border-indigo-600' 
+      : isPersonalExpense
+        ? 'border-l-4 border-yellow-400'
         : isSettled()
           ? 'border-l-4 border-green-400'
           : 'border-l-4 border-red-400'
     }`}>
         <div className="p-3">
-          <div className="flex items-center gap-2 mb-2 text-xs text-gray-500">
-            {isDirectPayment ? (
-              <>
-                <DollarSign className="w-3 h-3" />
-                <span>Direct Payment</span>
-              </>
-            ) : (
-              <>
-                <Receipt className="w-3 h-3" />
-                <span>Expense with Split</span>
-              </>
-            )}
-          </div>
+        <div className="flex items-center gap-2 mb-2 text-xs text-gray-500">
+          {isDirectPayment ? (
+            <>
+              <DollarSign className="w-3 h-3" />
+              <span>Direct Payment</span>
+            </>
+          ) : (
+            <>
+              <Receipt className="w-3 h-3" />
+              <span>{isPersonalExpense ? 'Personal Expense' : 'Expense with Split'}</span>
+            </>
+          )}
+        </div>
 
-          {/* Main content row */}
           <div className="flex justify-between items-start">
-            {/* Left section with expand button */}
             <div className="flex items-center gap-4">
               <button 
                 onClick={() => setIsExpanded(!isExpanded)}
@@ -235,7 +244,6 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
               )}
             </div>
 
-            {/* Right section with amount and edit */}
             <div className="flex items-center gap-4">
               <span className="font-medium text-sm">
                 RM {summary.totalAmount}
@@ -249,11 +257,9 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
             </div>
           </div>
 
-          {/* Expanded content */}
           {isExpanded && (
             <div className="mt-4 space-y-4">
 
-              {/* Transaction details */}
               <div className="space-y-3">
                 {!isDirectPayment && (
                   <div className="flex flex-col gap-2">
@@ -265,10 +271,8 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                   </div>
                 )}
 
-                {/* Individual Transactions Section */}
                 {!isDirectPayment && (
                   <div className="flex flex-col gap-2">
-                    {/* Lending Section */}
                     <div className="flex flex-col gap-2">
                       {sortedTransactions
                         .filter(t => t.type === 'expense')
@@ -340,7 +344,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                                 <span className="text-xs text-gray-600">
                                 RM {isMultipleLent ? 
                                     samePayerTransactions.reduce((sum, t) => sum + t.amount, 0) : 
-                                    transaction.amount}
+                                    transaction.amount.toFixed(2)}
                                 </span>
                               </div>
                             </div>
@@ -348,7 +352,6 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                         })}
                     </div>
 
-                        {/* Settlements Section */}
                         {sortedTransactions.filter(t => t.type === 'settle').length > 0 && (
                           <div className="flex flex-col gap-2">
                             <div className="flex items-center gap-2 text-xs text-gray-400">
@@ -423,7 +426,6 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                   </div>
                 )}
 
-                  {/* Direct Payment Display */}
                   {isDirectPayment && sortedTransactions.map(transaction => {
                   const payerData = getUserData(transaction.payer_id);
                   const receiverData = getUserData(transaction.receiver_id);
@@ -479,7 +481,6 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                   );
                 })}
 
-              {/* Summary section */}
                 <div className="flex items-center gap-2 text-xs text-gray-400">
                   <span>Split Summary</span>
                   <div className="flex-1 border-b border-dashed border-gray-200">
@@ -521,7 +522,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                             : 'text-gray-900'
                       }`}>
                         {participant.balance > 0 ? '+' : ''}
-                        RM {participant.balance}
+                        RM {participant.balance.toFixed(2)}
                       </span>
                     </React.Fragment>
                   ))}
@@ -537,12 +538,22 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
   );
 };
 
-const ExpenseList: React.FC<{ currentUserId: string }> = ({ currentUserId }) => {
+const ExpenseList: React.FC<{ currentUserId: string; showAll?: boolean }> = ({ currentUserId, showAll = false }) => {
   const { groupTransactions, groupedTransactions } = useExpenseList();
   
-  const transactions = groupTransactions?.length > 0 ? groupTransactions : groupedTransactions;
-  
-  console.log('Current Transactions:', transactions);
+  const transactions = useMemo(() => {
+    if (!showAll) {
+      return groupTransactions?.length > 0 ? groupTransactions : groupedTransactions;
+    }
+    
+    return [...(groupedTransactions || []), ...(groupTransactions || [])]
+      .filter(Boolean)
+      .sort((a, b) => {
+        const dateA = new Date(a.expense?.created_at || a.transactions[0]?.created_at).getTime();
+        const dateB = new Date(b.expense?.created_at || b.transactions[0]?.created_at).getTime();
+        return dateB - dateA; 
+      });
+  }, [showAll, groupTransactions, groupedTransactions]);
 
   if (!transactions || transactions.length === 0) {
     return (
@@ -557,9 +568,11 @@ const ExpenseList: React.FC<{ currentUserId: string }> = ({ currentUserId }) => 
                 No Transactions Yet
               </h3>
               <p className="text-xs text-gray-500 max-w-sm">
-                {groupTransactions?.length >= 0 
-                  ? "This group doesn't have any expenses yet. Create a new expense to start tracking group spending!"
-                  : "You haven't shared any expenses yet. Create a new expense to start tracking your spending!"
+                {showAll 
+                  ? "You don't have any expenses yet. Create a new expense to start tracking your spending!"
+                  : groupTransactions?.length >= 0 
+                    ? "This group doesn't have any expenses yet. Create a new expense to start tracking group spending!"
+                    : "You haven't shared any expenses yet. Create a new expense to start tracking your spending!"
                 }
               </p>
             </div>

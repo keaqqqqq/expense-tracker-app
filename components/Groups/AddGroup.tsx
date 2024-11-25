@@ -450,39 +450,38 @@ export default function AddGroup({
                 <label className="block text-xs font-medium">Members</label>
 
                 <div className="space-y-2">
-                  
-                {isEditing ? (
-                  <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-md">
-                    {currentUserImage ? (
-                      <img 
-                        src={currentUserImage}
-                        alt={name || email}
-                        className="w-6 h-6 rounded-full object-cover"
-                      />
-                    ) : (
-                      <UserCircle className="w-6 h-6 text-gray-400" />
-                    )}
-                    <span className="text-xs">
-                      {editData?.members[0].name || editData?.members[0].email}
-                      {editData?.members[0].id === currentUserId && " (You)"}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-md">
-                    {currentUserImage ? (
-                      <img 
-                        src={currentUserImage}
-                        alt={name || email}
-                        className="w-6 h-6 rounded-full object-cover"
-                      />
-                    ) : (
-                      <UserCircle className="w-6 h-6 text-gray-400" />
-                    )}
-                    <span className="text-xs">
-                      {name || email} (You)
-                    </span>
-                  </div>
-                )}
+              {isEditing ? (
+                <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-md">
+                  {formData.members[0]?.image ? (
+                    <img 
+                      src={formData.members[0].image}
+                      alt={formData.members[0].name || formData.members[0].email}
+                      className="w-6 h-6 rounded-full object-cover"
+                    />
+                  ) : (
+                    <UserCircle className="w-6 h-6 text-gray-400" />
+                  )}
+                  <span className="text-xs">
+                    {formData.members[0]?.name || formData.members[0]?.email}
+                    {formData.members[0]?.id === currentUserId && " (You)"}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-md">
+                  {currentUserImage ? (
+                    <img 
+                      src={currentUserImage}
+                      alt={name || email}
+                      className="w-6 h-6 rounded-full object-cover"
+                    />
+                  ) : (
+                    <UserCircle className="w-6 h-6 text-gray-400" />
+                  )}
+                  <span className="text-xs">
+                    {name || email} (You)
+                  </span>
+                </div>
+              )}
 
                   {members.map(member => (
                     <div key={member.id || member.email} className="flex items-center justify-between bg-gray-50 p-2 rounded-md">

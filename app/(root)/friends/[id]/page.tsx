@@ -107,8 +107,17 @@ async function FriendDetails({ params }: Props) {
         userIds.add(transaction.payer_id);
         userIds.add(transaction.receiver_id);
       });
+      
+      if (group.expense) {
+        group.expense.payer?.forEach(payer => {
+          userIds.add(payer.id);
+        });
+        group.expense.splitter?.forEach(splitter => {
+          userIds.add(splitter.id);
+        });
+      }
     });
-
+    
     const usersDataPromises = Array.from(userIds).map(async (userId) => {
       try {
         const userData = await fetchUserData(userId);
@@ -118,9 +127,10 @@ async function FriendDetails({ params }: Props) {
         return [userId, { id: userId, name: userId }];
       }
     });
-
+    
     const usersDataArray = await Promise.all(usersDataPromises);
     const usersData = Object.fromEntries(usersDataArray);
+    
     const balance = initialTransactions.reduce((total: number, group: GroupedTransactions) => {
       return group.transactions.reduce((subTotal: number, transaction: Transaction) => {
         if (transaction.payer_id === params.id) {
@@ -150,6 +160,7 @@ async function FriendDetails({ params }: Props) {
                     amount={balance}
                     type="user"
                     avatarUrl={userData.image || '/default-avatar.jpg'}
+                    friendId={params.id}
                   />
                   <Suspense fallback={<div className="text-center">Loading expenses...</div>}>
                     <ExpenseList currentUserId={uid}/>

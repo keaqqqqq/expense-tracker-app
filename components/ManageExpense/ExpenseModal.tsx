@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, {useState} from 'react';
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import Button from "./Button";
 import SplitTab from "../Split/SplitTab";
@@ -6,55 +6,141 @@ import CreateExpenseForm from "./CreateExpensesForm";
 import AddSplit from './AddSplit';
 import { useExpense } from '@/context/ExpenseContext';
 import { useExpenseList } from '@/context/ExpenseListContext';
-
+import Toast from '../Toast';
 interface ExpenseModalProps {
     isOpen: boolean;
     closeModal: () => void;
+    refreshAll?: boolean;
+    friendId?: string | string[];
+    groupId?: string | string[]; 
 }
 
-const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, closeModal }) => {
-    const {expense, addExpense, deleteExpense, editExpense, resetExpense} = useExpense();
-    const { refreshTransactions, refreshGroupTransactions } = useExpenseList();
+const ExpenseModal: React.FC<ExpenseModalProps> = ({ 
+    isOpen, 
+    closeModal, 
+    refreshAll = false,
+    friendId, 
+    groupId
+}) => {
+    const { expense, addExpense, deleteExpense, editExpense, resetExpense } = useExpense();
+    const { 
+        refreshTransactions, 
+        refreshGroupTransactions, 
+        refreshAllTransactions 
+    } = useExpenseList();
 
-    const handleRefresh = async (friendId?: string, groupId?: string) => {
-        if (groupId) {
-            await refreshGroupTransactions(groupId);
-        }
-        if (friendId) {
-            await refreshTransactions(friendId);
-        }
-    };
+    const [toast, setToast] = useState<{
+        show: boolean;
+        message: string;
+        type: 'success' | 'error';
+    }>({
+        show: false,
+        message: '',
+        type: 'success'
+    });
 
-    const getFriendId = () => {
-        return expense.splitter.find(s => s.id !== expense.created_by)?.id || 
-               expense.payer.find(p => p.id !== expense.created_by)?.id;
+    const handleRefresh = async () => {
+        const participantIds = Array.from(new Set(
+            expense.splitter.map(s => s.id)
+            .concat(expense.payer.map(p => p.id))
+        )).filter(id => id !== expense.created_by);
+    
+        const friendIds = friendId 
+            ? Array.isArray(friendId) ? friendId : [friendId]
+            : [];
+            
+        const groupIds = groupId
+            ? Array.isArray(groupId) ? groupId : [groupId]
+            : [];
+    
+        const allParticipantIds = Array.from(new Set([
+            ...participantIds,
+            ...friendIds
+        ]));
+    
+        if (refreshAll) {
+            await refreshAllTransactions(allParticipantIds, groupIds);
+        } else {
+            if (groupId) {
+                if (Array.isArray(groupId)) {
+                    for (const gId of groupId) {
+                        await refreshGroupTransactions(gId);
+                    }
+                } else {
+                    await refreshGroupTransactions(groupId);
+                }
+            }
+    
+            if (friendId) {
+                if (Array.isArray(friendId)) {
+                    await refreshAllTransactions(friendId);
+                } else {
+                    await refreshTransactions(friendId);
+                }
+            } else if (participantIds.length === 1) {
+                await refreshTransactions(participantIds[0]);
+            } else if (participantIds.length > 1) {
+                await refreshAllTransactions(participantIds);
+            }
+        }
     };
 
     const handleCreate = async () => {
-        await addExpense(expense);
-        const friendId = getFriendId();
-        const groupId = expense.group_id;
-        
-        await handleRefresh(friendId, groupId);
-        closeModal();
+        try {
+            await addExpense(expense);
+            await handleRefresh();
+            setToast({
+                show: true,
+                message: 'Expense created successfully',
+                type: 'success'
+            });
+            closeModal();
+        } catch (error) {
+            setToast({
+                show: true,
+                message: 'Failed to create expense',
+                type: 'error'
+            });
+        }
     };
      
     const handleEdit = async () => {
-        await editExpense(expense);
-        const friendId = getFriendId();
-        const groupId = expense.group_id;
-
-        await handleRefresh(friendId, groupId);
-        closeModal();
+        try {
+            await editExpense(expense);
+            await handleRefresh();
+            setToast({
+                show: true,
+                message: 'Expense updated successfully',
+                type: 'success'
+            });
+            closeModal();
+        } catch (error) {
+            setToast({
+                show: true,
+                message: 'Failed to update expense',
+                type: 'error'
+            });
+        }
     };
      
     const handleDelete = async () => {
         if(expense.id){
-            const friendId = getFriendId();
-            const groupId = expense.group_id;
-            
-            await deleteExpense(expense.id);
-            await handleRefresh(friendId, groupId);
+            try {
+                await deleteExpense(expense.id);
+                await handleRefresh();
+                setToast({
+                    show: true,
+                    message: 'Expense deleted successfully',
+                    type: 'success'
+                });
+            } catch (error) {
+                setToast({
+                    show: true,
+                    message: 'Failed to delete expense',
+                    type: 'error'
+                });
+                return;
+            }
         }
         closeModal();
     };
@@ -65,6 +151,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, closeModal }) => {
     };
 
     return (
+        <>
         <Dialog open={isOpen} onClose={handleClose} className="relative z-30">
             <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
             <div className="fixed inset-0 overflow-y-auto">
@@ -98,6 +185,14 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, closeModal }) => {
                 </div>
             </div>
         </Dialog>
+        {toast.show && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(prev => ({ ...prev, show: false }))}
+                />
+            )}
+        </>
     );
 }
 

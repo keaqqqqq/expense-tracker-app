@@ -137,7 +137,17 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
                 let amountOwed = u.split - u.pay;
                 if (amountOwed !== 0) {
                     return { id: u.id, amountOwed };
-                }
+                }else{
+                       addDoc(collection(db, "Transactions"), {
+                       amount:0,
+                       created_at:response.created_at,
+                       payer_id:u.id,
+                       receiver_id:u.id,
+                       type: 'expense',
+                       expense_id: response.id,  // Optional: If you want to store the response id
+                       group_id: response.group_id || '' , // Optional: If you want to store the group id
+                   });
+               }
                 return null; // Return null when no amount is owed
             })
             .filter((item) => item !== null);  // Remove null values

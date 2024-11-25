@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Users, User, Check } from 'lucide-react';
 import ExpenseModal from './ManageExpense/ExpenseModal';
+
 interface ExpenseCardProps {
   name: string;
   amount: number;
@@ -9,7 +10,9 @@ interface ExpenseCardProps {
   memberCount?: number;
   avatarUrl?: string;
   groupType?: string;
-  imageUrl?: string;  
+  imageUrl?: string;
+  friendId?: string;
+  groupId?: string; 
 }
 
 const ExpenseCard = ({ 
@@ -19,7 +22,9 @@ const ExpenseCard = ({
   memberCount,
   avatarUrl,
   groupType,
-  imageUrl
+  imageUrl,
+  friendId,
+  groupId
 }: ExpenseCardProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const isPositive = amount >= 0;
@@ -34,7 +39,6 @@ const ExpenseCard = ({
     <>
       <div className="w-full max-w-7xl p-3 bg-white rounded-lg shadow gap-6 ">
         <div className="flex justify-between items-center">
-          {/* Left side - Profile info */}
           <div className="flex items-center gap-4">
             <div className="relative">
               <div className="w-12 h-12 bg-gray-200 rounded-full overflow-hidden">
@@ -94,7 +98,6 @@ const ExpenseCard = ({
             </div>
           </div>
 
-          {/* Right side - Buttons */}
           <div className="flex gap-3">
             <button 
               onClick={openModal}
@@ -113,8 +116,11 @@ const ExpenseCard = ({
       </div>
 
       <ExpenseModal 
-        isOpen={isModalOpen}
+        isOpen={isModalOpen} 
         closeModal={closeModal}
+        friendId={friendId}
+        groupId={groupId}
+        refreshAll={false}
       />
     </>
   );
