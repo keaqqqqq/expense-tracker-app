@@ -3,17 +3,20 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { 
   fetchUserBalances, 
   fetchGroupBalances, 
+  fetchFriendGroupBalances,
   settleBalance 
 } from '@/lib/actions/user.action';
-import { db} from '../firebase/config';
-import { doc, onSnapshot, collection, query, where } from 'firebase/firestore';
+import { db } from '../firebase/config';
+import { doc, onSnapshot, collection } from 'firebase/firestore';
 import Toast from '@/components/Toast';
 
+// Basic balance interface for 1:1 balances
 interface Balance {
   balance: number;
   id: string;
 }
 
+// Interface for group member balances
 interface GroupBalance {
   groupId: string;
   userId: string;
@@ -26,9 +29,21 @@ interface GroupBalance {
   memberEmail: string;
 }
 
+// Interface for friend's group balances
+interface FriendGroupBalance {
+  groupId: string;
+  groupName: string;
+  groupImage: string;
+  balance: number;
+  memberId: string;
+  memberName: string;
+}
+
+// Context state interface
 interface BalancesContextState {
   balances: Balance[];
   groupBalances: GroupBalance[];
+  friendGroupBalances: FriendGroupBalance[];
   isLoading: boolean;
   toast: {
     message: string;
@@ -38,7 +53,7 @@ interface BalancesContextState {
 
 interface BalancesContextValue extends BalancesContextState {
   updateBalances: (newBalances: Balance[]) => void;
-  refreshBalances: (userId: string) => Promise<void>;
+  refreshBalances: (userId: string, friendId?: string) => Promise<void>;
   handleSettleBalance: (currentUserId: string, targetId: string, type: 'friend' | 'group') => Promise<void>;
   setToast: (message: string, type: 'success' | 'error') => void;
 }
@@ -48,6 +63,7 @@ interface BalancesProviderProps {
   userId: string;
   initialBalances?: Balance[];
   initialGroupBalances?: GroupBalance[];
+  initialFriendGroupBalances?: FriendGroupBalance[]; 
   groupId?: string;
 }
 
@@ -58,11 +74,13 @@ export function BalancesProvider({
   userId,
   initialBalances = [],
   initialGroupBalances = [],
+  initialFriendGroupBalances = [], 
   groupId
 }: BalancesProviderProps) {
   const [state, setState] = useState<BalancesContextState>({
     balances: initialBalances,
     groupBalances: initialGroupBalances,
+    friendGroupBalances: initialFriendGroupBalances,
     isLoading: false,
     toast: null
   });
@@ -72,12 +90,11 @@ export function BalancesProvider({
   
     const unsubscribeHandlers: (() => void)[] = [];
   
-    // Listen for current user's document changes
+    // Listen for changes in user's balances
     const userRef = doc(db, 'Users', userId);
     const unsubscribeUser = onSnapshot(userRef, async (userDoc) => {
       if (userDoc.exists()) {
         try {
-          // Get all balances when the user's document changes
           const newBalances = await fetchUserBalances(userId);
           setState(prev => ({
             ...prev,
@@ -90,7 +107,7 @@ export function BalancesProvider({
     });
     unsubscribeHandlers.push(unsubscribeUser);
   
-    // Listen for specific group changes if groupId is provided
+    // Listen for changes in group balances if groupId is provided
     if (groupId) {
       const groupRef = doc(db, 'Groups', groupId);
       const unsubscribeGroup = onSnapshot(groupRef, async (groupDoc) => {
@@ -109,7 +126,7 @@ export function BalancesProvider({
       unsubscribeHandlers.push(unsubscribeGroup);
     }
   
-    // Listen for changes in other users' documents that might affect balances
+    // Listen for changes in all users' balances
     const usersRef = collection(db, 'Users');
     const unsubscribeOtherUsers = onSnapshot(usersRef, async () => {
       try {
@@ -124,7 +141,6 @@ export function BalancesProvider({
     });
     unsubscribeHandlers.push(unsubscribeOtherUsers);
   
-    // Cleanup all listeners
     return () => {
       unsubscribeHandlers.forEach(unsubscribe => unsubscribe());
     };
@@ -151,18 +167,20 @@ export function BalancesProvider({
     }));
   }, []);
 
-  const refreshBalances = useCallback(async (userId: string, groupId?: string) => {
+  const refreshBalances = useCallback(async (userId: string, friendId?: string) => {
     setState(prev => ({ ...prev, isLoading: true }));
     try {
-      const [newBalances, newGroupBalances] = await Promise.all([
+      const [newBalances, newGroupBalances, newFriendGroupBalances] = await Promise.all([
         fetchUserBalances(userId),
-        groupId ? fetchGroupBalances(userId, groupId) : Promise.resolve([])
+        groupId ? fetchGroupBalances(userId, groupId) : Promise.resolve([]),
+        friendId ? fetchFriendGroupBalances(userId, friendId) : Promise.resolve([])
       ]);
       
       setState(prev => ({
         ...prev,
         balances: newBalances,
         groupBalances: newGroupBalances,
+        friendGroupBalances: newFriendGroupBalances,
         isLoading: false
       }));
     } catch (error) {
@@ -170,7 +188,7 @@ export function BalancesProvider({
       console.error('Error refreshing balances:', error);
       setState(prev => ({ ...prev, isLoading: false }));
     }
-  }, [setToast]);
+  }, [groupId, setToast]);
 
   const handleSettleBalance = useCallback(async (currentUserId: string, targetId: string, type: 'friend' | 'group') => {
     setState(prev => ({ ...prev, isLoading: true }));

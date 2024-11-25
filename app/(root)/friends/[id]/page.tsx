@@ -12,7 +12,7 @@ import { User} from 'lucide-react';
 import ManageFriend from '@/components/Friends/ManageFriend';
 import { Relationship } from '@/types/Friend';
 import { getFriendships } from '@/lib/actions/user.action';
-import { fetchUserBalances, fetchGroupBalances, settleBalance } from '@/lib/actions/user.action';
+import { fetchUserBalances, fetchFriendGroupBalances } from '@/lib/actions/user.action';
 import { BalancesProvider } from '@/context/BalanceContext';
 import Balances from '@/components/Balances/Balance';
 import ExpenseCard from '@/components/ExpenseCard';
@@ -95,10 +95,12 @@ async function FriendDetails({ params }: Props) {
       rawUserData, 
       initialTransactions,
       userBalances,
+      initialFriendGroupBalances
     ] = await Promise.all([
       fetchUserData(params.id),
       fetchTransactions(uid, params.id),
-      fetchUserBalances(uid)
+      fetchUserBalances(uid),
+      fetchFriendGroupBalances(uid, params.id) 
     ]);
 
     const userIds = new Set<string>();
@@ -151,6 +153,7 @@ async function FriendDetails({ params }: Props) {
           <BalancesProvider 
             userId={uid}
             initialBalances={userBalances}
+            initialFriendGroupBalances={initialFriendGroupBalances}
           >
             <div className="grid md:grid-cols-4 gap-5 xl:gap-0">
               <div className="md:col-span-3">

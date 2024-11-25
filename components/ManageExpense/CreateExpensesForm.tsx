@@ -40,6 +40,7 @@ const CreateExpenseForm: React.FC = () => {
                         <label>Category</label>
                         {/* <FormInput className="ml-0" value={expense.category} onChange={(e) => setCategory(e.target.value)} /> */}
                         <select onChange={(e)=>setCategory(e.target.value)} value={expense.category} className="text-xs border rounded focus:ring-2 focus:ring-indigo-500 focus:outline-none px-2 py-2.5 my-2 mr-2">
+                            <option value="" disabled>Select a category</option>
                             {ExpenseCategories.map((category) => (
                                 <option key={category.value} value={category.value}>
                                     <ExpenseCategoryDisplay value={category.value} />

@@ -26,7 +26,7 @@ const ManageExpense: React.FC<ManageExpenseProps> = ({
                 openExpModal={() => setExpIsOpen(true)} 
                 openTransModal={() => setTransIsOpen(true)} 
             />
-            <ExpenseList currentUserId={uid} showAll={true} />
+            <ExpenseList currentUserId={uid} showAll={true} allExpense={true}/>
             <ExpenseModal 
                 isOpen={expIsOpen} 
                 closeModal={() => setExpIsOpen(false)} 

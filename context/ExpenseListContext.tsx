@@ -10,6 +10,7 @@ interface ExtendedExpenseContextType extends ExpenseContextType {
   refreshGroupTransactions: (groupId: string) => Promise<void>; 
   refreshAllTransactions: (friendIds?: string[], groupIds?: string[]) => Promise<void>;
   usersData: Record<string, UserData>;
+  groupDetails?: Record<string, string>; 
   isGroupLoading: boolean;
   groupTransactions: GroupedTransactions[];
   allTransactions: GroupedTransactions[];
@@ -33,6 +34,7 @@ const ExpenseContext = createContext<ExtendedExpenseContextType>(defaultContextV
 
 export const ExpenseProvider: React.FC<ExpenseProviderProps & { 
   usersData: Record<string, UserData>;
+  groupDetails?: Record<string, string>;
   initialGroupTransactions?: GroupedTransactions[];
   initialAllTransactions?: GroupedTransactions[];
 
@@ -41,7 +43,8 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps & {
   initialTransactions,
   initialGroupTransactions = [],
   initialAllTransactions = [],
-  usersData
+  usersData, 
+  groupDetails
 }) => {
   const [groupedTransactions, setGroupedTransactions] = useState<GroupedTransactions[]>(initialTransactions);
   const [groupTransactions, setGroupTransactions] = useState<GroupedTransactions[]>(initialGroupTransactions);
@@ -145,7 +148,8 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps & {
       refreshTransactions,
       refreshGroupTransactions,
       refreshAllTransactions,
-      usersData
+      usersData,
+      ...(groupDetails && { groupDetails })
     }}>
       {children}
     </ExpenseContext.Provider>
