@@ -8,6 +8,7 @@ import { fetchUserData, getGroups, loadFriends } from '@/lib/actions/user.action
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { Group } from '@/types/Group';
+import { Friend } from '@/types/Friend';
 
 // Define the context state type
 interface ExpenseContextType {
@@ -252,6 +253,8 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
                 }else{
                     await updateUserBalance(trans.payer_id, trans.receiver_id, trans.amount);
                 }
+
+                await checkFriend(trans.payer_id, trans.receiver_id);
             }
             console.log("Transactions stored successfully!");
         } catch (error) {
@@ -260,6 +263,56 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
 
         console.log(transaction, users);  // Final transaction log
         return transaction;
+    };
+
+
+    const checkFriend = async (uid: string, receiverId: string): Promise<void> => {
+        try {
+            // Query for existing friendship in both directions
+            const [requesterSnapshot, addresseeSnapshot] = await Promise.all([
+                getDocs(query(
+                    collection(db, 'Friendships'),
+                    where('requester_id', '==', uid),
+                    where('addressee_id', '==', receiverId)
+                )),
+                getDocs(query(
+                    collection(db, 'Friendships'),
+                    where('requester_id', '==', receiverId),
+                    where('addressee_id', '==', uid)
+                ))
+            ]);
+    
+            // Check if friendship exists
+            const existingFriendship = requesterSnapshot.docs[0] || addresseeSnapshot.docs[0];
+    
+            if (existingFriendship) {
+                // If friendship exists but not accepted, update it
+                const friendshipData = existingFriendship.data();
+                if (friendshipData.status !== 'ACCEPTED') {
+                    await updateDoc(doc(db, 'Friendships', existingFriendship.id), {
+                        status: 'ACCEPTED',
+                        updated_at: serverTimestamp()
+                    });
+                    console.log('Updated existing friendship to ACCEPTED');
+                } else {
+                    console.log('Friendship already ACCEPTED, no action needed');
+                }
+            } else {
+                // Create new friendship with ACCEPTED status
+                await addDoc(collection(db, 'Friendships'), {
+                    requester_id: uid,
+                    addressee_id: receiverId,
+                    status: 'ACCEPTED',
+                    created_at: serverTimestamp(),
+                    updated_at: serverTimestamp()
+                });
+                console.log('Created new ACCEPTED friendship');
+            }
+    
+        } catch (error) {
+            console.error('Error in checkFriend:', error);
+            throw error;
+        }
     };
 
     const deleteTransactionsByExpense = async (expenseId: string) => {
@@ -291,6 +344,7 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
                     await updateUserBalance(payerId, receiverId, -amount);
                 }
                 await deleteDoc(docRef);  // Delete the document
+                // if()
                 console.log(`Transaction with ID ${docSnapshot.id} deleted.`);
             }
 
@@ -505,11 +559,7 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
             return;
         }
 
-        // Check if userData is available
-        if (!userData) {
-            setError('User data is not available');
-            return;
-        }
+       
 
         console.log('new expense: ' + JSON.stringify(newExpense))
 
@@ -517,11 +567,11 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
             const response = await createExpenseAPI({
                 ...newExpense,
                 payer: newExpense.payer?.length > 0 ? newExpense.payer : [{
-                    ...userData,
+                    id:currentUser.uid,
                     amount: newExpense.amount
                 }],
                 splitter: newExpense.splitter?.length > 0 ? newExpense.splitter : [{
-                    ...userData,
+                    id:currentUser.uid,
                     amount: newExpense.amount
                 }],
                 created_by: currentUser.uid, // Add the user UID to the created_by field
