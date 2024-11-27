@@ -1089,7 +1089,6 @@ export async function fetchUserBalances(userId: string): Promise<Balance[]> {
           where('receiver_id', '==', userId)
       );
 
-      // Get all transactions where user is either payer or receiver
       const [payerSnap, receiverSnap] = await Promise.all([
           getDocs(userTransactionsQuery),
           getDocs(receiverTransactionsQuery)
@@ -1100,7 +1099,6 @@ export async function fetchUserBalances(userId: string): Promise<Balance[]> {
           ...receiverSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
       ] as Transaction[];
 
-      // Get unique user IDs the current user has transactions with
       const uniqueUserIds = new Set<string>();
       transactions.forEach(t => {
           if (t.payer_id !== userId) uniqueUserIds.add(t.payer_id);
@@ -1155,7 +1153,7 @@ export async function fetchGroupBalances(
     const balancesPromises = members.map(async (member) => {
       if (!member.id) return null;
 
-      const memberBalances = await calculateBalancesFromTransactions(
+      const memberBalances = await calculateBalancesFromGroupTransactions(
         transactions,
         userId,
         member.id
@@ -1671,11 +1669,9 @@ export async function fetchFriendGroupBalances(
   friendId: string
 ): Promise<FriendGroupBalance[]> {
   try {
-    // Get all groups the user and friend share
     const groupsRef = collection(db, 'Groups');
     const groupsSnap = await getDocs(groupsRef);
     
-    // Type guard for Group
     const isValidGroup = (data: any): data is Group => {
       return data && 
         typeof data.id === 'string' &&
@@ -1691,7 +1687,6 @@ export async function fetchFriendGroupBalances(
                group.members.some(m => m.id === friendId);
       });
 
-    // Get all transactions for these groups
     const transactionsRef = collection(db, 'Transactions');
     const groupBalances = await Promise.all(
       sharedGroups.map(async (group) => {
@@ -1705,7 +1700,7 @@ export async function fetchFriendGroupBalances(
           ...doc.data()
         })) as Transaction[];
 
-        const balances = await calculateBalancesFromTransactions(
+        const balances = await calculateBalancesFromGroupTransactions(
           transactions,
           userId,
           friendId
@@ -1834,15 +1829,13 @@ async function calculateBalancesFromTransactions(
   userId: string,
   targetId: string
 ): Promise<Balance> {
-  // Filter relevant transactions between these users
   const relevantTransactions = transactions.filter(t =>
       (t.payer_id === userId && t.receiver_id === targetId) ||
       (t.payer_id === targetId && t.receiver_id === userId)
   );
 
-  // Calculate unsettled balances from expense transactions
   const unsettledTransactions = relevantTransactions.filter(t => 
-      !t.type || t.type.toLowerCase() === 'expense'
+      !t.type || t.type.toLowerCase() === 'expense' && t.group_id === ''
   );
 
   const unsettledDetails = unsettledTransactions.reduce((acc: BalanceDetails, t) => {
@@ -1855,7 +1848,55 @@ async function calculateBalancesFromTransactions(
       return acc;
   }, { totalAmount: 0, netAmount: 0 });
 
-  // Calculate settled balances from settle transactions
+  const settledTransactions = relevantTransactions.filter(t => 
+      t.type?.toLowerCase() === 'settle'
+  );
+
+  const settledDetails = settledTransactions.reduce((acc: BalanceDetails, t) => {
+      acc.totalAmount += t.amount;
+      if (t.payer_id === userId) {
+          acc.netAmount += t.amount;
+      } else {
+          acc.netAmount -= t.amount;
+      }
+      return acc;
+  }, { totalAmount: 0, netAmount: 0 });
+
+  // Calculate remaining unsettled amount by subtracting settled amount
+  const remainingUnsettled = Math.max(0, unsettledDetails.totalAmount - settledDetails.totalAmount);
+
+  return {
+      id: targetId,
+      settledBalance: settledDetails.totalAmount,
+      unsettledBalance: remainingUnsettled,
+      netBalance: unsettledDetails.netAmount - settledDetails.netAmount
+  };
+}
+
+async function calculateBalancesFromGroupTransactions(
+  transactions: Transaction[],
+  userId: string,
+  targetId: string
+): Promise<Balance> {
+  const relevantTransactions = transactions.filter(t =>
+      (t.payer_id === userId && t.receiver_id === targetId) ||
+      (t.payer_id === targetId && t.receiver_id === userId)
+  );
+
+  const unsettledTransactions = relevantTransactions.filter(t => 
+      !t.type || t.type.toLowerCase() === 'expense' && t.group_id 
+  );
+
+  const unsettledDetails = unsettledTransactions.reduce((acc: BalanceDetails, t) => {
+      acc.totalAmount += t.amount;
+      if (t.payer_id === userId) {
+          acc.netAmount += t.amount;
+      } else {
+          acc.netAmount -= t.amount;
+      }
+      return acc;
+  }, { totalAmount: 0, netAmount: 0 });
+
   const settledTransactions = relevantTransactions.filter(t => 
       t.type?.toLowerCase() === 'settle'
   );

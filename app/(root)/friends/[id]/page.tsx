@@ -26,11 +26,10 @@ interface Props {
 }
 
 const calculateTotalBalance = (
-  userBalances: Balance[],  // Make sure Balance interface has netBalance
-  friendGroupBalances: FriendGroupBalance[],  // Make sure FriendGroupBalance interface has netBalance
+  userBalances: Balance[],  
+  friendGroupBalances: FriendGroupBalance[],  
   friendId: string
 ) => {
-  // Type guard to check if balances have netBalance
   const hasNetBalance = (balance: any): boolean => 
     balance && typeof balance.netBalance === 'number';
 
@@ -39,7 +38,6 @@ const calculateTotalBalance = (
     return 0;
   }
 
-  // Rest of your calculation code...
   const directBalance = userBalances.find(balance => balance.id === friendId)?.netBalance || 0;
 
   const groupBalancesSum = friendGroupBalances.reduce((sum, groupBalance) => {

@@ -162,7 +162,8 @@ export function BalancesProvider({
         groupId ? fetchGroupBalances(userId, groupId) : Promise.resolve([]),
         friendId ? fetchFriendGroupBalances(userId, friendId) : Promise.resolve([])
       ]);
-      
+      console.log('New friend group balances: ' + JSON.stringify(newFriendGroupBalances));
+
       setState(prev => ({
         ...prev,
         balances: newBalances,
@@ -176,6 +177,7 @@ export function BalancesProvider({
       setState(prev => ({ ...prev, isLoading: false }));
     }
   }, [groupId, setToast]);
+
 
   const handleSettleBalance = useCallback(async (currentUserId: string, targetId: string, type: 'friend' | 'group') => {
     setState(prev => ({ ...prev, isLoading: true }));

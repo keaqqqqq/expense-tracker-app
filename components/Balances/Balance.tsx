@@ -76,13 +76,13 @@ export default function Balances({
 
   const canShowFriendBalance = type === 'friend' && friendData && friendBalance;
   const canShowGroupBalance = type === 'group' && groupData && groupId;
-
+  console.log('Balance: ' + friendBalance?.netBalance)
   return (
     <div className="space-y-4 xl:ml-10">
       <h2 className="text-sm mb-4">
         {type === 'friend' ? 'Friend Balance' : 'Group Members Balance'}
       </h2>
-
+      
       {canShowFriendBalance && friendBalance && (
         <>
           {/* Friend's direct balance */}
@@ -96,7 +96,7 @@ export default function Balances({
             type="friend"
             onSettle={() => handleSettleBalance(currentUserId, friendData.id, 'friend')}
           />
-
+          
           {/* Friend's group balances */}
           {friendGroupBalances && friendGroupBalances.length > 0 && (
             <>
