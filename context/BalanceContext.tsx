@@ -9,33 +9,7 @@ import {
 import { db } from '../firebase/config';
 import { doc, onSnapshot, collection } from 'firebase/firestore';
 import Toast from '@/components/Toast';
-
-interface Balance {
-  balance: number;
-  id: string;
-}
-
-interface GroupBalance {
-  groupId: string;
-  userId: string;
-  userName: string;
-  userEmail: string;
-  memberBalance: number;
-  memberId: string;  
-  memberName: string; 
-  memberImage: string;
-  memberEmail: string;
-}
-
-interface FriendGroupBalance {
-  groupId: string;
-  groupName: string;
-  groupImage: string;
-  balance: number;
-  memberId: string;
-  memberName: string;
-}
-
+import { Balance, FriendBalance, GroupBalance, FriendGroupBalance } from '@/types/Balance';
 interface BalancesContextState {
   balances: Balance[];
   groupBalances: GroupBalance[];
@@ -143,6 +117,7 @@ export function BalancesProvider({
     const unsubscribeOtherUsers = onSnapshot(usersRef, async () => {
       try {
         const newBalances = await fetchUserBalances(userId);
+        console.log(JSON.stringify(newBalances))
         setState(prev => ({
           ...prev,
           balances: newBalances
