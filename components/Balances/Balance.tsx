@@ -1,10 +1,10 @@
 'use client'
 import React from 'react';
 import { BalanceCard } from './BalanceCard';
-import { useBalances } from '@/context/BalanceContext';
 import { Group } from '@/types/Group';
 import { Friend } from '@/types/Friend';
-
+import { useBalances } from '@/context/BalanceContext';
+import { GroupBalance } from '@/types/Balance';
 interface BalancesProps {
   type: 'friend' | 'group';
   groupData?: Group;
@@ -38,19 +38,22 @@ export default function Balances({
     }
   }, [type, friendId, groupId, currentUserId, refreshBalances]);
 
-  const friendBalance = friendId ? balances.find(b => b.id === friendId)?.balance || 0 : 0;
+  const friendBalance = friendId ? balances.find(b => b.id === friendId) : null;
 
   const groupMembers = React.useMemo(() => {
     if (!groupData?.members) return [];
   
-    return groupData.members
-      .map(member => {
-        const memberId = typeof member === 'string' ? member : member.id;
-        if (memberId === currentUserId) return null;
+    // Filter and map in one step to ensure non-null values
+    const validMembers = groupData.members.reduce<GroupBalance[]>((acc, member) => {
+      const memberId = typeof member === 'string' ? member : member.id;
+      if (memberId === currentUserId) return acc;
   
-        const memberBalance = groupBalances.find(b => b.memberId === memberId);
-        
-        return memberBalance ? {
+      const memberBalance = groupBalances.find(b => b.memberId === memberId);
+      
+      if (memberBalance && 
+          typeof memberBalance.settledBalance === 'number' && 
+          typeof memberBalance.unsettledBalance === 'number') {
+        acc.push({
           groupId: memberBalance.groupId,
           userId: memberBalance.userId,
           userName: memberBalance.userName,
@@ -59,23 +62,19 @@ export default function Balances({
           memberName: memberBalance.memberName,
           memberImage: memberBalance.memberImage,
           memberEmail: memberBalance.memberEmail,
-          memberBalance: memberBalance.memberBalance
-        } : null;
-      })
-      .filter((member): member is {
-        groupId: string;
-        userId: string;
-        userName: string;
-        userEmail: string;
-        memberId: string;
-        memberName: string;
-        memberImage: string;
-        memberEmail: string;
-        memberBalance: number;
-      } => member !== null);
+          settledBalance: memberBalance.settledBalance,
+          unsettledBalance: memberBalance.unsettledBalance,
+          netBalance: memberBalance.netBalance
+        });
+      }
+      
+      return acc;
+    }, []);
+
+    return validMembers;
   }, [groupData?.members, currentUserId, groupBalances]);
 
-  const canShowFriendBalance = type === 'friend' && friendData;
+  const canShowFriendBalance = type === 'friend' && friendData && friendBalance;
   const canShowGroupBalance = type === 'group' && groupData && groupId;
 
   return (
@@ -84,12 +83,14 @@ export default function Balances({
         {type === 'friend' ? 'Friend Balance' : 'Group Members Balance'}
       </h2>
 
-      {canShowFriendBalance && (
+      {canShowFriendBalance && friendBalance && (
         <>
           {/* Friend's direct balance */}
           <BalanceCard
             title="1:1 w/Friend"
-            balance={friendBalance}
+            settledBalance={friendBalance.settledBalance}
+            unsettledBalance={friendBalance.unsettledBalance}
+            netBalance={friendBalance.netBalance || 0} 
             name={friendData.name}
             image={friendData.image}
             type="friend"
@@ -105,7 +106,9 @@ export default function Balances({
                   <BalanceCard
                     key={`${groupBalance.groupId}-${groupBalance.memberId}`}
                     title={groupBalance.groupName}
-                    balance={groupBalance.balance}
+                    settledBalance={groupBalance.settledBalance}
+                    unsettledBalance={groupBalance.unsettledBalance}
+                    netBalance={groupBalance.netBalance || 0} 
                     name={groupBalance.memberName}
                     image={groupBalance.groupImage}
                     type="group"
@@ -119,13 +122,15 @@ export default function Balances({
       )}
 
       {/* Group members balances */}
-      {canShowGroupBalance && (
+      {canShowGroupBalance && groupMembers.length > 0 && (
         <div className="space-y-3">
           {groupMembers.map((member) => (
             <BalanceCard
               key={member.memberId}
               title=""
-              balance={member.memberBalance}
+              settledBalance={member.settledBalance}
+              unsettledBalance={member.unsettledBalance}
+              netBalance={member.netBalance || 0} // Add netBalan
               name={member.memberName}
               image={member.memberImage}
               type="group"

@@ -1,5 +1,5 @@
 export interface GroupMember {
-    id?: string;
+    id: string;
     name?: string;
     email?: string;
     status?: 'ACTIVE' | 'PENDING_FRIENDSHIP' | 'PENDING_INVITATION' | 'PENDING';

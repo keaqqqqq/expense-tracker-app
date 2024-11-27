@@ -10,7 +10,7 @@ import { GroupMember } from '@/types/Group';
 import { GroupedTransactions } from '@/types/ExpenseList';
 import { Expense } from '@/types/Expense';
 import { Transaction } from '@/types/Transaction';
-import { FriendGroupBalance, Balance } from '@/types/Balance';
+import { FriendGroupBalance, Balance, GroupBalance, BalanceDetails } from '@/types/Balance';
 export const updateUserProfile = async (
   currentUser: User | null,
   name: string,
@@ -1077,105 +1077,132 @@ export const removeFriend = async (currentUserId: string, friendId: string) => {
   }
 };
 
-export async function fetchUserBalances(userId: string) {
+export async function fetchUserBalances(userId: string): Promise<Balance[]> {
   try {
-    const userRef = doc(db, 'Users', userId);
-    const userSnap = await getDoc(userRef);
+      const transactionsRef = collection(db, 'Transactions');
+      const userTransactionsQuery = query(
+          transactionsRef,
+          where('payer_id', '==', userId)
+      );
+      const receiverTransactionsQuery = query(
+          transactionsRef,
+          where('receiver_id', '==', userId)
+      );
 
-    if (!userSnap.exists()) {
-      throw new Error('User not found');
-    }
+      // Get all transactions where user is either payer or receiver
+      const [payerSnap, receiverSnap] = await Promise.all([
+          getDocs(userTransactionsQuery),
+          getDocs(receiverTransactionsQuery)
+      ]);
 
-    const usersRef = collection(db, 'Users');
-    const usersSnap = await getDocs(usersRef);
-    
-    const balances: Balance[] = [];
+      const transactions = [
+          ...payerSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+          ...receiverSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+      ] as Transaction[];
 
-    usersSnap.forEach((doc) => {
-      const userData = doc.data();
-      if (userData.balances && Array.isArray(userData.balances)) {
-        const userBalance = userData.balances.find(
-          (b: Balance) => b.id === userId
-        );
-        
-        if (userBalance) {
-          balances.push({
-            id: doc.id,
-            balance: -userBalance.balance 
-          });
-        }
-      }
-    });
-
-    const currentUserData = userSnap.data();
-    if (currentUserData.balances && Array.isArray(currentUserData.balances)) {
-      currentUserData.balances.forEach((balance: Balance) => {
-        const existingBalanceIndex = balances.findIndex(b => b.id === balance.id);
-        
-        if (existingBalanceIndex === -1) {
-          balances.push(balance);
-        }
+      // Get unique user IDs the current user has transactions with
+      const uniqueUserIds = new Set<string>();
+      transactions.forEach(t => {
+          if (t.payer_id !== userId) uniqueUserIds.add(t.payer_id);
+          if (t.receiver_id !== userId) uniqueUserIds.add(t.receiver_id);
       });
-    }
-    return balances;
+
+      const balances = await Promise.all(
+          Array.from(uniqueUserIds).map(targetId =>
+              calculateBalancesFromTransactions(transactions, userId, targetId)
+          )
+      );
+
+      return balances;
   } catch (error) {
-    console.error('Error fetching user balances:', error);
-    throw error;
+      console.error('Error fetching user balances:', error);
+      throw error;
   }
 }
 
-
-export async function fetchGroupBalances(userId: string, groupId: string) {
+export async function fetchGroupBalances(
+  userId: string,
+  groupId: string
+): Promise<GroupBalance[]> {
   try {
-    const groupRef = doc(db, 'Groups', groupId);
-    const groupDoc = await getDoc(groupRef);
-    
+    const transactionsRef = collection(db, 'Transactions');
+    const groupTransactionsQuery = query(
+      transactionsRef,
+      where('group_id', '==', groupId)
+    );
+
+    const [transactionsSnap, groupDoc] = await Promise.all([
+      getDocs(groupTransactionsQuery),
+      getDoc(doc(db, 'Groups', groupId))
+    ]);
+
     if (!groupDoc.exists()) {
       return [];
     }
 
-    const groupData = groupDoc.data();
-    
-    const currentUserMember = groupData.members.find((member: any) => member.id === userId);
-    
-    if (!currentUserMember || !currentUserMember.balances) {
-      return [];
-    }
+    const transactions = transactionsSnap.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as Transaction[];
 
-    const balances = await Promise.all(currentUserMember.balances.map(async (balance: any) => {
-      const member = groupData.members.find((m: any) => m.id === balance.id);
-      
+    const groupData = {
+      id: groupDoc.id,
+      ...groupDoc.data() as FirestoreGroupData
+    } as Group;
+
+    const members = groupData.members.filter(member => member.id !== userId);
+
+    const balancesPromises = members.map(async (member) => {
+      if (!member.id) return null;
+
+      const memberBalances = await calculateBalancesFromTransactions(
+        transactions,
+        userId,
+        member.id
+      );
+
       try {
-        const memberData = await fetchUserData(balance.id);
-        
-        return {
-          groupId: groupDoc.id,
-          userId: userId,                  
-          userName: currentUserMember.name,  
-          userEmail: currentUserMember.email,
-          memberId: balance.id,            
-          memberName: memberData.name || member?.name || 'Unknown',
-          memberImage: memberData.image || '/default-avatar.jpg',
-          memberEmail: memberData.email || member?.email || '',
-          memberBalance: balance.balance || 0
-        };
-      } catch (error) {
-        console.error(`Error fetching member data for ${balance.id}:`, error);
-        return {
-          groupId: groupDoc.id,
-          userId: userId,
-          userName: currentUserMember.name,
-          userEmail: currentUserMember.email,
-          memberId: balance.id,
-          memberName: member?.name || 'Unknown Member',
-          memberImage: '/default-avatar.jpg',
-          memberEmail: member?.email || '',
-          memberBalance: balance.balance || 0
-        };
-      }
-    }));
+        const memberData = await fetchUserData(member.id);
+        const currentUserMember = groupData.members.find(m => m.id === userId);
 
-    return balances;
+        const groupBalance: GroupBalance = {
+          groupId,
+          userId,
+          userName: currentUserMember?.name || 'Unknown',
+          userEmail: currentUserMember?.email || '',
+          memberId: member.id,
+          memberName: memberData.name || 'Unknown Member',
+          memberImage: memberData.image || '/default-avatar.jpg',
+          memberEmail: memberData.email || '',
+          settledBalance: memberBalances.settledBalance,
+          unsettledBalance: memberBalances.unsettledBalance,
+          netBalance: memberBalances.netBalance
+        };
+
+        return groupBalance;
+      } catch (error) {
+        console.error(`Error fetching member data for ${member.id}:`, error);
+        
+        const fallbackBalance: GroupBalance = {
+          groupId,
+          userId,
+          userName: groupData.members.find(m => m.id === userId)?.name || 'Unknown',
+          userEmail: groupData.members.find(m => m.id === userId)?.email || '',
+          memberId: member.id,
+          memberName: member.name || 'Unknown Member',
+          memberImage: '/default-avatar.jpg',
+          memberEmail: member.email || '',
+          settledBalance: memberBalances.settledBalance,
+          unsettledBalance: memberBalances.unsettledBalance,
+          netBalance: memberBalances.netBalance
+        };
+
+        return fallbackBalance;
+      }
+    });
+
+    const balances = await Promise.all(balancesPromises);
+    return balances.filter((balance): balance is GroupBalance => balance !== null);
   } catch (error) {
     console.error('Error fetching group balances:', error);
     return [];
@@ -1639,64 +1666,76 @@ export const fetchAllTransactions = async (
   }
 };
 
-export async function fetchFriendGroupBalances(userId: string, friendId: string) {
+export async function fetchFriendGroupBalances(
+  userId: string,
+  friendId: string
+): Promise<FriendGroupBalance[]> {
   try {
+    // Get all groups the user and friend share
     const groupsRef = collection(db, 'Groups');
     const groupsSnap = await getDocs(groupsRef);
-    const sharedGroups: FriendGroupBalance[] = [];
+    
+    // Type guard for Group
+    const isValidGroup = (data: any): data is Group => {
+      return data && 
+        typeof data.id === 'string' &&
+        typeof data.name === 'string' &&
+        Array.isArray(data.members);
+    };
+    
+    const sharedGroups = groupsSnap.docs
+      .map(doc => ({ id: doc.id, ...doc.data() as FirestoreGroupData }))
+      .filter((group): group is Group => {
+        if (!isValidGroup(group)) return false;
+        return group.members.some(m => m.id === userId) && 
+               group.members.some(m => m.id === friendId);
+      });
 
-    for (const groupDoc of groupsSnap.docs) {
-      const groupData = groupDoc.data();
-      const members = groupData.members || [];
+    // Get all transactions for these groups
+    const transactionsRef = collection(db, 'Transactions');
+    const groupBalances = await Promise.all(
+      sharedGroups.map(async (group) => {
+        const groupTransactionsQuery = query(
+          transactionsRef,
+          where('group_id', '==', group.id)
+        );
+        const transactionsSnap = await getDocs(groupTransactionsQuery);
+        const transactions = transactionsSnap.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Transaction[];
 
-      const currentUserMember = members.find((member: any) => member.id === userId);
-      const friendMember = members.find((member: any) => member.id === friendId);
+        const balances = await calculateBalancesFromTransactions(
+          transactions,
+          userId,
+          friendId
+        );
 
-      if (currentUserMember && friendMember) {
-        if (currentUserMember.balances && Array.isArray(currentUserMember.balances)) {
-          const balanceWithFriend = currentUserMember.balances.find(
-            (balance: any) => balance.id === friendId
-          );
+        const friendMember = group.members.find(m => m.id === friendId);
+        const currentUser = group.members.find(m => m.id === userId);
 
-          if (balanceWithFriend) {
-            try {
-              const friendData = await fetchUserData(friendId);
+        const friendGroupBalance: FriendGroupBalance = {
+          groupId: group.id,
+          groupName: group.name,
+          groupImage: group.image || '/default-group.jpg',
+          userId,
+          userName: currentUser?.name || 'Unknown',
+          userEmail: currentUser?.email || '',
+          memberId: friendId,
+          memberName: friendMember?.name || 'Unknown Member',
+          memberImage: friendMember?.image || '/default-avatar.jpg',
+          memberEmail: friendMember?.email || '',
+          balance: balances.unsettledBalance - balances.settledBalance,
+          settledBalance: balances.settledBalance,
+          unsettledBalance: balances.unsettledBalance,
+          netBalance: balances.netBalance
+        };
 
-              sharedGroups.push({
-                groupId: groupDoc.id,
-                groupName: groupData.name || 'Unknown Group',
-                groupImage: groupData.image || '/default-group.jpg',
-                userId: userId,
-                userName: currentUserMember.name,
-                userEmail: currentUserMember.email,
-                memberId: friendId,
-                memberName: friendData.name || friendMember.name || 'Unknown',
-                memberImage: friendData.image || '/default-avatar.jpg',
-                memberEmail: friendData.email || friendMember.email || '',
-                balance: balanceWithFriend.balance || 0
-              });
-            } catch (error) {
-              console.error(`Error fetching friend data for ${friendId}:`, error);
-              sharedGroups.push({
-                groupId: groupDoc.id,
-                groupName: groupData.name || 'Unknown Group',
-                groupImage: groupData.image || '/default-group.jpg',
-                userId: userId,
-                userName: currentUserMember.name,
-                userEmail: currentUserMember.email,
-                memberId: friendId,
-                memberName: friendMember.name || 'Unknown',
-                memberImage: '/default-avatar.jpg',
-                memberEmail: friendMember.email || '',
-                balance: balanceWithFriend.balance || 0
-              });
-            }
-          }
-        }
-      }
-    }
+        return friendGroupBalance;
+      })
+    );
 
-    return sharedGroups;
+    return groupBalances;
   } catch (error) {
     console.error('Error fetching friend group balances:', error);
     return [];
@@ -1705,66 +1744,139 @@ export async function fetchFriendGroupBalances(userId: string, friendId: string)
 
 export async function fetchAllFriendBalances(userId: string) {
   try {
-    const relationships = await getFriendships(userId);
-    const acceptedFriends = relationships
-      .filter((rel: Relationship) => rel.status === 'ACCEPTED')
-      .map((rel: Relationship) => {
-        const friendId = rel.requester_id === userId ? rel.addressee_id : rel.requester_id;
-        if (!friendId) return null;
-        return friendId;
-      })
-      .filter((id): id is string => id !== null); 
+      // Get all user's transactions
+      const transactionsRef = collection(db, 'Transactions');
+      const [payerSnap, receiverSnap] = await Promise.all([
+          getDocs(query(transactionsRef, where('payer_id', '==', userId))),
+          getDocs(query(transactionsRef, where('receiver_id', '==', userId)))
+      ]);
 
-    if (acceptedFriends.length === 0) {
-      return [];
-    }
+      const allTransactions = [
+          ...payerSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+          ...receiverSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+      ] as Transaction[];
 
-    const allBalances = await Promise.all([
-      fetchUserBalances(userId),
-      ...acceptedFriends.map(friendId => 
-        fetchFriendGroupBalances(userId, friendId)
-      )
-    ]);
-
-    const [directBalances, ...groupBalances] = allBalances;
-    
-    const combinedBalances = await Promise.all(
-      acceptedFriends.map(async (friendId, index) => {
-        try {
-          const friendData = await fetchUserData(friendId);
-          const directBalance = directBalances.find(b => b.id === friendId)?.balance || 0;
-          const groupBalance = groupBalances[index].reduce(
-            (total, group) => total + group.balance, 
-            0
+      // Get user's friends
+      const relationships = await getFriendships(userId);
+      const friendIds = relationships
+          .filter((rel: Relationship) => rel.status === 'ACCEPTED')
+          .map((rel: Relationship) => 
+              rel.requester_id === userId ? rel.addressee_id : rel.requester_id
           );
 
-          return {
-            friendId,
-            name: friendData?.name || 'Unknown',
-            image: friendData?.image,
-            directBalance,
-            groupBalance,
-            totalBalance: directBalance + groupBalance,
-            groups: groupBalances[index]
-          };
-        } catch (error) {
-          console.error(`Error processing friend ${friendId}:`, error);
-          return {
-            friendId,
-            name: 'Unknown User',
-            image: '/default-avatar.jpg',
-            directBalance: 0,
-            groupBalance: 0,
-            totalBalance: 0,
-            groups: []
-          };
-        }
-      })
-    );
+      if (friendIds.length === 0) {
+          return [];
+      }
 
-    return combinedBalances.filter(balance => balance !== null);
+      const friendBalances = await Promise.all(
+          friendIds.map(async (friendId) => {
+              try {
+                  if(!friendId){
+                    return null;
+                  }
+                  const friendData = await fetchUserData(friendId);
+
+                  // Calculate direct (non-group) balances
+                  const directBalances = await calculateBalancesFromTransactions(
+                      allTransactions.filter(t => !t.group_id),
+                      userId,
+                      friendId
+                  );
+
+                  // Calculate group balances
+                  const groupBalances = await calculateBalancesFromTransactions(
+                      allTransactions.filter(t => t.group_id),
+                      userId,
+                      friendId
+                  );
+
+                  return {
+                      friendId,
+                      name: friendData.name,
+                      image: friendData.image,
+                      directBalance: {
+                          settled: directBalances.settledBalance,
+                          unsettled: directBalances.unsettledBalance,
+                          total: directBalances.unsettledBalance - directBalances.settledBalance
+                      },
+                      groupBalance: {
+                          settled: groupBalances.settledBalance,
+                          unsettled: groupBalances.unsettledBalance,
+                          total: groupBalances.unsettledBalance - groupBalances.settledBalance
+                      },
+                      totalBalance: 
+                          (directBalances.unsettledBalance - directBalances.settledBalance) +
+                          (groupBalances.unsettledBalance - groupBalances.settledBalance)
+                  };
+              } catch (error) {
+                  console.error(`Error processing friend ${friendId}:`, error);
+                  return {
+                      friendId,
+                      name: 'Unknown User',
+                      image: '/default-avatar.jpg',
+                      directBalance: { settled: 0, unsettled: 0, total: 0 },
+                      groupBalance: { settled: 0, unsettled: 0, total: 0 },
+                      totalBalance: 0
+                  };
+              }
+          })
+      );
+
+      return friendBalances.filter(balance => balance !== null);
   } catch (error) {
-    console.error('Error fetching all friend balances:', error);
-    return [];
+      console.error('Error fetching all friend balances:', error);
+      return [];
   }
+}
+
+async function calculateBalancesFromTransactions(
+  transactions: Transaction[],
+  userId: string,
+  targetId: string
+): Promise<Balance> {
+  // Filter relevant transactions between these users
+  const relevantTransactions = transactions.filter(t =>
+      (t.payer_id === userId && t.receiver_id === targetId) ||
+      (t.payer_id === targetId && t.receiver_id === userId)
+  );
+
+  // Calculate unsettled balances from expense transactions
+  const unsettledTransactions = relevantTransactions.filter(t => 
+      !t.type || t.type.toLowerCase() === 'expense'
+  );
+
+  const unsettledDetails = unsettledTransactions.reduce((acc: BalanceDetails, t) => {
+      acc.totalAmount += t.amount;
+      if (t.payer_id === userId) {
+          acc.netAmount += t.amount;
+      } else {
+          acc.netAmount -= t.amount;
+      }
+      return acc;
+  }, { totalAmount: 0, netAmount: 0 });
+
+  // Calculate settled balances from settle transactions
+  const settledTransactions = relevantTransactions.filter(t => 
+      t.type?.toLowerCase() === 'settle'
+  );
+
+  const settledDetails = settledTransactions.reduce((acc: BalanceDetails, t) => {
+      acc.totalAmount += t.amount;
+      if (t.payer_id === userId) {
+          acc.netAmount += t.amount;
+      } else {
+          acc.netAmount -= t.amount;
+      }
+      return acc;
+  }, { totalAmount: 0, netAmount: 0 });
+
+  // Calculate remaining unsettled amount by subtracting settled amount
+  const remainingUnsettled = Math.max(0, unsettledDetails.totalAmount - settledDetails.totalAmount);
+
+  return {
+      id: targetId,
+      settledBalance: settledDetails.totalAmount,
+      unsettledBalance: remainingUnsettled,
+      netBalance: unsettledDetails.netAmount - settledDetails.netAmount
+  };
 }
