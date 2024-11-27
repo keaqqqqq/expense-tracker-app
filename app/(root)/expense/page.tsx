@@ -45,6 +45,13 @@ const ExpensePage = async () => {
             .filter(group => group.members.some(member => member.id === uid))
             .map(group => group.id)
             .filter((id): id is string => id !== undefined);
+        
+        const groupDetails = groups.reduce((acc, group) => {
+            if (group.id) {
+                acc[group.id] = group.name;
+            }
+            return acc;
+        }, {} as Record<string, string>);
 
         const allTransactions = await fetchAllTransactions(uid, friendIds, groupIds);
 
@@ -85,6 +92,7 @@ const ExpensePage = async () => {
             <ExpenseProvider 
                 initialTransactions={allTransactions}
                 usersData={usersData}
+                groupDetails={groupDetails} 
             >
                 <ManageExpense 
                     uid={uid} 

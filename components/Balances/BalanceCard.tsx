@@ -17,17 +17,33 @@ export function BalanceCard({ title, balance, image, name, type, onSettle }: Bal
   
   const formattedAmount = Math.abs(balance).toFixed(2);
   const isPositive = balance > 0;
-
+  const friendType = type == 'friend';
+  const groupType = type == 'group';
+  const isTitle = title.length !== 0;
   return (
     <div className="bg-white rounded-lg shadow p-4">
       <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1">
           <Avatar className="h-8 w-8">
             <AvatarImage src={image || '/default-avatar.jpg'} alt={name} />
             <AvatarFallback>{name[0]}</AvatarFallback>
           </Avatar>
           <div>
-            <h3 className="text-xs">{title} {name}</h3>
+            {
+              friendType && (
+                <h3 className="text-xs">1:1 w/ <span className='font-medium text-sm'>{name}</span></h3>
+              )
+            }
+            {
+              groupType && isTitle &&(
+                <h3 className="text-xs">In <span className='font-medium text-sm'>{title}</span></h3>
+              )
+            }
+            {
+              groupType && !isTitle && (
+                <h3 className="font-medium text-sm">{name}</h3>
+              )
+            }
           </div>
         </div>
       </div>

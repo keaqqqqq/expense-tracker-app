@@ -25,4 +25,5 @@ export interface ExpenseContextType {
 export interface ExpenseProviderProps {
   children: React.ReactNode;
   initialTransactions: GroupedTransactions[];
+  groupDetails?: Record<string, string>; 
 }

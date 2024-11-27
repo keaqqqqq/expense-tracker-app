@@ -14,12 +14,29 @@ interface BalancesProps {
   groupId?: string;
 }
 
-export default function Balances({ type, friendData, groupData, currentUserId, friendId, groupId }: BalancesProps) {
+export default function Balances({ 
+  type, 
+  friendData, 
+  groupData, 
+  currentUserId, 
+  friendId, 
+  groupId 
+}: BalancesProps) {
   const {
     balances,
     groupBalances,
+    friendGroupBalances,
     handleSettleBalance,
+    refreshBalances,
   } = useBalances();
+
+  React.useEffect(() => {
+    if (type === 'friend' && friendId) {
+      refreshBalances(currentUserId, friendId);
+    } else if (type === 'group' && groupId) {
+      refreshBalances(currentUserId);
+    }
+  }, [type, friendId, groupId, currentUserId, refreshBalances]);
 
   const friendBalance = friendId ? balances.find(b => b.id === friendId)?.balance || 0 : 0;
 
@@ -69,6 +86,7 @@ export default function Balances({ type, friendData, groupData, currentUserId, f
 
       {canShowFriendBalance && (
         <>
+          {/* Friend's direct balance */}
           <BalanceCard
             title="1:1 w/Friend"
             balance={friendBalance}
@@ -78,28 +96,35 @@ export default function Balances({ type, friendData, groupData, currentUserId, f
             onSettle={() => handleSettleBalance(currentUserId, friendData.id, 'friend')}
           />
 
-          {/* <h3 className="text-lg font-medium mb-3 mt-4">In Groups</h3>
-          <div className="space-y-3">
-            {groupBalances && groupBalances.map((group) => (
-              <BalanceCard
-                key={group.groupId}
-                title={group.name}
-                balance={group.balance}
-                name={group.name}
-                image={group.image}
-                type="group"
-                onSettle={() => handleSettleBalance(currentUserId, group.groupId, 'group')}
-              />
-            ))}
-          </div> */}
+          {/* Friend's group balances */}
+          {friendGroupBalances && friendGroupBalances.length > 0 && (
+            <>
+              <h3 className="text-sm mb-3 mt-4">Shared Group Balances</h3>
+              <div className="space-y-3">
+                {friendGroupBalances.map((groupBalance) => (
+                  <BalanceCard
+                    key={`${groupBalance.groupId}-${groupBalance.memberId}`}
+                    title={groupBalance.groupName}
+                    balance={groupBalance.balance}
+                    name={groupBalance.memberName}
+                    image={groupBalance.groupImage}
+                    type="group"
+                    onSettle={() => handleSettleBalance(currentUserId, groupBalance.memberId, 'group')}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </>
       )}
+
+      {/* Group members balances */}
       {canShowGroupBalance && (
         <div className="space-y-3">
           {groupMembers.map((member) => (
             <BalanceCard
               key={member.memberId}
-              title={``}
+              title=""
               balance={member.memberBalance}
               name={member.memberName}
               image={member.memberImage}

@@ -1,34 +1,37 @@
 'use client'
-import React, { useState, useMemo } from 'react';
-import { ChevronDown, Utensils, Edit2, DollarSign, User, Receipt } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { ChevronDown, Utensils, Edit2, DollarSign, User, Receipt, Users } from 'lucide-react';
 import type { GroupedTransactions} from '@/types/ExpenseList';
 import { useExpenseList } from '@/context/ExpenseListContext';
 import { Expense } from '@/types/Expense';
 import { Transaction } from '@/types/Transaction';
+import ExpenseCategoryDisplay
+ from './ExpenseCategoryDisplay';
 interface ExpenseItemProps {
   groupedTransactions: GroupedTransactions;
   onEdit: (id: string) => void;
   currentUserId: string;
+  allExpense?: boolean;
+  groupName?: string;
 }
 
-const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, currentUserId }) => {
+const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, currentUserId, allExpense, groupName }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const { expense, transactions } = groupedTransactions;
   const isDirectPayment = transactions[0]?.expense_id === 'direct-payment';
   const { usersData } = useExpenseList();
-  const isPersonalExpense = expense?.splitter.length === 0;
+  const isPersonalExpense = expense?.payer[0].id == expense?.splitter[0].id && expense?.amount == expense?.splitter[0].amount && expense?.payer.length==1
+  
   const getUserData = (userId: string) => {
     if (isDirectPayment || expense?.splitter || expense?.payer ) {
       return usersData[userId];
     }
     return undefined;
   };
-  console.log('Expense: ' + JSON.stringify(expense))
   const getDisplayName = (userId: string) => {
     return userId === currentUserId ? 'You' : getUserData(userId)?.name || userId;
   };
 
-  console.log('Expense: ' + expense)
   const calculateSummary = () => {
     if (isDirectPayment) {
       const transaction = transactions[0];
@@ -178,6 +181,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
       return Math.abs(paidAmount - borrowedAmount) < 0.01;
     });
   };
+
   return (
     <div className="w-full max-w-7xl">
     <div className="text-sm text-gray-500 mb-1 px-3 flex justify-between items-center">
@@ -226,19 +230,18 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="flex items-center gap-2 focus:outline-none"
               >
-                <ChevronDown 
-                  className={`w-4 h-4 text-gray-400 transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                />
                 <span className="text-gray-900 font-medium text-sm">
                   {isDirectPayment ? 'Transfer' : expense?.description}
                 </span>
+                <ChevronDown 
+                  className={`w-4 h-4 text-gray-400 transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                />
               </button>
 
-              {!isDirectPayment && (
-                <div className="flex items-center gap-2 text-gray-500 text-xs">
+              {!isDirectPayment && expense?.category && (
+                <div className="flex items-center gap-2 text-gray-500 text-sm">
                   <div className="flex items-center gap-1 px-2 py-0.5 bg-gray-50 rounded-md">
-                    <Utensils className="w-3 h-3" />
-                    <span>{expense?.category}</span>
+                    <ExpenseCategoryDisplay value={expense.category} />
                   </div>
                 </div>
               )}
@@ -256,6 +259,13 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
               </button>
             </div>
           </div>
+
+          {allExpense && expense?.group_id && (
+            <div className="flex items-center gap-1 text-xs text-gray-500 mt-3">  
+              <Users className="w-3 h-3" />
+              <span>{groupName}</span>  
+            </div>
+          )}
 
           {isExpanded && (
             <div className="mt-4 space-y-4">
@@ -538,8 +548,8 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
   );
 };
 
-const ExpenseList: React.FC<{ currentUserId: string; showAll?: boolean }> = ({ currentUserId, showAll = false }) => {
-  const { groupTransactions, groupedTransactions } = useExpenseList();
+const ExpenseList: React.FC<{ currentUserId: string; showAll?: boolean; allExpense?: boolean; }> = ({ currentUserId, showAll = false, allExpense= false }) => {
+  const { groupTransactions, groupedTransactions, groupDetails } = useExpenseList();
   
   const transactions = useMemo(() => {
     if (!showAll) {
@@ -591,6 +601,8 @@ const ExpenseList: React.FC<{ currentUserId: string; showAll?: boolean }> = ({ c
             groupedTransactions={group}
             currentUserId={currentUserId}
             onEdit={(id: string) => console.log('Edit:', id)}
+            allExpense={allExpense}
+            groupName={group.expense?.group_id && groupDetails ? groupDetails[group.expense.group_id] : undefined}
           />
         ))}
       </div>

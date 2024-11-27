@@ -309,6 +309,15 @@ const Sidebar: React.FC<SideBarProps> = ({ currentUser, initialFriends = [], ini
                             </h2>
                         </Link>
                         <ul>
+                        <li>
+                            <Link
+                                    href="/"
+                                    className={`block py-2 px-4 font-semibold text-gray-800 ${pathname === '/' ? 'bg-gray-100 text-indigo-600' : ''}`}
+                                    onClick={() => isMobile && setIsOpen(false)}
+                                >
+                                    Home
+                                </Link>
+                            </li>
                             <li>
                                 <Link
                                     href="/expense"

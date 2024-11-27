@@ -12,16 +12,51 @@ import { User} from 'lucide-react';
 import ManageFriend from '@/components/Friends/ManageFriend';
 import { Relationship } from '@/types/Friend';
 import { getFriendships } from '@/lib/actions/user.action';
-import { fetchUserBalances, fetchGroupBalances, settleBalance } from '@/lib/actions/user.action';
+import { fetchUserBalances, fetchFriendGroupBalances } from '@/lib/actions/user.action';
 import { BalancesProvider } from '@/context/BalanceContext';
 import Balances from '@/components/Balances/Balance';
 import ExpenseCard from '@/components/ExpenseCard';
 import { Transaction } from '@/types/Transaction';
+import { Balance } from '@/types/Group';
+import { FriendGroupBalance } from '@/types/Balance';
 interface Props {
   params: {
     id: string;
   }
 }
+
+const calculateTotalBalance = (
+  userBalances: Balance[],
+  friendGroupBalances: FriendGroupBalance[],
+  friendId: string
+) => {
+  // Get direct balance with friend
+  const directBalance = userBalances.find(balance => balance.id === friendId)?.balance || 0;
+  console.log('Direct balance:', directBalance);
+  console.log('User balances:', userBalances);
+  console.log('Friend ID:', friendId);
+
+  // Sum up all group balances with this friend
+  const groupBalancesSum = friendGroupBalances.reduce((sum, groupBalance) => {
+    console.log('Checking group balance:', groupBalance);
+    console.log('Current member ID:', groupBalance.memberId);
+    if (groupBalance.memberId === friendId) {
+      console.log('Found matching member, adding balance:', groupBalance.balance);
+      return sum + (groupBalance.balance || 0);
+    }
+    return sum;
+  }, 0);
+
+  console.log('Group balances sum:', groupBalancesSum);
+  console.log('Friend group balances:', friendGroupBalances);
+
+  // Return total combined balance
+  const total = directBalance + groupBalancesSum;
+  console.log('Total balance:', total);
+  return total;
+};
+
+// The rest of your component stays the same
 
 async function FriendDetails({ params }: Props) {
 
@@ -95,11 +130,15 @@ async function FriendDetails({ params }: Props) {
       rawUserData, 
       initialTransactions,
       userBalances,
+      initialFriendGroupBalances
     ] = await Promise.all([
       fetchUserData(params.id),
       fetchTransactions(uid, params.id),
-      fetchUserBalances(uid)
+      fetchUserBalances(uid),
+      fetchFriendGroupBalances(uid, params.id) 
     ]);
+
+    console.log('Initial friend group balances: ' + JSON.stringify(initialFriendGroupBalances))
 
     const userIds = new Set<string>();
     initialTransactions.forEach((group: GroupedTransactions) => {
@@ -131,16 +170,12 @@ async function FriendDetails({ params }: Props) {
     const usersDataArray = await Promise.all(usersDataPromises);
     const usersData = Object.fromEntries(usersDataArray);
     
-    const balance = initialTransactions.reduce((total: number, group: GroupedTransactions) => {
-      return group.transactions.reduce((subTotal: number, transaction: Transaction) => {
-        if (transaction.payer_id === params.id) {
-          return subTotal - transaction.amount;
-        } else if (transaction.receiver_id === params.id) {
-          return subTotal + transaction.amount;
-        }
-        return subTotal;
-      }, total);
-    }, 0);
+    // Calculate total balance using the new helper function
+    const totalBalance = calculateTotalBalance(
+      userBalances,
+      initialFriendGroupBalances,
+      params.id
+    );
 
     const userData = serializeFirebaseData(rawUserData);
       return (
@@ -151,13 +186,14 @@ async function FriendDetails({ params }: Props) {
           <BalancesProvider 
             userId={uid}
             initialBalances={userBalances}
+            initialFriendGroupBalances={initialFriendGroupBalances}
           >
             <div className="grid md:grid-cols-4 gap-5 xl:gap-0">
               <div className="md:col-span-3">
                 <div className="flex flex-col gap-2">
                   <ExpenseCard  
                     name={userData.name}
-                    amount={balance}
+                    amount={totalBalance}
                     type="user"
                     avatarUrl={userData.image || '/default-avatar.jpg'}
                     friendId={params.id}
