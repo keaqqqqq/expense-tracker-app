@@ -1834,42 +1834,42 @@ async function calculateBalancesFromTransactions(
       (t.payer_id === targetId && t.receiver_id === userId)
   );
 
-  const unsettledTransactions = relevantTransactions.filter(t => 
-      !t.type || t.type.toLowerCase() === 'expense' && t.group_id === ''
+  let netBalance = 0;
+
+  // Calculate expense transactions
+  const expenseTransactions = relevantTransactions.filter(t => 
+      (!t.type || t.type.toLowerCase() === 'expense') && t.group_id === ''
   );
 
-  const unsettledDetails = unsettledTransactions.reduce((acc: BalanceDetails, t) => {
-      acc.totalAmount += t.amount;
-      if (t.payer_id === userId) {
-          acc.netAmount += t.amount;
-      } else {
-          acc.netAmount -= t.amount;
-      }
-      return acc;
-  }, { totalAmount: 0, netAmount: 0 });
+  expenseTransactions.forEach(t => {
+    if (t.payer_id === userId) {
+      netBalance += t.amount; // Current user paid, they should receive money
+    } else {
+      netBalance -= t.amount; // Friend paid, current user should pay
+    }
+  });
 
-  const settledTransactions = relevantTransactions.filter(t => 
+  // Calculate settle transactions
+  const settleTransactions = relevantTransactions.filter(t => 
       t.type?.toLowerCase() === 'settle'
   );
 
-  const settledDetails = settledTransactions.reduce((acc: BalanceDetails, t) => {
-      acc.totalAmount += t.amount;
-      if (t.payer_id === userId) {
-          acc.netAmount += t.amount;
-      } else {
-          acc.netAmount -= t.amount;
-      }
-      return acc;
-  }, { totalAmount: 0, netAmount: 0 });
+  settleTransactions.forEach(t => {
+    if (t.payer_id === userId) {
+      netBalance += t.amount; // Current user paid to settle, reduce what they should receive
+    } else {
+      netBalance -= t.amount; // Friend paid to settle, reduce what current user should pay
+    }
+  });
 
-  // Calculate remaining unsettled amount by subtracting settled amount
-  const remainingUnsettled = Math.max(0, unsettledDetails.totalAmount - settledDetails.totalAmount);
+  const unsettledAmount = expenseTransactions.reduce((sum, t) => sum + t.amount, 0);
+  const settledAmount = settleTransactions.reduce((sum, t) => sum + t.amount, 0);
 
   return {
-      id: targetId,
-      settledBalance: settledDetails.totalAmount,
-      unsettledBalance: remainingUnsettled,
-      netBalance: unsettledDetails.netAmount - settledDetails.netAmount
+    id: targetId,
+    settledBalance: settledAmount,
+    unsettledBalance: Math.max(0, unsettledAmount - settledAmount),
+    netBalance: netBalance
   };
 }
 
@@ -1883,41 +1883,41 @@ async function calculateBalancesFromGroupTransactions(
       (t.payer_id === targetId && t.receiver_id === userId)
   );
 
-  const unsettledTransactions = relevantTransactions.filter(t => 
-      !t.type || t.type.toLowerCase() === 'expense' && t.group_id 
+  let netBalance = 0;
+
+  // Calculate expense transactions
+  const expenseTransactions = relevantTransactions.filter(t => 
+      (!t.type || t.type.toLowerCase() === 'expense') && t.group_id 
   );
 
-  const unsettledDetails = unsettledTransactions.reduce((acc: BalanceDetails, t) => {
-      acc.totalAmount += t.amount;
-      if (t.payer_id === userId) {
-          acc.netAmount += t.amount;
-      } else {
-          acc.netAmount -= t.amount;
-      }
-      return acc;
-  }, { totalAmount: 0, netAmount: 0 });
+  expenseTransactions.forEach(t => {
+    if (t.payer_id === userId) {
+      netBalance += t.amount; // Current user paid, they should receive money
+    } else {
+      netBalance -= t.amount; // Friend paid, current user should pay
+    }
+  });
 
-  const settledTransactions = relevantTransactions.filter(t => 
+  // Calculate settle transactions
+  const settleTransactions = relevantTransactions.filter(t => 
       t.type?.toLowerCase() === 'settle'
   );
 
-  const settledDetails = settledTransactions.reduce((acc: BalanceDetails, t) => {
-      acc.totalAmount += t.amount;
-      if (t.payer_id === userId) {
-          acc.netAmount += t.amount;
-      } else {
-          acc.netAmount -= t.amount;
-      }
-      return acc;
-  }, { totalAmount: 0, netAmount: 0 });
+  settleTransactions.forEach(t => {
+    if (t.payer_id === userId) {
+      netBalance += t.amount; // Current user paid to settle, reduce what they should receive
+    } else {
+      netBalance -= t.amount; // Friend paid to settle, reduce what current user should pay
+    }
+  });
 
-  // Calculate remaining unsettled amount by subtracting settled amount
-  const remainingUnsettled = Math.max(0, unsettledDetails.totalAmount - settledDetails.totalAmount);
+  const unsettledAmount = expenseTransactions.reduce((sum, t) => sum + t.amount, 0);
+  const settledAmount = settleTransactions.reduce((sum, t) => sum + t.amount, 0);
 
   return {
-      id: targetId,
-      settledBalance: settledDetails.totalAmount,
-      unsettledBalance: remainingUnsettled,
-      netBalance: unsettledDetails.netAmount - settledDetails.netAmount
+    id: targetId,
+    settledBalance: settledAmount,
+    unsettledBalance: Math.max(0, unsettledAmount - settledAmount),
+    netBalance: netBalance
   };
 }
