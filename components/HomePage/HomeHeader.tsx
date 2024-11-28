@@ -26,6 +26,7 @@ const HomeHeader = () => {
       <ManageHeader 
         title="Balances" 
         buttons={headerButtons}
+        homeType={true}
       />
       
       <ExpenseModal 

@@ -182,7 +182,7 @@ const Sidebar: React.FC<SideBarProps> = ({ currentUser, initialFriends = [], ini
                     <li key={friend.id}>
                         <Link
                             href={`/friends/${friend.id}`}
-                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 mb-2"
                         >
                             {friend.image ? (
                                 <div className="relative w-6 h-6 rounded-full overflow-hidden mr-2">
@@ -217,7 +217,7 @@ const Sidebar: React.FC<SideBarProps> = ({ currentUser, initialFriends = [], ini
                             className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         >
                             {group.image ? (
-                                <div className="relative w-6 h-6 rounded-lg overflow-hidden mr-2">
+                                <div className="relative w-6 h-6 rounded-full overflow-hidden mr-2">
                                     <Image
                                         src={group.image}
                                         alt={group.name}

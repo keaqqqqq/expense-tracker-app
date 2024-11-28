@@ -73,6 +73,7 @@ export default function GroupsContainer({
         buttons={[
           { label: "Add Group", primary: true, onClick: () => setModalOpen(true) },
         ]}
+        homeType={false}
       />
       <AddGroup 
         isOpen={isModalOpen} 

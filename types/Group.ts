@@ -4,7 +4,11 @@ export interface GroupMember {
     email?: string;
     status?: 'ACTIVE' | 'PENDING_FRIENDSHIP' | 'PENDING_INVITATION' | 'PENDING';
     image?: string;
-    balances?: Balance[];
+    balances?: {
+      [key: string]: {
+        balance: number;
+      };
+    };
   }
 
 export interface Balance {

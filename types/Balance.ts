@@ -1,9 +1,9 @@
 export interface Balance {
     balance?: number;
     id: string;
-    settledBalance: number;
-    unsettledBalance: number;
-    netBalance: number;
+    settledBalance?: number;
+    unsettledBalance?: number;
+    netBalance?: number;
   }
 
 export  interface BalanceDetails {
@@ -36,7 +36,6 @@ export interface FriendGroupBalance {
     memberName: string;
     memberImage: string;
     memberEmail: string;
-    balance: number;
     settledBalance: number;
     unsettledBalance: number;
     netBalance: number;
@@ -46,15 +45,8 @@ export interface FriendBalance {
     friendId: string;
     name: string;
     image?: string;
-    directBalance: {
-        settled: number;
-        unsettled: number;
-        total: number;
-    };
-    groupBalance: {
-        settled: number;
-        unsettled: number;
-        total: number;
-    };
+    directBalance: number;
+    groupBalance: number;
     totalBalance: number;
-}
+    groups: FriendGroupBalance[];
+  }

@@ -27,6 +27,7 @@ export function BalanceCard({
 }: BalanceCardProps) {
   if (unsettledBalance === 0 && settledBalance === 0) return null;
 
+  console.log('Net balance: '+ netBalance)
   return (
       <Card className="bg-white p-4">
           <div className="flex justify-between items-center mb-4">

@@ -18,11 +18,12 @@ async function HomePage() {
     
     return (
       <div className="container mx-auto px-4 py-6">
+        
+        <BalanceSummary friendBalances={friendBalances} />
+
         <div className="mb-6">
           <HomeHeader />
         </div>
-        
-        <BalanceSummary friendBalances={friendBalances} />
         
         {friendBalances.length > 0 ? (
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
@@ -35,7 +36,7 @@ async function HomePage() {
                 directBalance={friend.directBalance}
                 groupBalances={friend.groups?.map(group => ({
                   name: group.groupName,
-                  balance: group.balance
+                  balance: group.netBalance
                 }))}
                 totalBalance={friend.totalBalance}
               />

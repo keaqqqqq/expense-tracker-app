@@ -3,4 +3,11 @@ export interface UserData {
   name?: string;
   email?: string;
   image?: string | '';
+  balances: {
+    [key: string]: FirestoreBalance;
+  };
+}
+
+interface FirestoreBalance {
+  balance: number;
 }
