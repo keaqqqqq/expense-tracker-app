@@ -17,7 +17,7 @@ import { BalancesProvider } from '@/context/BalanceContext';
 import Balances from '@/components/Balances/Balance';
 import ExpenseCard from '@/components/ExpenseCard';
 import { Transaction } from '@/types/Transaction';
-import { Balance } from '@/types/Group';
+import { Balance } from '@/types/Balance';
 import { FriendGroupBalance } from '@/types/Balance';
 interface Props {
   params: {
@@ -26,37 +26,29 @@ interface Props {
 }
 
 const calculateTotalBalance = (
-  userBalances: Balance[],
-  friendGroupBalances: FriendGroupBalance[],
+  userBalances: Balance[],  
+  friendGroupBalances: FriendGroupBalance[],  
   friendId: string
 ) => {
-  // Get direct balance with friend
-  const directBalance = userBalances.find(balance => balance.id === friendId)?.balance || 0;
-  console.log('Direct balance:', directBalance);
-  console.log('User balances:', userBalances);
-  console.log('Friend ID:', friendId);
+  const hasNetBalance = (balance: any): boolean => 
+    balance && typeof balance.netBalance === 'number';
 
-  // Sum up all group balances with this friend
+  if (!userBalances.every(hasNetBalance) || !friendGroupBalances.every(hasNetBalance)) {
+    console.error('Some balances are missing netBalance property');
+    return 0;
+  }
+
+  const directBalance = userBalances.find(balance => balance.id === friendId)?.netBalance || 0;
+
   const groupBalancesSum = friendGroupBalances.reduce((sum, groupBalance) => {
-    console.log('Checking group balance:', groupBalance);
-    console.log('Current member ID:', groupBalance.memberId);
     if (groupBalance.memberId === friendId) {
-      console.log('Found matching member, adding balance:', groupBalance.balance);
-      return sum + (groupBalance.balance || 0);
+      return sum + (groupBalance.netBalance || 0);
     }
     return sum;
   }, 0);
 
-  console.log('Group balances sum:', groupBalancesSum);
-  console.log('Friend group balances:', friendGroupBalances);
-
-  // Return total combined balance
-  const total = directBalance + groupBalancesSum;
-  console.log('Total balance:', total);
-  return total;
+  return directBalance + groupBalancesSum;
 };
-
-// The rest of your component stays the same
 
 async function FriendDetails({ params }: Props) {
 
@@ -137,8 +129,6 @@ async function FriendDetails({ params }: Props) {
       fetchUserBalances(uid),
       fetchFriendGroupBalances(uid, params.id) 
     ]);
-
-    console.log('Initial friend group balances: ' + JSON.stringify(initialFriendGroupBalances))
 
     const userIds = new Set<string>();
     initialTransactions.forEach((group: GroupedTransactions) => {

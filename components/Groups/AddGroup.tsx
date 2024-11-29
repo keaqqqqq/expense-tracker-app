@@ -10,11 +10,30 @@ import { Friend } from '@/types/Friend';
 import { ToastState } from '@/types/Toast';
 import { saveGroup, updateGroup } from '@/lib/actions/user.action';
 
+interface EditGroupMember {
+  id?: string;
+  email?: string;
+  name?: string;
+  balances?: {
+    [key: string]: {
+      balance: number;
+    };
+  };
+  image?: string;
+}
 interface TypeOption {
   value: GroupType;
   label: string;
   icon: React.ReactNode;
   description: string;
+}
+
+interface PendingGroupMember {
+  email: string;
+  name?: string;
+  image?: string;
+  balances: { [key: string]: { balance: number } };
+  status?: 'PENDING_INVITATION';
 }
 
 const typeOptions: TypeOption[] = [
@@ -67,17 +86,18 @@ interface AddGroupProps {
   onSuccess?: () => void;
   isEditing?: boolean;
   editData?: {
-    type: string;
+    type: GroupType;
     name: string;
     image?: string;
     members: Array<{
       id?: string;
       email?: string;
       name?: string;
-      balances?: Array<{
-        id: string;
-        balance: number;
-      }>;
+      balances?: {
+        [key: string]: {
+          balance: number;
+        };
+      };
       image?: string;
     }>;
   };
@@ -123,23 +143,33 @@ export default function AddGroup({
       id: currentUserId,
       email: email || '',
       name: name || '',
-      balances: [], 
-      image: currentUserImage || ''    
+      balances: {},
+      image: currentUserImage || ''
     }]
   });
 
   useEffect(() => {
     if (isEditing && editData) {
       const [creator, ...otherMembers] = editData.members;
+
+      const validCreator: GroupMember = {
+        id: creator.id || currentUserId,
+        email: creator.email || email || '',
+        name: creator.name || name || '',
+        balances: creator.balances || {},
+        image: creator.image || currentUserImage || ''
+      };
+
+      const validMembers: GroupMember[] = otherMembers.map(member => ({
+        id: member.id || '',
+        email: member.email || '',
+        name: member.name || '',
+        balances: member.balances || {},
+        image: member.image || ''
+      }));
   
-      setMembers(otherMembers.map(member => ({
-        id: member.id,
-        name: member.name,
-        email: member.email,
-        balances: member.balances,
-        image: member.image || '' 
-      })));
-  
+      setMembers(validMembers);
+
       const emailOnlyMembers = otherMembers
         .filter(member => !member.id && member.email)
         .map(member => member.email as string);
@@ -151,21 +181,22 @@ export default function AddGroup({
         type: editData.type,
         name: editData.name,
         image: editData.image || '',
-        members: [creator, ...otherMembers] 
+        members: [validCreator, ...validMembers]
       }));
   
       if (editData.image) {
         setPreviewImage(editData.image);
-      }} else {
-        setFormData(prev => ({
-          ...prev,
-          members: [{
-            id: currentUserId,
-            email: email || '',
-            name: name || '',
-            balances: []
-          }]
-        }));
+      }
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        members: [{
+          id: currentUserId,
+          email: email || '',
+          name: name || '',
+          balances: {}
+        }]
+      }));
     }
   }, [isEditing, editData, currentUserId, email, name]);
 
@@ -224,7 +255,6 @@ export default function AddGroup({
 
       setInvitedEmails(prev => [...prev, emailInput]);
       setFormData(prev => {
-        // Preserve existing member balances
         const existingMembers = prev.members.filter(member =>
           member.email !== emailInput
         );
@@ -235,7 +265,7 @@ export default function AddGroup({
             ...existingMembers,
             {
               email: emailInput,
-              balances: []
+              balances: {}
             }
           ]
         };
@@ -261,7 +291,6 @@ export default function AddGroup({
   };
 
   const handleFriendSelect = (friend: Friend) => {
-    // Check both members array and formData.members array
     if (members.some(member => member.id === friend.id) || 
         formData.members.some(member => member.id === friend.id)) {
       setEmailError('This user is already a member of the group');
@@ -273,7 +302,7 @@ export default function AddGroup({
       name: friend.name,
       email: friend.email,
       image: friend.image,
-      balances: []
+      balances: {}
     };
   
     setMembers(prev => [...prev, newMember]);
@@ -285,7 +314,6 @@ export default function AddGroup({
       members: [...prev.members, newMember]
     }));
   };
-  
 
   const handleRemoveMember = (memberId?: string, memberEmail?: string) => {
     setMembers(prev => prev.filter(m => 
@@ -306,11 +334,11 @@ export default function AddGroup({
       const updatedFormData = {
         ...formData,
         members: [
-          formData.members[0], 
-          ...members, 
-          ...invitedEmails.map(emailAddr => ({ 
+          formData.members[0],
+          ...members,
+          ...invitedEmails.map(emailAddr => ({
             email: emailAddr,
-            balances: []
+            balances: {}
           }))
         ]
       };
@@ -337,7 +365,7 @@ export default function AddGroup({
           id: currentUserId,
           email: email || '',
           name: name || '',
-          balances: []
+          balances: {}
         }]
       });
       setMembers([]);

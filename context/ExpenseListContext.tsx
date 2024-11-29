@@ -1,10 +1,12 @@
 'use client'
 import React, { createContext, useContext, useState } from 'react';
 import type { ExpenseContextType, ExpenseProviderProps, GroupedTransactions } from '@/types/ExpenseList';
-import { fetchTransactions, fetchGroupTransactions } from '@/lib/actions/user.action';
+import { fetchTransactions, fetchGroupTransactions, fetchUserData } from '@/lib/actions/user.action';
 import { useAuth } from './AuthContext';
 import type { UserData } from '@/types/User';
 import { fetchAllTransactions } from '@/lib/actions/user.action';
+import { serializeFirebaseData } from '@/lib/utils';
+import { Transaction } from '@/types/Transaction';
 interface ExtendedExpenseContextType extends ExpenseContextType {
   refreshTransactions: (friendId: string) => Promise<void>;
   refreshGroupTransactions: (groupId: string) => Promise<void>; 
@@ -43,7 +45,7 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps & {
   initialTransactions,
   initialGroupTransactions = [],
   initialAllTransactions = [],
-  usersData, 
+  usersData: initialUsersData, 
   groupDetails
 }) => {
   const [groupedTransactions, setGroupedTransactions] = useState<GroupedTransactions[]>(initialTransactions);
@@ -51,8 +53,49 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps & {
   const [isLoading, setIsLoading] = useState(false);
   const [isGroupLoading, setIsGroupLoading] = useState(false);
   const [allTransactions, setAllTransactions] = useState<GroupedTransactions[]>(initialAllTransactions);
+  const [usersData, setUsersData] = useState<Record<string, UserData>>(initialUsersData);
   const [isAllTransactionsLoading, setIsAllTransactionsLoading] = useState(false);
   const { currentUser } = useAuth();
+
+  const fetchNewUserData = async (transactions: GroupedTransactions[]) => {
+    const newUserIds = new Set<string>();
+    
+    transactions.forEach((group) => {
+      group.transactions.forEach((transaction: Transaction) => {
+        if (!usersData[transaction.payer_id]) newUserIds.add(transaction.payer_id);
+        if (!usersData[transaction.receiver_id]) newUserIds.add(transaction.receiver_id);
+      });
+      
+      if (group.expense) {
+        group.expense.payer?.forEach(payer => {
+          if (!usersData[payer.id]) newUserIds.add(payer.id);
+        });
+        group.expense.splitter?.forEach(splitter => {
+          if (!usersData[splitter.id]) newUserIds.add(splitter.id);
+        });
+      }
+    });
+
+    if (newUserIds.size === 0) return;
+
+    const newUsersDataArray = await Promise.all(
+      Array.from(newUserIds).map(async (userId) => {
+        try {
+          const userData = await fetchUserData(userId);
+          return [userId, serializeFirebaseData(userData)];
+        } catch (error) {
+          console.error(`Error fetching user ${userId}:`, error);
+          return [userId, { id: userId, name: userId }];
+        }
+      })
+    );
+
+    setUsersData(prev => ({
+      ...prev,
+      ...Object.fromEntries(newUsersDataArray)
+    }));
+  };
+
 
   const refreshTransactions = async (friendId: string) => {
     setIsLoading(true);
@@ -60,7 +103,8 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps & {
       if (!currentUser) return;
   
       const freshTransactions = await fetchTransactions(currentUser.uid, friendId);
-  
+      await fetchNewUserData(freshTransactions);
+
       setGroupedTransactions(prevTransactions => {
         const existingTransactions = prevTransactions.filter(transaction => 
           !transaction.transactions.some(t => 
@@ -83,7 +127,8 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps & {
       if (!currentUser) return;
   
       const freshGroupTransactions = await fetchGroupTransactions(groupId);
-      
+      await fetchNewUserData(freshGroupTransactions);
+
       setGroupTransactions(prevTransactions => {
         const filteredTransactions = prevTransactions.filter(group => 
           !group.transactions.some(t => t.group_id === groupId)
@@ -108,7 +153,7 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps & {
         friendIds,
         groupIds
       );
-
+      await fetchNewUserData(freshAllTransactions);
       setAllTransactions(freshAllTransactions);
 
       if (groupIds?.length) {

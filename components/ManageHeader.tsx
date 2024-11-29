@@ -1,3 +1,4 @@
+'use client'
 import React from 'react';
 import Button from './ManageExpense/Button';
 
@@ -6,18 +7,21 @@ interface ButtonProps {
     onClick?: () => void;
     primary?: boolean;
     secondary?: boolean;
+    homeType?: boolean;
 }
 
 interface ManageHeaderProps {
     title: string;
     buttons: ButtonProps[];
+    homeType: boolean;
 }
 
-const ManageHeader: React.FC<ManageHeaderProps> = ({ title, buttons }) => {
+const ManageHeader: React.FC<ManageHeaderProps> = ({ title, buttons, homeType }) => {
+
     return (
-        <div className='border rounded'>
+        <div className={`${homeType ? '' : 'border rounded'} w-full`}>
             <div className='flex flex-row justify-between font-semibold content-center px-2'>
-                <h2 className='my-auto'>{title}</h2>
+                <h2 className='my-auto text-md'>{title}</h2>
                 <div className='text-sm'>
                     {buttons.map((button, index) => (
                         <Button 

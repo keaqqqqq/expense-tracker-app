@@ -182,7 +182,7 @@ const Sidebar: React.FC<SideBarProps> = ({ currentUser, initialFriends = [], ini
                     <li key={friend.id}>
                         <Link
                             href={`/friends/${friend.id}`}
-                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 mb-2"
                         >
                             {friend.image ? (
                                 <div className="relative w-6 h-6 rounded-full overflow-hidden mr-2">
@@ -217,7 +217,7 @@ const Sidebar: React.FC<SideBarProps> = ({ currentUser, initialFriends = [], ini
                             className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         >
                             {group.image ? (
-                                <div className="relative w-6 h-6 rounded-lg overflow-hidden mr-2">
+                                <div className="relative w-6 h-6 rounded-full overflow-hidden mr-2">
                                     <Image
                                         src={group.image}
                                         alt={group.name}
@@ -304,7 +304,7 @@ const Sidebar: React.FC<SideBarProps> = ({ currentUser, initialFriends = [], ini
                 <div className="h-full flex flex-col overflow-y-auto">
                     <div className="flex-1">
                         <Link href="/">
-                            <h2 className={`text-xl font-semibold text-black px-4 py-4 logo ${isMobile ? 'hidden' : 'block'} cursor-pointer hover:text-indigo-600`}>
+                            <h2 className={`text-xl font-semibold text-black px-4 py-4 logo mb-5 ${isMobile ? 'hidden' : 'block'} cursor-pointer hover:text-indigo-600`}>
                                 ExpenseTracker
                             </h2>
                         </Link>
@@ -312,46 +312,37 @@ const Sidebar: React.FC<SideBarProps> = ({ currentUser, initialFriends = [], ini
                         <li>
                             <Link
                                     href="/"
-                                    className={`block py-2 px-4 font-semibold text-gray-800 ${pathname === '/' ? 'bg-gray-100 text-indigo-600' : ''}`}
+                                    className={`block py-2 px-4 font-semibold text-gray-800 text-md mb-2 ${pathname === '/' ? 'bg-gray-100 text-indigo-600' : ''}`}
                                     onClick={() => isMobile && setIsOpen(false)}
                                 >
-                                    Home
+                                    🏠 Home
                                 </Link>
                             </li>
                             <li>
                                 <Link
                                     href="/expense"
-                                    className={`block py-2 px-4 font-semibold text-gray-800 ${pathname === '/expense' ? 'bg-gray-100 text-indigo-600' : ''}`}
+                                    className={`block py-2 px-4 font-semibold text-gray-800 text-md mb-2 ${pathname === '/expense' ? 'bg-gray-100 text-indigo-600' : ''}`}
                                     onClick={() => isMobile && setIsOpen(false)}
                                 >
-                                    Expense
-                                </Link>
-                            </li>
-                            <li>
-                                <Link
-                                    href="/profile"
-                                    className={`block py-2 px-4 font-semibold text-gray-800 ${pathname === '/profile' ? 'bg-gray-100 text-indigo-600' : ''}`}
-                                    onClick={() => isMobile && setIsOpen(false)}
-                                >
-                                    Profile
+                                    💰 Expense
                                 </Link>
                             </li>
                             <li>
                                 <Link
                                     href="/friends"
-                                    className={`block py-2 px-4 font-semibold text-gray-800 ${pathname === '/friends' ? 'bg-gray-100 text-indigo-600' : ''}`}
+                                    className={`block py-2 px-4 font-semibold text-gray-800 text-md mb-2 ${pathname === '/friends' ? 'bg-gray-100 text-indigo-600' : ''}`}
                                     onClick={() => isMobile && setIsOpen(false)}
                                 >
-                                    Friends
+                                    👤 Friends
                                 </Link>
                             </li>
                             <li>
                                 <Link
                                     href="/groups"
-                                    className={`block py-2 px-4 font-semibold text-gray-800 ${pathname === '/groups' ? 'bg-gray-100 text-indigo-600' : ''}`}
+                                    className={`block py-2 px-4 font-semibold text-gray-800 text-md mb-2 ${pathname === '/groups' ? 'bg-gray-100 text-indigo-600' : ''}`}
                                     onClick={() => isMobile && setIsOpen(false)}
                                 >
-                                    Groups
+                                    👥 Groups
                                 </Link>
                             </li>
                         </ul>
@@ -367,7 +358,7 @@ const Sidebar: React.FC<SideBarProps> = ({ currentUser, initialFriends = [], ini
                             }`}
                             onClick={() => isMobile && setIsOpen(false)}
                         >
-                            <span className="font-semibold">Settings</span>
+                            <span className="font-semibold flex"><Settings/>&nbsp;Settings</span>
                         </Link>
                     </div>
                 </div>

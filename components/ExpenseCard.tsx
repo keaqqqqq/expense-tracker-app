@@ -94,8 +94,8 @@ const ExpenseCard = ({
                   </>
                 ) : (
                   isPositive 
-                ? `Owes you $${Math.abs(displayAmount).toFixed(2)}`
-                : `You owe $${Math.abs(displayAmount).toFixed(2)}`
+                ? `Owes you RM${Math.abs(displayAmount).toFixed(2)}`
+                : `You owe RM${Math.abs(displayAmount).toFixed(2)}`
                 )}
               </div>
             </div>

@@ -82,7 +82,6 @@ exports.sendInvitationEmail = onDocumentCreated({
     } as nodemailer.SendMailOptions;
 
     await transporter.sendMail(mailOptions);
-    console.log('Invitation email sent successfully to:', invitation.addressee_email);
 
     await event.data?.ref.update({
       email_sent: true,
