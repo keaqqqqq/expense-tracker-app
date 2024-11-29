@@ -3,7 +3,7 @@ export interface UserData {
   name?: string;
   email?: string;
   image?: string | '';
-  balances: {
+  balances?: {
     [key: string]: FirestoreBalance;
   };
 }
