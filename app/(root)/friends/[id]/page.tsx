@@ -130,8 +130,6 @@ async function FriendDetails({ params }: Props) {
       fetchFriendGroupBalances(uid, params.id) 
     ]);
 
-    console.log('Initial friend group balances: ' + JSON.stringify(initialFriendGroupBalances))
-
     const userIds = new Set<string>();
     initialTransactions.forEach((group: GroupedTransactions) => {
       group.transactions.forEach((transaction: Transaction) => {

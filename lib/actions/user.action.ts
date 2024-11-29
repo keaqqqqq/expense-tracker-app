@@ -25,7 +25,6 @@ export const updateUserProfile = async (
     image,
     email: currentUser.email,
   };
-  console.log(userData)
   await setDoc(doc(db, 'Users', currentUser.uid), userData);
 };
 
