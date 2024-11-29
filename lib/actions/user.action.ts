@@ -12,6 +12,7 @@ import { GroupedTransactions } from '@/types/ExpenseList';
 import { Expense } from '@/types/Expense';
 import { Transaction } from '@/types/Transaction';
 import { FriendGroupBalance, Balance } from '@/types/Balance';
+import { cookies } from 'next/headers';
 export const updateUserProfile = async (
   currentUser: User | null,
   name: string,
@@ -1936,4 +1937,13 @@ export async function fetchAllFriendBalances(userId: string) {
     console.error('Error fetching all friend balances:', error);
     return [];
   }
+}
+
+export async function refreshBalances() {
+  const cookieStore = cookies();
+  const uid = cookieStore.get('currentUserUid')?.value;
+  if (!uid) {
+    throw new Error('User not authenticated');
+  }
+  return fetchAllFriendBalances(uid);
 }

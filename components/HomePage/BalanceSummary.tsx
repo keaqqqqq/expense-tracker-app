@@ -1,13 +1,10 @@
+'use client'
 import React from 'react';
 import { ArrowUpRight, ArrowDownRight, Wallet } from 'lucide-react';
-
-interface BalanceSummaryProps {
-  friendBalances: Array<{
-    totalBalance: number;
-  }>;
-}
-
-export function BalanceSummary({ friendBalances }: BalanceSummaryProps) {
+import { useBalance } from '@/context/HomeBalanceContext';
+export function BalanceSummary() {
+  const { friendBalances } = useBalance();
+  
   const calculateBalances = () => {
     let youGet = 0;
     let youOwe = 0;
