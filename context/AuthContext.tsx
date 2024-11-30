@@ -3,6 +3,7 @@ import { User, createUserWithEmailAndPassword, onAuthStateChanged, signInWithEma
 import { DocumentData, doc, getDoc, setDoc} from 'firebase/firestore';
 import React, { useContext, useState, useEffect, ReactNode } from 'react';
 import { auth , db, googleProvider} from '../firebase/config';
+import { useRouter } from 'next/navigation';
 interface AuthContextType {
   currentUser: User | null;
   userDataObj: DocumentData | null;
@@ -68,6 +69,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [userDataObj, setUserDataObj] = useState<DocumentData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [isProfileComplete, setIsProfileComplete] = useState<boolean>(false);
+  const router = useRouter();
+
+    const clearUserData = () => {
+    setUserDataObj(null);
+    setCurrentUser(null);
+    setIsProfileComplete(false);
+  };
 
   const signup = (email: string, password: string) => {
     return createUserWithEmailAndPassword(auth, email, password);
@@ -106,9 +114,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const logout = async (): Promise<void> => {
-    setUserDataObj(null);
-    setCurrentUser(null);
-    await signOut(auth);
+    try {
+      clearUserData(); 
+      await signOut(auth);
+      router.push('/auth');
+    } catch (error) {
+      console.error('Error during logout:', error);
+      throw error;
+    }
   };
 
   const updateUserPassword = async (currentPassword: string, newPassword: string): Promise<void> => {

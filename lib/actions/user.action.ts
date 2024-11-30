@@ -13,6 +13,7 @@ import { Expense } from '@/types/Expense';
 import { Transaction } from '@/types/Transaction';
 import { FriendGroupBalance, Balance } from '@/types/Balance';
 import { cookies } from 'next/headers';
+import React from 'react';
 export const updateUserProfile = async (
   currentUser: User | null,
   name: string,

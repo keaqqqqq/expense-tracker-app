@@ -1,5 +1,3 @@
-import { SplitFriend } from "./SplitFriend";
-
 export interface Expense {
     id?: string; // Document ID from Firestore
     amount: number;

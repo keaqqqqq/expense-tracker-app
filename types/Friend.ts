@@ -1,3 +1,5 @@
+import { Timestamp } from "firebase-admin/firestore";
+
 export interface Friend {
   id: string;
   name: string;
@@ -10,7 +12,7 @@ export interface Friendship {
   requester_id: string;
   addressee_id: string;
   status: 'PENDING' | 'ACCEPTED' | 'REJECTED';
-  created_at: any;
+  created_at: Timestamp;
 }
 
 export interface Relationship {

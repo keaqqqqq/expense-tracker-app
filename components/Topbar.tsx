@@ -1,8 +1,7 @@
-"use client";
-
 import React, { useState } from 'react';
-import { Search, Menu } from 'lucide-react';
+import { Search, Menu, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 
 interface TopBarProps {
   name: string | null;
@@ -12,13 +11,30 @@ interface TopBarProps {
 
 const TopBar: React.FC<TopBarProps> = ({ name: initialName, image: initialImage, onMenuClick }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const { userDataObj } = useAuth();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const { userDataObj, logout } = useAuth();
+  const router = useRouter();
 
   const displayName = userDataObj !== null ? userDataObj.name : initialName;
   const displayImage = userDataObj !== null ? userDataObj.image : initialImage;
+  const userEmail = userDataObj?.email;
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(event.target.value);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      window.location.href = '/auth';
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
+
+  const handleSettingsClick = () => {
+    router.push('/settings');
+    setIsDropdownOpen(false);
   };
 
   return (
@@ -46,29 +62,56 @@ const TopBar: React.FC<TopBarProps> = ({ name: initialName, image: initialImage,
           </div>
         </div>
 
-        <div className="flex items-center">
-          {displayImage ? (
-            <div className="relative w-8 h-8">
-              <img
-                src={displayImage}
-                alt="Profile"
-                className="w-full h-full rounded-full object-cover"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = '/default-avatar.jpg';
-                }}
-              />
-            </div>
-          ) : (
-            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-              <span className="text-gray-500 text-sm">
-                {displayName?.[0] || '?'}
-              </span>
+        <div className="relative">
+          <button
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="flex items-center focus:outline-none"
+            aria-expanded={isDropdownOpen}
+            aria-haspopup="true"
+          >
+            {displayImage ? (
+              <div className="relative w-8 h-8">
+                <img
+                  src={displayImage}
+                  alt="Profile"
+                  className="w-full h-full rounded-full object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = '/default-avatar.jpg';
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                <span className="text-gray-500 text-sm">
+                  {displayName?.[0] || '?'}
+                </span>
+              </div>
+            )}
+          </button>
+
+          {isDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+              <div className="px-4 py-2 text-sm text-gray-700 border-b">
+                <div className="font-medium">{displayName}</div>
+                <div className="text-gray-500 truncate">{userEmail}</div>
+              </div>
+              <button
+                onClick={handleSettingsClick}
+                className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+              >
+                <Settings size={16} />
+                Settings
+              </button>
+              <button
+                onClick={handleLogout}
+                className="w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2"
+              >
+                <LogOut size={16} />
+                Sign out
+              </button>
             </div>
           )}
-          <span className="hidden md:block font-semibold truncate ml-2 max-w-[200px]">
-            {displayName}
-          </span>
         </div>
       </div>
     </header>
