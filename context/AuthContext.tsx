@@ -4,6 +4,8 @@ import { DocumentData, doc, getDoc, setDoc} from 'firebase/firestore';
 import React, { useContext, useState, useEffect, ReactNode } from 'react';
 import { auth , db, googleProvider} from '../firebase/config';
 import { useRouter } from 'next/navigation';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+
 interface AuthContextType {
   currentUser: User | null;
   userDataObj: DocumentData | null;
@@ -95,13 +97,42 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const userDoc = await getDoc(userRef);
       
       if (!userDoc.exists()) {
-        // Create new user document if it doesn't exist
+        let firebaseImageUrl = user.photoURL;
+  
+        // If there's a Google profile image, store it in Firebase Storage
+        if (user.photoURL) {
+          try {
+            // Download the image from Google
+            const response = await fetch(user.photoURL);
+            const blob = await response.blob();
+            
+            // Upload to Firebase Storage
+            const storage = getStorage();
+            const storageRef = ref(storage, `profile-images/${user.uid}`);
+            await uploadBytes(storageRef, blob);
+            
+            // Get the Firebase Storage URL
+            firebaseImageUrl = await getDownloadURL(storageRef);
+          } catch (error) {
+            console.error('Error storing profile image:', error);
+            // Fall back to original Google photo URL if storage fails
+            firebaseImageUrl = user.photoURL;
+          }
+        }
+  
+        // Create new user document with Firebase Storage image URL
         const userData = {
           name: user.displayName,
           email: user.email,
-          image: user.photoURL,
+          image: firebaseImageUrl,
         };
+        
         await setDoc(userRef, userData);
+        setUserDataObj(userData);
+        setIsProfileComplete(true);
+      } else {
+        // If user exists, get their data
+        const userData = userDoc.data();
         setUserDataObj(userData);
         setIsProfileComplete(true);
       }
