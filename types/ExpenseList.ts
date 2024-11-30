@@ -1,3 +1,4 @@
+import React from 'react';
 import { Expense } from "./Expense";
 import { Transaction } from "./Transaction";
 export interface User {

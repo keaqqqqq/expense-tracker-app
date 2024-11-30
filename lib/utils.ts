@@ -1,5 +1,6 @@
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { Timestamp } from 'firebase/firestore';
 
 export function cn(...inputs: (string | undefined)[]) {
   return twMerge(clsx(inputs));
