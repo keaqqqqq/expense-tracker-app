@@ -136,7 +136,7 @@ const Sidebar: React.FC<SideBarProps> = ({
 
             {/* Sidebar */}
             <aside 
-                className={`${className} fixed inset-y-0 left-0 z-40 transform transition-transform duration-300 ease-in-out
+                className={`${className} fixed inset-y-0 left-0 z-30 transform transition-transform duration-300 ease-in-out
                     ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}
             >
                 <nav className="h-full bg-white border-r">
