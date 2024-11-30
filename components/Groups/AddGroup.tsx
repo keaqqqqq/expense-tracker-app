@@ -393,8 +393,8 @@ export default function AddGroup({
     image: currentUserImage
   };
     return (
-      <Dialog>
-        <div className="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto z-[100]">
+      <>
+        <div className="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto z-[9999]">
             <div className="min-h-screen py-8 flex items-center justify-center p-4">
               <div className="relative bg-white rounded-lg p-5 w-full max-w-2xl mx-auto">
               <h2 className="text-sm font-bold mb-4">
@@ -479,7 +479,7 @@ export default function AddGroup({
 
                 <div className="space-y-2">
               {isEditing ? (
-                <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-md">
+                <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-md ">
                   {formData.members[0]?.image ? (
                     <img 
                       src={formData.members[0].image}
@@ -636,6 +636,6 @@ export default function AddGroup({
           </div>
         </div>
         </div>
-      </Dialog>
+        </>
     );
   }
