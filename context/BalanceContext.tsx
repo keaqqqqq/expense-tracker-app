@@ -10,6 +10,7 @@ import { db } from '../firebase/config';
 import { doc, onSnapshot, collection } from 'firebase/firestore';
 import Toast from '@/components/Toast';
 import { Balance, FriendBalance, GroupBalance, FriendGroupBalance } from '@/types/Balance';
+
 interface BalancesContextState {
   balances: Balance[];
   groupBalances: GroupBalance[];
@@ -59,11 +60,11 @@ export function BalancesProvider({
   });
 
   const calculateTotalBalance = useCallback((friendId: string) => {
-    const directBalance = state.balances.find(balance => balance.id === friendId)?.balance || 0;
+    const directBalance = state.balances.find(balance => balance.id === friendId)?.netBalance || 0;
     
     const groupBalancesSum = state.friendGroupBalances.reduce((sum, groupBalance) => {
       if (groupBalance.memberId === friendId) {
-        return sum + (groupBalance.balance || 0);
+        return sum + (groupBalance.netBalance || 0); // Changed from balance to netBalance
       }
       return sum;
     }, 0);
@@ -117,7 +118,6 @@ export function BalancesProvider({
     const unsubscribeOtherUsers = onSnapshot(usersRef, async () => {
       try {
         const newBalances = await fetchUserBalances(userId);
-        console.log(JSON.stringify(newBalances))
         setState(prev => ({
           ...prev,
           balances: newBalances
@@ -162,7 +162,7 @@ export function BalancesProvider({
         groupId ? fetchGroupBalances(userId, groupId) : Promise.resolve([]),
         friendId ? fetchFriendGroupBalances(userId, friendId) : Promise.resolve([])
       ]);
-      
+
       setState(prev => ({
         ...prev,
         balances: newBalances,

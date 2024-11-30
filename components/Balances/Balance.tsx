@@ -49,24 +49,15 @@ export default function Balances({
       if (memberId === currentUserId) return acc;
   
       const memberBalance = groupBalances.find(b => b.memberId === memberId);
-      
+
       if (memberBalance && 
-          typeof memberBalance.settledBalance === 'number' && 
-          typeof memberBalance.unsettledBalance === 'number') {
-        acc.push({
-          groupId: memberBalance.groupId,
-          userId: memberBalance.userId,
-          userName: memberBalance.userName,
-          userEmail: memberBalance.userEmail,
-          memberId: memberBalance.memberId,
-          memberName: memberBalance.memberName,
-          memberImage: memberBalance.memberImage,
-          memberEmail: memberBalance.memberEmail,
-          settledBalance: memberBalance.settledBalance,
-          unsettledBalance: memberBalance.unsettledBalance,
-          netBalance: memberBalance.netBalance
-        });
-      }
+        typeof memberBalance.settledBalance === 'number' && 
+        typeof memberBalance.unsettledBalance === 'number' &&
+        typeof memberBalance.netBalance === 'number') { 
+      acc.push({
+        ...memberBalance 
+      });
+    }
       
       return acc;
     }, []);
@@ -76,27 +67,26 @@ export default function Balances({
 
   const canShowFriendBalance = type === 'friend' && friendData && friendBalance;
   const canShowGroupBalance = type === 'group' && groupData && groupId;
-
   return (
     <div className="space-y-4 xl:ml-10">
       <h2 className="text-sm mb-4">
         {type === 'friend' ? 'Friend Balance' : 'Group Members Balance'}
       </h2>
-
+      
       {canShowFriendBalance && friendBalance && (
         <>
           {/* Friend's direct balance */}
           <BalanceCard
             title="1:1 w/Friend"
-            settledBalance={friendBalance.settledBalance}
-            unsettledBalance={friendBalance.unsettledBalance}
+            settledBalance={friendBalance.settledBalance || 0}
+            unsettledBalance={friendBalance.unsettledBalance || 0}
             netBalance={friendBalance.netBalance || 0} 
             name={friendData.name}
             image={friendData.image}
             type="friend"
             onSettle={() => handleSettleBalance(currentUserId, friendData.id, 'friend')}
           />
-
+          
           {/* Friend's group balances */}
           {friendGroupBalances && friendGroupBalances.length > 0 && (
             <>

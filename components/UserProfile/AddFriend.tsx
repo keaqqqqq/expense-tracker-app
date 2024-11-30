@@ -37,7 +37,6 @@ const AddFriend: React.FC = () => {
                 await saveFriendship(currentUser.uid, email); 
             }
             
-            console.log("Friends invited:", validEmails);
             setShowToast(true); 
             setTimeout(() => {
                 router.push('/');

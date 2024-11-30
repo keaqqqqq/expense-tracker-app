@@ -183,7 +183,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
   };
 
   return (
-    <div className="w-full max-w-7xl">
+    <div className="w-full max-w-10xl">
     <div className="text-sm text-gray-500 mb-1 px-3 flex justify-between items-center">
       <span>
         {expense?.date 

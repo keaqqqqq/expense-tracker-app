@@ -29,7 +29,7 @@ export default async function GroupDetailsPage({ params }: GroupDetailsPageProps
   }
 
   try {
-    const [group, initialTransactions, friendships, userBalances] = await Promise.all([
+    const [group, initialTransactions, friendships, groupBalances] = await Promise.all([
       getGroupDetails(params.id),
       fetchGroupTransactions(params.id),
       getFriendships(uid),
@@ -121,7 +121,7 @@ export default async function GroupDetailsPage({ params }: GroupDetailsPageProps
         >
          <BalancesProvider
             userId={uid}
-            initialGroupBalances={userBalances} 
+            initialGroupBalances={groupBalances} 
             groupId={params.id}
           >
           <div className="grid md:grid-cols-4 gap-5 xl:gap-0">

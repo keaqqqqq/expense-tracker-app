@@ -3,9 +3,15 @@ import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firesto
 import { db } from '@/firebase/config';
 import { Friend } from '@/types/Friend'; 
 import { fetchUserData } from "@/lib/actions/user.action";
-import Sidebar from "@/components/Sidebar";
-import TopBar from "@/components/Topbar";
 import { Group, FirestoreGroupData} from "@/types/Group";
+import ClientWrapper from "@/components/Balances/ClientWrapper";
+
+interface UserData {
+    uid: string;
+    email: string | null;
+    name: string | null;
+    image: string | null;
+}
 
 async function getInitialFriends(uid: string): Promise<Friend[]> {
     try {
@@ -100,7 +106,7 @@ export default async function RootLayout({
 }>) {
     const cookieStore = cookies();
     const uid = cookieStore.get('currentUserUid')?.value;
-    let userData = null;
+    let userData: UserData | null = null;
     let initialFriends: Friend[] = [];
     let initialGroups: Group[] = [];
 
@@ -110,35 +116,32 @@ export default async function RootLayout({
                 fetchUserData(uid),
                 getInitialFriends(uid)
             ]);
-            userData = userDataResult;
+            
+            if (userDataResult) {
+                userData = {
+                    uid,
+                    email: userDataResult.email || null,
+                    name: userDataResult.name || null,
+                    image: userDataResult.image || null
+                };
+            }
+            
             initialFriends = friendsResult;
             if (userData?.email) {
-              initialGroups = await getInitialGroups(uid, userData.email);
-          }
+                initialGroups = await getInitialGroups(uid, userData.email);
+            }
         } catch (error) {
             console.error("Error fetching initial data:", error);
         }
     }
 
     return (
-        <main className="flex h-screen w-full font-inter">
-            <Sidebar
-                currentUser={{
-                    uid: uid || '',
-                    email: userData?.email || null,
-                    name: userData?.name || null,
-                    image: userData?.image || null,
-                }}
-                initialFriends={initialFriends}
-                initialGroups={initialGroups}
-                className="w-56"
-            />
-            <div className="flex flex-col flex-1 md:ml-56">
-                <TopBar name={userData?.name || null} image={userData?.image || null} />
-                <div className="p-3 flex-1 sm:p-4">
-                    {children}
-                </div>
-            </div>
-        </main>
+        <ClientWrapper
+            userData={userData}
+            initialFriends={initialFriends}
+            initialGroups={initialGroups}
+        >
+            {children}
+        </ClientWrapper>
     );
 }

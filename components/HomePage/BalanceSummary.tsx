@@ -1,13 +1,10 @@
+'use client'
 import React from 'react';
 import { ArrowUpRight, ArrowDownRight, Wallet } from 'lucide-react';
-
-interface BalanceSummaryProps {
-  friendBalances: Array<{
-    totalBalance: number;
-  }>;
-}
-
-export function BalanceSummary({ friendBalances }: BalanceSummaryProps) {
+import { useBalance } from '@/context/HomeBalanceContext';
+export function BalanceSummary() {
+  const { friendBalances } = useBalance();
+  
   const calculateBalances = () => {
     let youGet = 0;
     let youOwe = 0;
@@ -39,9 +36,9 @@ export function BalanceSummary({ friendBalances }: BalanceSummaryProps) {
         <div className="p-6 relative">
           <div className="flex items-center gap-2 text-gray-600 mb-1">
             <Wallet className="w-5 h-5" />
-            <span className="text-sm font-medium">YOUR BALANCE</span>
+            <span className="text-sm ">YOUR BALANCE</span>
           </div>
-          <span className={`text-2xl font-bold ${
+          <span className={`text-xl font-medium ${
             isPositive ? 'text-green-600' : 'text-red-600'
           }`}>
             RM {totalBalance}
@@ -53,9 +50,9 @@ export function BalanceSummary({ friendBalances }: BalanceSummaryProps) {
         <div className="p-6 relative">
           <div className="flex items-center gap-2 text-gray-600 mb-1">
             <ArrowUpRight className="w-5 h-5 text-green-600" />
-            <span className="text-sm font-medium">YOU GET</span>
+            <span className="text-sm">YOU GET</span>
           </div>
-          <span className="text-2xl font-bold text-green-600">
+          <span className="text-xl font-medium text-green-600">
             RM {youGet}
           </span>
           <div className="absolute right-0 top-0 bottom-0 w-px bg-gray-200"></div>
@@ -65,9 +62,9 @@ export function BalanceSummary({ friendBalances }: BalanceSummaryProps) {
         <div className="p-6">
           <div className="flex items-center gap-2 text-gray-600 mb-1">
             <ArrowDownRight className="w-5 h-5 text-red-600" />
-            <span className="text-sm font-medium">YOU OWE</span>
+            <span className="text-sm">YOU OWE</span>
           </div>
-          <span className="text-2xl font-bold text-red-600">
+          <span className="text-xl font-medium text-red-600">
             RM {youOwe}
           </span>
         </div>

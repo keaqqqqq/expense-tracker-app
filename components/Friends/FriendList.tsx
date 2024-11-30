@@ -26,15 +26,26 @@ export interface EnrichedRelationship extends Relationship {
 interface FriendListProps {
   relationships: EnrichedRelationship[];
   onAcceptRequest: (relationshipId: string) => Promise<{ success: boolean, message?: string }>;
+  balances?: Array<{
+    friendId: string;
+    totalBalance: number;
+  }>;
 }
 
-const FriendList = ({ relationships, onAcceptRequest }: FriendListProps) => {
+const FriendList = ({ relationships, onAcceptRequest, balances }: FriendListProps) => {
   const [pendingAccepts, setPendingAccepts] = useState<Set<string>>(new Set());
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const { refreshFriends } = useFriends(); 
   const router = useRouter();
   const {currentUser} = useAuth()
+
+  const getBalanceColor = (amount: number) => {
+    if (amount > 0) return 'bg-green-300 text-green-600';
+    if (amount < 0) return 'bg-red-300 text-red-600';
+    return 'bg-zinc-300 text-zinc-600';
+  };
+
   const shouldReplaceExisting = (existing: EnrichedRelationship, new_rel: EnrichedRelationship) => {
     if (new_rel.related_group_id && !existing.related_group_id) return true;
     return new Date(new_rel.created_at || '') > new Date(existing.created_at || '');
@@ -132,12 +143,17 @@ const FriendList = ({ relationships, onAcceptRequest }: FriendListProps) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-w-6xl mx-auto">
         {organizedRelationships.map((relationship) => {
           const status = getRequestStatus(relationship);
+          const friendId = currentUser?.uid === relationship.requester_id
+            ? relationship.addressee_id
+            : relationship.requester_id;
+          const balance = balances?.find(b => b.friendId === friendId)?.totalBalance || 0;
+          const balanceColor = getBalanceColor(balance);
           
           return (
             <Card 
               key={relationship.id} 
               className={`w-full border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors duration-200 bg-white dark:bg-zinc-800/50 ${
-                relationship.related_group_id ? 'ring-1 ring-primary/20' : '' } cursor-pointer
+                relationship.related_group_id ? 'ring-1 ring-primary/20' : ''} cursor-pointer
               }`}
               onClick={() => handleCardClick(relationship)}
             >
@@ -153,9 +169,35 @@ const FriendList = ({ relationships, onAcceptRequest }: FriendListProps) => {
                     )}
                   </Avatar>
                   <div className="min-w-0 flex-1 border-l border-zinc-200 dark:border-zinc-700 pl-3">
-                    <p className="text-sm font-medium truncate text-zinc-900 dark:text-zinc-100">
-                      {relationship.displayInfo.displayName}
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium truncate text-zinc-900 dark:text-zinc-100 mr-5">
+                        {relationship.displayInfo.displayName}
+                      </p>
+                      {relationship.status === 'ACCEPTED' && (
+                        <div className={`text-xs font-medium px-2 py-0.5 rounded-full inline-flex items-center ${
+                          balance > 0 
+                            ? 'bg-green-100 dark:bg-green-900/20' 
+                            : balance < 0 
+                              ? 'bg-red-100 dark:bg-red-900/20'
+                              : 'bg-zinc-100 dark:bg-zinc-800'
+                        }`}>
+                          <span className={`${
+                            balance > 0 
+                              ? 'text-green-700 dark:text-green-400' 
+                              : balance < 0 
+                                ? 'text-red-700 dark:text-red-400'
+                                : 'text-zinc-600 dark:text-zinc-400'
+                          }`}>
+                            {balance > 0 
+                              ? `Owes you RM${balance.toFixed(2)}` 
+                              : balance < 0 
+                                ? `You owe RM${Math.abs(balance).toFixed(2)}`
+                                : 'No balance'
+                            }
+                          </span>
+                        </div>
+                      )}
+                    </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs bg-primary/10 text-primary py-0.5 rounded-full">
                         {status.displayText}
@@ -170,8 +212,8 @@ const FriendList = ({ relationships, onAcceptRequest }: FriendListProps) => {
                 {relationship.role === 'addressee' && 
                  relationship.status === 'PENDING' && (
                   <Button
-                  onClick={(event) => handleAcceptRequest(event, relationship)}
-                  disabled={pendingAccepts.has(relationship.id)}
+                    onClick={(event) => handleAcceptRequest(event, relationship)}
+                    disabled={pendingAccepts.has(relationship.id)}
                     className="ml-4 shrink-0 shadow-sm hover:shadow-md transition-shadow duration-200"
                     variant={relationship.related_group_id ? "default" : "secondary"}
                     size="sm"
@@ -203,5 +245,6 @@ const FriendList = ({ relationships, onAcceptRequest }: FriendListProps) => {
     </>
   );
 };
+
 
 export default FriendList;
