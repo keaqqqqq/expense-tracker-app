@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Search, Menu, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import { createPortal } from 'react-dom';
 
 interface TopBarProps {
   name: string | null;
@@ -37,6 +38,45 @@ const TopBar: React.FC<TopBarProps> = ({ name: initialName, image: initialImage,
     setIsDropdownOpen(false);
   };
 
+  const renderDropdown = () => {
+    if (!isDropdownOpen) return null;
+
+    const buttonRect = document.querySelector('.profile-button')?.getBoundingClientRect();
+    if (!buttonRect) return null;
+
+    return createPortal(
+      <div 
+        className="fixed bg-white rounded-md shadow-lg py-1"
+        style={{
+          top: `${buttonRect.bottom + window.scrollY + 8}px`,
+          left: `${buttonRect.right - 192}px`, // 192px is the width of the dropdown (w-48)
+          width: '12rem',
+          zIndex: 9999
+        }}
+      >
+        <div className="px-4 py-2 text-sm text-gray-700 border-b">
+          <div className="font-medium">{displayName}</div>
+          <div className="text-gray-500 truncate">{userEmail}</div>
+        </div>
+        <button
+          onClick={handleSettingsClick}
+          className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+        >
+          <Settings size={16} />
+          Settings
+        </button>
+        <button
+          onClick={handleLogout}
+          className="w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2"
+        >
+          <LogOut size={16} />
+          Sign out
+        </button>
+      </div>,
+      document.body
+    );
+  };
+
   return (
     <header className="sticky top-0 bg-white text-black p-4 shadow-md">
       <div className="flex justify-between items-center gap-2">
@@ -65,7 +105,7 @@ const TopBar: React.FC<TopBarProps> = ({ name: initialName, image: initialImage,
         <div className="relative">
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center focus:outline-none"
+            className="profile-button flex items-center focus:outline-none"
             aria-expanded={isDropdownOpen}
             aria-haspopup="true"
           >
@@ -90,28 +130,7 @@ const TopBar: React.FC<TopBarProps> = ({ name: initialName, image: initialImage,
             )}
           </button>
 
-          {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
-              <div className="px-4 py-2 text-sm text-gray-700 border-b">
-                <div className="font-medium">{displayName}</div>
-                <div className="text-gray-500 truncate">{userEmail}</div>
-              </div>
-              <button
-                onClick={handleSettingsClick}
-                className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-              >
-                <Settings size={16} />
-                Settings
-              </button>
-              <button
-                onClick={handleLogout}
-                className="w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2"
-              >
-                <LogOut size={16} />
-                Sign out
-              </button>
-            </div>
-          )}
+          {renderDropdown()}
         </div>
       </div>
     </header>
