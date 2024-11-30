@@ -98,6 +98,7 @@ export default function AuthForm() {
     const [invitationDetails, setInvitationDetails] = useState<InvitationDetails | null>(null);
     const [loading, setLoading] = useState(true);
     const { signup, login, currentUser, signInWithGoogle} = useAuth();
+    const [googleLoading, setGoogleLoading] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
@@ -302,7 +303,7 @@ export default function AuthForm() {
     }
 
     async function handleGoogleSignIn() {
-        setAuthenticating(true);
+        setGoogleLoading(true); 
         try {
             const result = await signInWithGoogle();
             if (result.user) {
@@ -331,11 +332,21 @@ export default function AuthForm() {
         } catch (error) {
             console.error('Google sign-in error:', error);
         }
-        setAuthenticating(false);
+        setGoogleLoading(false);
     }
 
     return (
-        <div className='min-h-screen flex flex-col justify-center items-center p-4 bg-gradient-to-b from-white to-indigo-50'>
+        <div className='min-h-screen flex flex-col justify-center items-center p-4 w-full'>
+            {/* Welcome text moved outside */}
+            <div className="text-center mb-8">
+                <h3 className={'text-3xl sm:text-4xl ' + fugaz.className}>
+                    {isRegister ? 'Create Account' : 'Welcome Back'}
+                </h3>
+                <p className="text-gray-600 mt-2">
+                    {isRegister ? 'Join our community today' : 'Sign in to continue'}
+                </p>
+            </div>
+    
             <div className='w-full max-w-md bg-white rounded-2xl shadow-xl p-8'>
                 {invitationData && invitationDetails && (
                     <div className="mb-8">
@@ -345,22 +356,13 @@ export default function AuthForm() {
                         />
                     </div>
                 )}
-
-                <div className="text-center mb-8">
-                    <h3 className={'text-3xl sm:text-4xl ' + fugaz.className}>
-                        {isRegister ? 'Create Account' : 'Welcome Back'}
-                    </h3>
-                    <p className="text-gray-600 mt-2">
-                        {isRegister ? 'Join our community today' : 'Sign in to continue'}
-                    </p>
-                </div>
-
+    
                 <div className="space-y-4">
                     <div>
                         <input
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className='w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors duration-200 outline-none'
+                            className='w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors duration-200 outline-none hover:border-indigo-400'
                             placeholder='Email'
                             disabled={invitationData?.type === 'FRIEND_INVITE'}
                         />
@@ -369,7 +371,7 @@ export default function AuthForm() {
                         <input
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className='w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors duration-200 outline-none'
+                            className='w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors duration-200 outline-none hover:border-indigo-400'
                             placeholder='Password'
                             type='password'
                         />
@@ -393,7 +395,7 @@ export default function AuthForm() {
                             )
                         }
                     />
-
+    
                     <div className="relative">
                         <div className="absolute inset-0 flex items-center">
                             <div className="w-full border-t border-gray-300"></div>
@@ -402,51 +404,58 @@ export default function AuthForm() {
                             <span className="px-2 bg-white text-gray-500">Or continue with</span>
                         </div>
                     </div>
-
+    
                     <Button
                         clickHandler={handleGoogleSignIn}
                         text={
-                            <span className="flex justify-center items-center">
-                                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                                    <path
-                                        fill="currentColor"
-                                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                                    />
-                                    <path
-                                        fill="currentColor"
-                                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                                    />
-                                    <path
-                                        fill="currentColor"
-                                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                                    />
-                                    <path
-                                        fill="currentColor"
-                                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                                    />
-                                </svg>
-                                Continue with Google
-                            </span>
+                            googleLoading ? (
+                                <span className="flex justify-center items-center">
+                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Processing...
+                                </span>
+                            ) : (
+                                <span className="flex justify-center items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" width="18" height="18">
+                                        <path
+                                            fill="#4285F4"
+                                            d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908C16.658 14.2 17.64 11.9 17.64 9.2z"
+                                        />
+                                        <path
+                                            fill="#34A853"
+                                            d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"
+                                        />
+                                        <path
+                                            fill="#FBBC05"
+                                            d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"
+                                        />
+                                        <path
+                                            fill="#EA4335"
+                                            d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"
+                                        />
+                                    </svg>
+                                    &nbsp;&nbsp;Continue with Google
+                                </span>
+                            )
                         }
-                        additionalClasses="bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                        additionalClasses="bg-slate-950 hover:bg-slate-800 transition-colors duration-200"
                     />
                 </div>
-
-                <div className="mt-6 text-center">
-                    <p className='text-gray-600'>
-                        {isRegister ? 'Already have an account? ' : 'New to our platform? '}
-                        <button 
-                            onClick={() => setIsRegister(!isRegister)} 
-                            className='text-indigo-600 hover:text-indigo-800 font-medium transition-colors'
-                        >
-                            {isRegister ? 'Sign in' : 'Create account'}
-                        </button>
-                    </p>
-                </div>
             </div>
-            
-            <div className="mt-8 text-center text-gray-500 text-sm">
-                <p>© {new Date().getFullYear()} Your Platform. All rights reserved.</p>
+    
+            {/* Account toggle text */}
+            <div className="mt-6 text-center">
+                <p className='text-gray-600'>
+                    {isRegister ? "Already have an account? " : "Don't have an account? "}
+                    <button 
+                        onClick={() => setIsRegister(!isRegister)} 
+                        className='text-indigo-600 hover:text-indigo-800 font-medium transition-colors underline underline-offset-2'
+                    >
+                        {isRegister ? 'Sign in' : 'Create account'}
+                    </button>
+                </p>
             </div>
         </div>
     );
