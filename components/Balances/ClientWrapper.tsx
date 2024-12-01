@@ -156,6 +156,8 @@ export default function ClientWrapper({
                     name={userData?.name || null} 
                     image={userData?.image || null}
                     onMenuClick={handleToggleSidebar}
+                    friends={friends}  
+                    groups={groups}   
                 />
                 <div className="p-3 flex-1 sm:p-4 overflow-y-auto">
                     {children}

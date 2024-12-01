@@ -152,7 +152,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
     return (
         <>
-        <Dialog open={isOpen} onClose={handleClose} className="relative z-30">
+        <Dialog open={isOpen} onClose={handleClose} className="relative z-50">
             <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
             <div className="fixed inset-0 overflow-y-auto">
                 <div className="min-h-full flex items-center justify-center p-4">

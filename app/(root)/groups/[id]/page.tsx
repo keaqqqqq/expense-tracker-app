@@ -14,6 +14,7 @@ import { fetchGroupBalances } from '@/lib/actions/user.action';
 import { BalancesProvider } from '@/context/BalanceContext';
 import { getOrCreateGroupInviteLink } from '@/lib/actions/user.action';
 import { Transaction } from '@/types/Transaction';
+import GroupDetailsClient from './GroupDetailsClient';
 interface GroupDetailsPageProps {
   params: {
     id: string;
@@ -114,60 +115,16 @@ export default async function GroupDetailsPage({ params }: GroupDetailsPageProps
 
 
     return (
-      <div>
-        <ExpenseProvider 
-          initialTransactions={initialTransactions}
-          usersData={usersData}
-        >
-         <BalancesProvider
-            userId={uid}
-            initialGroupBalances={groupBalances} 
-            groupId={params.id}
-          >
-          <div className="grid md:grid-cols-4 gap-5 xl:gap-0">
-            <div className="md:col-span-3">
-              <div className="flex flex-col gap-2">
-                <ExpenseCard  
-                  name={group.name}
-                  amount={balance}
-                  type="group"
-                  memberCount={group.members.length}
-                  groupType={group.type}
-                  imageUrl={group.image}
-                  groupId={params.id}
-                />
-                <Suspense fallback={<div className="text-center">Loading expenses...</div>}>
-                  <ExpenseList currentUserId={uid}/>
-                </Suspense>
-              </div>
-            </div>
-            
-            <div className="md:col-span-1 space-y-4">
-              <div className="sticky top-4">
-                <ManageGroup 
-                  groupId={params.id}
-                  groupName={group.name}
-                  inviteLink={inviteLink}
-                  groupData={group}
-                  currentUserId={uid}
-                  groupFriends={groupFriends}  
-                  currentUserEmail={usersData[uid]?.email || ''}
-                  currentUserImage={usersData[uid]?.image}
-                  />
-                  <div className="mt-4">
-                  <Balances
-                    type="group"
-                    groupData={group}   
-                    currentUserId={uid}
-                    groupId={params.id}
-                  />
-                  </div>
-              </div>
-            </div>
-          </div>
-          </BalancesProvider>
-        </ExpenseProvider>
-      </div>
+      <GroupDetailsClient
+        group={group}
+        uid={uid}
+        groupFriends={groupFriends}
+        usersData={usersData}
+        balance={balance}
+        initialTransactions={initialTransactions}
+        groupBalances={groupBalances}
+        inviteLink={inviteLink}
+      />
     );
   } catch (error) {
     console.error('Error loading group details:', error);

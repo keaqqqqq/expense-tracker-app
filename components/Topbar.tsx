@@ -3,14 +3,18 @@ import { Search, Menu, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
-
+import SearchBar from './SearchBar';
+import type { Friend } from '@/types/Friend';
+import type { Group } from '@/types/Group';
 interface TopBarProps {
   name: string | null;
   image: string | null;
   onMenuClick: () => void;
+  friends: Friend[];  
+  groups: Group[]; 
 }
 
-const TopBar: React.FC<TopBarProps> = ({ name: initialName, image: initialImage, onMenuClick }) => {
+const TopBar: React.FC<TopBarProps> = ({ name: initialName, image: initialImage, onMenuClick, friends, groups  }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const { userDataObj, logout } = useAuth();
@@ -78,7 +82,7 @@ const TopBar: React.FC<TopBarProps> = ({ name: initialName, image: initialImage,
   };
 
   return (
-    <header className="sticky top-0 bg-white text-black p-4 shadow-md">
+    <header className="sticky top-0 bg-white text-black p-4 shadow-md md:z-[50]">
       <div className="flex justify-between items-center gap-2">
         <button
           onClick={onMenuClick}
@@ -90,17 +94,8 @@ const TopBar: React.FC<TopBarProps> = ({ name: initialName, image: initialImage,
         </button>
 
         <div className="flex-1 max-w-5xl">
-          <div className="relative">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={handleSearchChange}
-              placeholder="Search..."
-              className="w-full bg-white text-black px-3 py-2 pl-10 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
-            />
-            <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
-          </div>
-        </div>
+        <SearchBar initialFriends={friends} initialGroups={groups} />
+      </div>
 
         <div className="relative">
           <button
