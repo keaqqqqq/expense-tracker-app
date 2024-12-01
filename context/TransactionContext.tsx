@@ -59,6 +59,11 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
 
         await addDoc(collection(db, "Transactions"), newTransaction);
         await updateUserBalance(newTransaction.payer_id, newTransaction.receiver_id, newTransaction.amount);
+        if(newTransaction.group_id){
+            await updateGroupBalance(newTransaction.payer_id, newTransaction.receiver_id, newTransaction.group_id, newTransaction.amount);
+        }else{
+            await updateUserBalance(newTransaction.payer_id, newTransaction.receiver_id, newTransaction.amount);
+        }
         setTransaction(null);
     }
 
@@ -450,7 +455,12 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
     
         const transactionRef = doc(db, "Transactions", updatedTransaction.id);
         const transaction = (await getDoc(transactionRef)).data();
-        await updateUserBalance(transaction?.payer_id, transaction?.receiver_id, -transaction?.amount);
+        if(transaction)
+        if(transaction.group_id){
+            await updateGroupBalance(transaction.payer_id, transaction.receiver_id, transaction.group_id, -transaction.amount);
+        }else{
+            await updateUserBalance(transaction.payer_id, transaction.receiver_id, -transaction.amount);
+        }
         
         try {
             // Update the document in Firestore
@@ -469,11 +479,11 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
             
             // If the payer or amount changed, update user balances
             // This might require additional logic to handle the previous transaction's impact
-            await updateUserBalance(
-                updatedTransaction.payer_id, 
-                updatedTransaction.receiver_id, 
-                updatedTransaction.amount
-            );
+            if(updatedTransaction.group_id){
+                await updateGroupBalance(updatedTransaction.payer_id, updatedTransaction.receiver_id, updatedTransaction.group_id, updatedTransaction.amount);
+            }else{
+                await updateUserBalance(updatedTransaction.payer_id, updatedTransaction.receiver_id, updatedTransaction.amount);
+            }
         } catch (error) {
             console.error('Error updating transaction:', error);
             // Optionally, handle the error (show toast, set error state, etc.)
