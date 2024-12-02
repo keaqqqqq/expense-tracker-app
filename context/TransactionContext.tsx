@@ -50,7 +50,6 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
             console.log('Updating group list');
         }
     }, []);
-
     
     // Method to create a new transaction (you could integrate with a database or API here)
     const createTransaction = async (newTransaction: Omit<Transaction,'id'>) =>{
