@@ -17,7 +17,6 @@ interface TopBarProps {
 }
 
 const TopBar: React.FC<TopBarProps> = ({ name: initialName, image: initialImage, onMenuClick, friends, groups  }) => {
-  const [searchQuery, setSearchQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const { userDataObj, logout } = useAuth();
   const router = useRouter();

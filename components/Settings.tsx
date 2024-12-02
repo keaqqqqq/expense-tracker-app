@@ -5,11 +5,12 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { doc, deleteDoc} from 'firebase/firestore';
 import { db } from '@/firebase/config';
-import { ref, uploadBytes, getDownloadURL, deleteObject} from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, deleteObject, StorageError} from 'firebase/storage';
 import { storage } from '@/firebase/config';
 import Toast from './Toast';
 import { ToastState } from '@/types/Toast';
 import Image from 'next/image';
+import { FirebaseError } from 'firebase/app';
 interface ProfileSettingsProps {
   userData: UserData | null;
 }
@@ -70,9 +71,10 @@ const ProfileSettings = ({ userData }: ProfileSettingsProps) => {
       });      
       setProfile(prev => ({ ...prev, image: imageUrl }));
       setToast({ show: true, message: 'Photo uploaded successfully', type: 'success' });
-    } catch (error: any) {
+    } catch (error: unknown) {
       let errorMessage = 'Error uploading photo';
-      if (error.message) {
+      
+      if (error instanceof Error || error instanceof StorageError) {
         errorMessage = error.message;
       }
       setToast({ show: true, message: errorMessage, type: 'error' });
@@ -90,8 +92,8 @@ const ProfileSettings = ({ userData }: ProfileSettingsProps) => {
       try {
         const storageRef = ref(storage, `profile_images/${currentUser.uid}`);
         await deleteObject(storageRef);
-      } catch (error: any) {
-        if (error.code !== 'storage/object-not-found') {
+      } catch (error: unknown) {
+        if (error instanceof StorageError && error.code !== 'storage/object-not-found') {
           throw error;
         }
       }
@@ -164,15 +166,23 @@ const ProfileSettings = ({ userData }: ProfileSettingsProps) => {
       if (!showEmailUpdate) {
         setShowEmailUpdate(false);
         setCurrentPassword('');
-      } } catch (error: any) {
+      }
+     } catch (error: unknown) {
+        let errorMessage = 'An error occurred while updating profile';
+        
+        if (error instanceof FirebaseError || error instanceof Error) {
+          errorMessage = error.message;
+          
+          if (error.message.includes('password')) {
+            setEmailUpdateError(error.message);
+          }
+        }
+        
         setToast({ 
           show: true, 
-          message: error.message, 
+          message: errorMessage,
           type: 'error' 
         });
-        if (error.message.includes('password')) {
-          setEmailUpdateError(error.message);
-        }
       } finally {
         setIsLoading(false);
       }
@@ -490,6 +500,7 @@ const DeleteAccount = () => {
 const Settings = () => {
   const { currentUser, loading: authLoading, userDataObj } = useAuth();
   const router = useRouter();
+  // eslint-disable-next-line
   const [isLoading, setIsLoading] = useState(false); 
   const [toast, setToast] = useState<ToastState>({
     show: false,

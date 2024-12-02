@@ -2,14 +2,13 @@ import '@testing-library/jest-dom';
 import { jest } from '@jest/globals';
 
 declare global {
-  namespace jest {
-    interface Matchers<R> {
-      toBeInTheDocument(): R;
-    }
+  interface JestMatchers<R> {
+    toBeInTheDocument(): R;
   }
 }
 
 beforeEach(() => {
+  // eslint-disable-next-line
   jest.spyOn(console, 'log').mockImplementation(() => {});
 });
 

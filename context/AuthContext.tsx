@@ -6,15 +6,23 @@ import { auth , db, googleProvider} from '../firebase/config';
 import { useRouter } from 'next/navigation';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Cookies from 'js-cookie'; 
+import { UserCredential } from 'firebase/auth';
+import { FirebaseError } from 'firebase/app';
 
+class VerificationSentError extends Error {
+  constructor() {
+    super('VERIFICATION_SENT');
+    this.name = 'VerificationSentError';
+  }
+}
 interface AuthContextType {
   currentUser: User | null;
   userDataObj: DocumentData | null;
   setUserDataObj: React.Dispatch<React.SetStateAction<DocumentData | null>>;
-  signup: (email: string, password: string) => Promise<any>;
+  signup: (email: string, password: string) => Promise<UserCredential>;
   logout: () => Promise<void>;
-  login: (email: string, password: string) => Promise<any>;
-  signInWithGoogle: () => Promise<any>;
+  login: (email: string, password: string) => Promise<UserCredential>;
+  signInWithGoogle: () => Promise<UserCredential>;
   loading: boolean;
   isProfileComplete: boolean; 
   setIsProfileComplete: React.Dispatch<React.SetStateAction<boolean>>;
@@ -214,12 +222,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await setDoc(doc(db, 'Users', currentUser.uid), userData);
       setUserDataObj(userData);
       return userData;
-    } catch (error: any) {
-      if (error.message === "VERIFICATION_SENT") {
+    } catch (error: unknown) {
+      if (error instanceof VerificationSentError) {
         throw error;
       }
-      console.error("Profile update error:", error);
-      throw error;
+      
+      if (error instanceof FirebaseError || error instanceof Error) {
+        console.error("Profile update error:", error);
+        throw error;
+      }
+      
+      // Handle unexpected error types
+      console.error("Unknown profile update error:", error);
+      throw new Error("An unexpected error occurred");
     }
   };
 

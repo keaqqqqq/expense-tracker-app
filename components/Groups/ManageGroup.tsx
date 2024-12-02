@@ -5,14 +5,15 @@ import { Copy, Settings2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Toast from '../Toast';
 import { getOrCreateGroupInviteLink } from '@/lib/actions/user.action';
-
+import { Group } from '@/types/Group';
+import { Friend } from '@/types/Friend';
 interface ManageGroupProps {
   groupId: string;
   groupName: string;
   inviteLink: string;
-  groupData: any; // Replace with proper type
+  groupData: Group; // Replace with proper type
   currentUserId: string;
-  groupFriends: any[]; // Replace with proper type
+  groupFriends: Friend[]; // Replace with proper type
   currentUserEmail: string;
   currentUserImage?: string;
   modalStateProps: {

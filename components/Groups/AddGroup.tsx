@@ -6,7 +6,6 @@ import { useState, useRef, useEffect } from 'react';
 import { Search, UserCircle, Plane, Home, Heart, PartyPopper, Briefcase, MoreHorizontal } from 'lucide-react';
 import { Group, GroupMember, GroupType } from '@/types/Group';
 import { Friend } from '@/types/Friend';
-import { ToastState } from '@/types/Toast';
 import { saveGroup, updateGroup } from '@/lib/actions/user.action';
 import Image from 'next/image';
 interface TypeOption {
@@ -110,11 +109,6 @@ export default function AddGroup({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewImage, setPreviewImage] = useState<string>('');
   const [members, setMembers] = useState<GroupMember[]>([]);
-  const [toast, setToast] = useState<ToastState>({
-    show: false,
-    message: '',
-    type: 'success'
-  });
 
   const [formData, setFormData] = useState<Omit<Group, 'id'>>({
     type: editData?.type || 'trip',
@@ -326,10 +320,8 @@ export default function AddGroup({
   
       if (isEditing && groupId) {
         await updateGroup(groupId, updatedFormData, currentUserId);
-        setToast({ show: true, message: 'Group updated successfully', type: 'success' });
       } else {
         await saveGroup(updatedFormData, currentUserId);
-        setToast({ show: true, message: 'Group created successfully', type: 'success' });
       }
   
       if (onSuccess) {
@@ -355,7 +347,6 @@ export default function AddGroup({
       setPreviewImage('');
     } catch (error) {
       console.error('Error saving/updating group:', error);
-      setToast({ show: true, message: 'Failed to save group changes', type: 'error' });
     }
   };
 
@@ -424,6 +415,9 @@ export default function AddGroup({
                           src={previewImage}
                           alt="Group avatar"
                           className="w-20 h-20 rounded-full object-cover"
+                          unoptimized
+                          width={100}
+                          height={100}
                         />
                       ) : (
                         <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center">

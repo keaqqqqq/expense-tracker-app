@@ -11,6 +11,7 @@ import { Users, UserPlus2, LogIn } from 'lucide-react';
 import { fetchUserData } from '@/lib/actions/user.action';
 import Button from '../ButtonProps';
 import Image from 'next/image';
+import { GroupMember } from '@/types/Group';
 const fugaz = Fugaz_One({ subsets: ['latin'], weight: ['400'] });
 
 interface InvitationData {
@@ -100,7 +101,6 @@ export default function AuthForm() {
     const [authenticating, setAuthenticating] = useState(false);
     const [invitationData, setInvitationData] = useState<InvitationData | null>(null);
     const [invitationDetails, setInvitationDetails] = useState<InvitationDetails | null>(null);
-    const [loading, setLoading] = useState(true);
     const { signup, login, signInWithGoogle} = useAuth();
     const [googleLoading, setGoogleLoading] = useState(false);
     const router = useRouter();
@@ -109,7 +109,6 @@ export default function AuthForm() {
         async function fetchInvitationDetails() {
             const storedInvitation = localStorage.getItem('invitationData');
             if (!storedInvitation) {
-                setLoading(false);
                 return;
             }
 
@@ -141,7 +140,6 @@ export default function AuthForm() {
             } catch (error) {
                 console.error('Error fetching invitation details:', error);
             }
-            setLoading(false);
         }
 
         fetchInvitationDetails();
@@ -176,7 +174,7 @@ export default function AuthForm() {
                 for (const groupDoc of groupsSnapshot.docs) {
                     const groupData = groupDoc.data();
                     const pendingMember = groupData.pending_members?.find(
-                        (member: any) => member.email === email
+                        (member: GroupMember) => member.email === email
                     );
 
                     if (pendingMember) {
@@ -192,7 +190,7 @@ export default function AuthForm() {
                         };
 
                         const updatedPendingMembers = (groupData.pending_members || [])
-                            .filter((member: any) => member.email !== email);
+                            .filter((member: GroupMember) => member.email !== email);
 
                         await updateDoc(groupDoc.ref, {
                             members: arrayUnion(newMember),

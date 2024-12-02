@@ -32,7 +32,9 @@ const TransactionContext = createContext<TransactionContextType | undefined>(und
 export const TransactionProvider: React.FC<TransactionProviderProps> = ({ children }) => {
     // State to store the current transaction, friend list, and group list
     const [transaction, setTransaction] = useState<Transaction | null>(null);
+    // eslint-disable-next-line
     const [friendList, setFriendList] = useState<Omit<SplitFriend, 'amount'>[]>([]);
+    // eslint-disable-next-line
     const [groupList, setGroupList] = useState<Group[]>([]);
 
 

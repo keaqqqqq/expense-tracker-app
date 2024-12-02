@@ -100,6 +100,7 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
             // Sort filtered expenses by date
             setExpenses(filteredExpenses.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
         } catch (err) {
+            console.log('Error fetchExpenses: ' + err)
             setError('Failed to fetch expenses');
         } finally {
             setLoading(false);
@@ -163,6 +164,7 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
             fetchExpenses(currentUser.uid);
 
         } catch (err) {
+            console.log('Error addExpenses: ' + err)
             setError('Failed to create expense');
         } finally {
             setLoading(false);
@@ -182,6 +184,7 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
                 if (currentUser?.uid)
                     fetchExpenses(currentUser.uid); // Re-fetch expenses after editing
             } catch (err) {
+                console.log('Error editExpenses: ' + err)
                 setError('Failed to edit expense');
             } finally {
                 setLoading(false);
@@ -199,6 +202,7 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
             if (currentUser)
                 fetchExpenses(currentUser.uid); // Re-fetch expenses after deletion
         } catch (err) {
+            console.log('Error deleteExpenses: ' + err)
             setError('Failed to delete expense');
         }
     };
