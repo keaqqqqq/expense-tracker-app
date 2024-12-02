@@ -1,6 +1,6 @@
 import { SplitFriend } from '@/types/SplitFriend';
 import React from 'react';
-
+import Image from 'next/image';
 // Define the type for the props
 interface DisplaySplitterProps {
     friend: SplitFriend & {amount:number};
@@ -10,10 +10,13 @@ interface DisplaySplitterProps {
 const DisplaySplitter: React.FC<DisplaySplitterProps> = ({ friend, handleRemoveFriend }) => {
     return (<>
         <div className="flex flex-row w-full justify-start items-center space-x-4 p-1"> {/* Added space-x-4 for spacing */}
-        <img
+        <Image
             src={friend.image}
             alt={friend.name}
             className="w-8 h-8 rounded-full object-cover" // Circle styling
+            unoptimized
+            width={100}
+            height={100}
         />
         <div className="flex flex-row w-full justify-between">
             <p className="my-auto">{friend.name}</p>

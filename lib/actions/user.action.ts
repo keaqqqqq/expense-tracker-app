@@ -13,6 +13,7 @@ import { Expense } from '@/types/Expense';
 import { Transaction } from '@/types/Transaction';
 import { FriendGroupBalance, Balance } from '@/types/Balance';
 import { cookies } from 'next/headers';
+import { GroupBalance } from '@/types/Balance';
 export const updateUserProfile = async (
   currentUser: User | null,
   name: string,
@@ -625,6 +626,7 @@ export const loadFriends = async (uid: string): Promise<Friend[]> => {
           return null;
         }
       } catch (error) {
+        console.log('Error loadFriends: ' + error)
         return null;
       }
     });
@@ -669,7 +671,7 @@ export async function getGroups(userEmail: string): Promise<Group[]> {
       });
     });
 
-    let userDataMap = new Map<string, { name: string, image: string }>();
+    const userDataMap = new Map<string, { name: string, image: string }>();
 
     if (memberEmails.size > 0) {
       const usersRef = collection(db, 'Users');
@@ -1195,7 +1197,7 @@ async function calculateBalancesFromTransactions(
   };
 }
 
-export async function fetchGroupBalances(userId: string, groupId: string) {
+export async function fetchGroupBalances(userId: string, groupId: string): Promise<GroupBalance[]> {
   try {
     const [groupDoc, transactionsSnap] = await Promise.all([
       getDoc(doc(db, 'Groups', groupId)),
@@ -1243,7 +1245,7 @@ export async function fetchGroupBalances(userId: string, groupId: string) {
           memberName: memberData.name || member?.name || 'Unknown',
           memberImage: memberData.image || '/default-avatar.jpg',
           memberEmail: memberData.email || member?.email || '',
-          netBalance: balance.balance || 0, // Negate to maintain consistency
+          netBalance: balance.balance || 0, 
           settledBalance,
           unsettledBalance
         };
@@ -1264,7 +1266,7 @@ export async function fetchGroupBalances(userId: string, groupId: string) {
           memberName: member?.name || 'Unknown Member',
           memberImage: '/default-avatar.jpg',
           memberEmail: member?.email || '',
-          netBalance: balance.balance || 0, // Negate to maintain consistency
+          netBalance: balance.balance || 0, 
           settledBalance,
           unsettledBalance
         };

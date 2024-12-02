@@ -7,14 +7,6 @@ interface InviteHandlerProps {
   token?: string;
 }
 
-interface InvitationData {
-  token: string;
-  email?: string;
-  requesterId?: string;
-  type?: 'GROUP_INVITE' | 'FRIEND_INVITE';
-  groupId?: string;
-}
-
 export default function InviteHandler({ token }: InviteHandlerProps) {
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(true);

@@ -25,8 +25,7 @@ interface ManageGroupProps {
 export default function ManageGroup({ 
   groupId, 
   currentUserId,
-  modalStateProps: { setIsEditModalOpen },
-  ...props 
+  modalStateProps: { setIsEditModalOpen }
 }: ManageGroupProps) {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -42,6 +41,7 @@ export default function ManageGroup({
       setToastMessage('Invite link copied to clipboard');
       setToastType('success');
     } catch (error) {
+      console.log('Error handleCopyInviteLink: ' + error)
       setToastMessage('Failed to copy invite link');
       setToastType('error');
     }

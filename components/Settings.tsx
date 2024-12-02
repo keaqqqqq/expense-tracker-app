@@ -9,6 +9,7 @@ import { ref, uploadBytes, getDownloadURL, deleteObject} from 'firebase/storage'
 import { storage } from '@/firebase/config';
 import Toast from './Toast';
 import { ToastState } from '@/types/Toast';
+import Image from 'next/image';
 interface ProfileSettingsProps {
   userData: UserData | null;
 }
@@ -191,7 +192,7 @@ return (
       <div className="w-1/3">
         <h2 className="text-xl font-semibold mb-2">Profile Information</h2>
         <p className="text-gray-600 text-sm">
-          Update your account's profile information and email address.
+          Update your account&apos;s profile information and email address.
         </p>
       </div>
       <div className="w-2/3">
@@ -203,10 +204,13 @@ return (
               <div className="flex items-center gap-4">
                 <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
                   {profile.image ? (
-                    <img 
+                    <Image
                       src={profile.image} 
                       alt="Profile" 
                       className="w-full h-full object-cover"
+                      unoptimized
+                      width={100}
+                      height={100}
                     />
                   ) : (
                     <div className="w-full h-full bg-gray-200 rounded-lg" />

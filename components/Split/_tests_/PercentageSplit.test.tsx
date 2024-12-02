@@ -29,9 +29,6 @@ describe('PercentageSplit Component', () => {
     });
   });
 
-  const getTextContent = (text: string) => {
-    return screen.getByText((content) => content.trim() === text);
-  };
 
   it('renders initial state correctly', () => {
     render(<PercentageSplit />);

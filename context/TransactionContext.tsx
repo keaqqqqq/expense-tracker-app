@@ -1,13 +1,11 @@
 'use client'
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import { Expense } from "@/types/Expense";
 import { Group } from "@/types/Group";
 import { SplitFriend } from "@/types/SplitFriend";
 import { Transaction } from '@/types/Transaction';
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import { db } from '@/firebase/config';
-import { fetchExpensesAPI } from '@/api/expenses';
-import { useAuth } from './AuthContext';
 
 // Define the context type based on your provided interface
 interface TransactionContextType {
@@ -290,7 +288,7 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
     const calculateTransaction = async (response: Expense) => {
 
         // Initialize users array from the 'payer' list
-        let users = response.payer.map((p) => ({
+        const users = response.payer.map((p) => ({
             id: p.id,
             pay: p.amount,
             split: 0  // Initialize split to 0 for each payer
@@ -315,7 +313,7 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
         // Calculate amounts owed for each user
         const usersNet = users
             .map((u) => {
-                let amountOwed = u.split - u.pay;
+                const amountOwed = u.split - u.pay;
                 if (amountOwed !== 0) {
                     return { id: u.id, amountOwed };
                 }else{
@@ -335,14 +333,14 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
 
         console.log(usersNet);
 
-        let transaction = [];
+        const transaction = [];
 
         // Step 4: Process each pair of users to determine who owes whom
         for (let i = 0; i < usersNet.length; i++) {
             for (let j = i + 1; j < usersNet.length; j++) {  // j starts from i + 1
                 console.log(`Processing: ${usersNet[i].id} and ${usersNet[j].id}`);
 
-                let total = usersNet[i].amountOwed + usersNet[j].amountOwed;
+                const total = usersNet[i].amountOwed + usersNet[j].amountOwed;
 
                 if (usersNet[i].amountOwed < 0 && usersNet[j].amountOwed > 0) {
                     if (total > 0) {
@@ -418,7 +416,7 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
         // Store the transactions in Firestore
         try {
             console.log('adding transaction')
-            for (let trans of transaction) {
+            for (const trans of transaction) {
                 // Store each transaction in the 'Transactions' collection
                 await addDoc(collection(db, "Transactions"), {
                     ...trans,

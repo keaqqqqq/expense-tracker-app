@@ -1,10 +1,11 @@
 'use client';
-import { User, createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut, updateProfile, EmailAuthProvider, reauthenticateWithCredential, updatePassword, verifyBeforeUpdateEmail, signInWithPopup } from 'firebase/auth';
+import { User, createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut, EmailAuthProvider, reauthenticateWithCredential, updatePassword, verifyBeforeUpdateEmail, signInWithPopup } from 'firebase/auth';
 import { DocumentData, doc, getDoc, setDoc} from 'firebase/firestore';
 import React, { useContext, useState, useEffect, ReactNode } from 'react';
 import { auth , db, googleProvider} from '../firebase/config';
 import { useRouter } from 'next/navigation';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import Cookies from 'js-cookie'; 
 
 interface AuthContextType {
   currentUser: User | null;
@@ -147,6 +148,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const logout = async (): Promise<void> => {
     try {
       clearUserData(); 
+      Cookies.remove('loggedin');
+      Cookies.remove('currentUserUid', { path: '/' });
       await signOut(auth);
       router.push('/auth');
     } catch (error) {

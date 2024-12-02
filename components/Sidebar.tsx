@@ -29,7 +29,6 @@ interface SideBarProps {
 }   
 
 const Sidebar: React.FC<SideBarProps> = ({ 
-    currentUser, 
     initialFriends, 
     initialGroups, 
     className,

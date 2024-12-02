@@ -5,10 +5,7 @@ import { Expense } from '@/types/Expense';
 import { SplitFriend } from '@/types/SplitFriend';
 import { createExpenseAPI, editExpenseAPI, deleteExpenseAPI, fetchExpensesAPI } from '@/api/expenses';
 import { fetchUserData, getGroups, loadFriends } from '@/lib/actions/user.action';
-import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
-import { db } from '@/firebase/config';
 import { Group } from '@/types/Group';
-import { Friend } from '@/types/Friend';
 import { useTransaction } from './TransactionContext';
 
 // Define the context state type

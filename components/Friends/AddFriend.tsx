@@ -73,6 +73,7 @@ const AddFriend: React.FC<AddFriendModalProps> = ({ isOpen, closeModal, onFriend
             }, 2000);
           }
         } catch (error) {
+          console.error('Error in handleInviteFriends:', error); 
           setToastType('error');
           setToastMessage('Error sending invitations. Please try again.');
           setShowToast(true);

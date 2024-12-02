@@ -89,22 +89,20 @@ export default function ClientWrapper({
             }
         };
 
-        // Set up real-time listeners
         const unsubscribeRequester = onSnapshot(
             query(relationshipsRef, where('requester_id', '==', userData.uid)),
-            (snapshot: QuerySnapshot<DocumentData>) => updateFriendsList()
+            () => updateFriendsList()  
         );
-
+        
         const unsubscribeAddressee = onSnapshot(
             query(relationshipsRef, where('addressee_id', '==', userData.uid)),
-            (snapshot: QuerySnapshot<DocumentData>) => updateFriendsList()
+            () => updateFriendsList()  
         );
 
-        // Groups listener
         const groupsRef = collection(db, 'Groups');
         const unsubscribeGroups = onSnapshot(
             groupsRef,
-            async (snapshot: QuerySnapshot<DocumentData>) => {
+            async () => { 
                 if(!userData.email){
                     return null;
                 }

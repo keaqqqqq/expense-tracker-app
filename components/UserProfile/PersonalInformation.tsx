@@ -5,7 +5,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { User, Camera } from 'lucide-react';
 import Toast from '../Toast';
 import Button from './Button';
-
+import Image from 'next/image';
 interface PersonalInformationProps {
   onComplete: () => void;
 }
@@ -58,7 +58,7 @@ export default function PersonalInformation({ onComplete }: PersonalInformationP
               <div className="relative">
                 <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
                   {image ? (
-                    <img src={image} alt="Profile" className="w-full h-full object-cover" />
+                    <Image src={image} alt="Profile" className="w-full h-full object-cover" unoptimized width={100} height={100} />
                   ) : (
                     <User className="w-16 h-16 text-gray-400" />
                   )}

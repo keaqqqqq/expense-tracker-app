@@ -16,7 +16,7 @@ const ExpensePage = async () => {
     const uid = cookieStore.get('currentUserUid')?.value;
   
     if (!uid) {
-        redirect('/login');
+        redirect('/auth');
     }
 
     try {

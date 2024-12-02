@@ -1,17 +1,11 @@
-import React, { Suspense } from 'react';
-import ExpenseCard from '@/components/ExpenseCard';
+import React from 'react';
 import { getGroupDetails, fetchGroupTransactions, fetchUserData } from '@/lib/actions/user.action';
-import ExpenseList from '@/components/ExpenseList';
 import { serializeFirebaseData } from '@/lib/utils';
 import type { GroupedTransactions } from '@/types/ExpenseList';
-import { ExpenseProvider } from '@/context/ExpenseListContext';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import ManageGroup from '@/components/Groups/ManageGroup';
 import { getFriendships } from '@/lib/actions/user.action';
-import Balances from '@/components/Balances/Balance';
 import { fetchGroupBalances } from '@/lib/actions/user.action';
-import { BalancesProvider } from '@/context/BalanceContext';
 import { getOrCreateGroupInviteLink } from '@/lib/actions/user.action';
 import { Transaction } from '@/types/Transaction';
 import GroupDetailsClient from './GroupDetailsClient';
@@ -42,7 +36,7 @@ export default async function GroupDetailsPage({ params }: GroupDetailsPageProps
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <h2 className="text-2xl font-semibold text-gray-900">Group not found</h2>
-            <p className="mt-2 text-gray-600">The group you're looking for doesn't exist.</p>
+            <p className="mt-2 text-gray-600">The group you&apos;re looking for doesn&apos;t exist.</p>
           </div>
         </div>
       );
@@ -112,7 +106,7 @@ export default async function GroupDetailsPage({ params }: GroupDetailsPageProps
         return subTotal;
       }, total);
     }, 0);
-
+    console.log('User data: ' + JSON.stringify(groupBalances))
 
     return (
       <GroupDetailsClient

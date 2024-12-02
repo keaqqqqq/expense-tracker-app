@@ -9,7 +9,7 @@ import {
 import { db } from '../firebase/config';
 import { doc, onSnapshot, collection } from 'firebase/firestore';
 import Toast from '@/components/Toast';
-import { Balance, FriendBalance, GroupBalance, FriendGroupBalance } from '@/types/Balance';
+import { Balance, GroupBalance, FriendGroupBalance } from '@/types/Balance';
 
 interface BalancesContextState {
   balances: Balance[];

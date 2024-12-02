@@ -3,7 +3,7 @@ import { useExpense } from '@/context/ExpenseContext';
 import React, { useEffect, useState } from 'react';
 import DisplayPayer from './DisplayPayer';
 import FormInput from '../FormInput';
-
+import Image from 'next/image';
 interface PayerInfoProps {
 
 }
@@ -41,15 +41,18 @@ const PayerInfo: React.FC<PayerInfoProps> = ({ }) => {
     //     }
     // },[expense.pay_preference])
     const renderPayer = expense.payer.map((p) => {
-        let payerInfo = friendList.find(user=>user.id===p.id)
+        const payerInfo = friendList.find(user=>user.id===p.id)
         if(payerInfo){
         return(
         <>
             <div className="flex flex-row w-full justify-start items-center space-x-4 p-1"> {/* Added space-x-4 for spacing */}
-                <img
+                <Image
                     src={payerInfo.image}
                     alt={payerInfo.name}
                     className="w-8 h-8 rounded-full object-cover" // Circle styling
+                    unoptimized
+                    width={100}
+                    height={100}
                 />
                 <div className="flex flex-row w-full justify-between">
                     <p className="my-auto">{payerInfo.name}</p>

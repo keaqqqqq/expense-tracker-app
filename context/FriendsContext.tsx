@@ -1,6 +1,6 @@
 'use client';
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { getFriendships, fetchUserData } from "@/lib/actions/user.action";
+import { getFriendships } from "@/lib/actions/user.action";
 import { EnrichedRelationship } from '@/components/Friends/FriendList';
 import { useAuth } from '@/context/AuthContext';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';

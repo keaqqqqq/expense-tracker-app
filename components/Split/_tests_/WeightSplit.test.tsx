@@ -29,10 +29,6 @@ describe('WeightSplit Component', () => {
     });
   });
 
-  const getTextContent = (textContent: string) => {
-    return screen.getByText((content) => content.includes(textContent));
-  };
-
   it('renders initial state correctly', () => {
     render(<WeightSplit />);
     

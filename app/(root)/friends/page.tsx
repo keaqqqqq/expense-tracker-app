@@ -1,5 +1,4 @@
-// app/friends/page.tsx
-import { getFriendships, fetchUserData } from "@/lib/actions/user.action"
+import { getFriendships } from "@/lib/actions/user.action"
 import { cookies } from "next/headers";
 import { redirect } from 'next/navigation';
 import { FriendsProvider } from '@/context/FriendsContext';
@@ -12,7 +11,7 @@ export default async function Friends() {
   const uid = cookieStore.get('currentUserUid')?.value;
 
   if (!uid) {
-    redirect('/login');
+    redirect('/auth');
   }
 
   const [relationships, balances] = await Promise.all([

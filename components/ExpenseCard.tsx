@@ -4,6 +4,7 @@ import { Users, User, Check } from 'lucide-react';
 import ExpenseModal from './ManageExpense/ExpenseModal';
 import { useBalances } from '@/context/BalanceContext';
 import TransactionModal from './Transaction/TransactionModal';
+import Image from 'next/image';
 interface ExpenseCardProps {
   name: string;
   amount: number;
@@ -29,7 +30,7 @@ const ExpenseCard = ({
 }: ExpenseCardProps) => {
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
-  const { calculateTotalBalance, refreshBalances } = useBalances();
+  const { calculateTotalBalance } = useBalances();
   const displayAmount = type === 'user' && friendId ? calculateTotalBalance(friendId) : initialAmount;
   const isPositive = displayAmount >= 0;
   const isSettled = displayAmount === 0;
@@ -52,10 +53,13 @@ const ExpenseCard = ({
             <div className="relative">
               <div className="w-12 h-12 bg-gray-200 rounded-full overflow-hidden">
                 {displayImage ? (
-                  <img 
+                  <Image
+                    unoptimized
                     src={displayImage} 
                     alt={name} 
                     className="w-full h-full object-cover"
+                    width={100}
+                    height={100}
                   />
                 ) : (
                   <div className="w-full h-full bg-gray-300 flex items-center justify-center">
