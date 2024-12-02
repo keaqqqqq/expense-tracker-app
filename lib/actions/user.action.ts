@@ -1410,24 +1410,13 @@ export const updateGroup = async (groupId: string, groupData: Omit<Group, 'id'>,
 
     const currentGroup = groupSnapshot.data();
     const currentMembers = new Set(currentGroup.members.map((m: any) => m.email));
+    
+    const originalCreator = currentGroup.members[0];
 
+    const otherMembers = groupData.members.slice(1);
     const processedMembers = await Promise.all(
-      groupData.members.map(async (member) => {
+      otherMembers.map(async (member) => {
         if (!member.email) return member;
-
-        if (member.email === groupData.members[0].email) {
-          const creatorDoc = await getDoc(doc(db, 'Users', requesterId));
-          if (!creatorDoc.exists()) throw new Error('Creator user not found');
-          
-          const creatorData = creatorDoc.data();
-          const existingCreator = currentGroup.members.find((m: any) => m.id === requesterId);
-          return {
-            id: requesterId,
-            name: creatorData.name,
-            email: member.email,
-            balances: existingCreator?.balances || [] 
-          };
-        }
 
         if (currentMembers.has(member.email)) {
           const existingMember = currentGroup.members.find((m: any) => m.email === member.email);
@@ -1542,7 +1531,7 @@ export const updateGroup = async (groupId: string, groupData: Omit<Group, 'id'>,
       name: groupData.name,
       type: groupData.type,
       image: groupData.image,
-      members: activeMembers, 
+      members: [originalCreator, ...activeMembers], 
       updated_at: serverTimestamp(),
       pending_members: [...pendingFriendships, ...pendingInvitations]
     });
