@@ -11,11 +11,11 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <AuthProvider>
-          <ExpenseProvider>
-            <TransactionProvider>
+          <TransactionProvider>
+            <ExpenseProvider>
               {children}
-            </TransactionProvider>
-          </ExpenseProvider>
+            </ExpenseProvider>
+          </TransactionProvider>
         </AuthProvider>
       </body>
     </html>
