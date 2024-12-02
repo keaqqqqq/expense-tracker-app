@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Users, User, Check } from 'lucide-react';
 import ExpenseModal from './ManageExpense/ExpenseModal';
 import { useBalances } from '@/context/BalanceContext';
+import TransactionModal from './Transaction/TransactionModal';
 interface ExpenseCardProps {
   name: string;
   amount: number;
@@ -26,7 +27,8 @@ const ExpenseCard = ({
   friendId,
   groupId
 }: ExpenseCardProps) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const { calculateTotalBalance, refreshBalances } = useBalances();
   const displayAmount = type === 'user' && friendId ? calculateTotalBalance(friendId) : initialAmount;
   const isPositive = displayAmount >= 0;
@@ -34,9 +36,13 @@ const ExpenseCard = ({
   
   const displayImage = type === 'user' ? avatarUrl : imageUrl;
   
-  const openModal = () => setIsModalOpen(true);
-  const closeModal = () => setIsModalOpen(false);
-
+  const openExpenseModal = () => setIsExpenseModalOpen(true);
+  const closeExpenseModal = () => setIsExpenseModalOpen(false);
+  
+  const openTransactionModal = () => setIsTransactionModalOpen(true);
+  const closeTransactionModal = async () => {
+    setIsTransactionModalOpen(false);
+  };
   
   return (
     <>
@@ -103,14 +109,17 @@ const ExpenseCard = ({
 
           <div className="flex gap-3">
             <button 
-              onClick={openModal}
+              onClick={openExpenseModal}
               className="flex items-center gap-2 px-2.5 py-1.5 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 text-sm"
             >
               New expense
             </button>
             
             {!isSettled && (
-              <button className="px-2.5 py-1.5 text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 text-sm">
+              <button 
+                onClick={openTransactionModal}
+                className="px-2.5 py-1.5 text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 text-sm"
+              >
                 Settle up
               </button>
             )}
@@ -119,11 +128,16 @@ const ExpenseCard = ({
       </div>
 
       <ExpenseModal 
-        isOpen={isModalOpen} 
-        closeModal={closeModal}
+        isOpen={isExpenseModalOpen} 
+        closeModal={closeExpenseModal}
         friendId={friendId}
         groupId={groupId}
         refreshAll={false}
+      />
+
+      <TransactionModal
+        isOpen={isTransactionModalOpen}
+        closeModal={closeTransactionModal}
       />
     </>
   );

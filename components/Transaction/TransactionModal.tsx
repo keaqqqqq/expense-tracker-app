@@ -283,7 +283,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal 
   };
 
   return (
-    <Dialog open={isOpen} onClose={closeModal} className="relative z-30">
+    <Dialog open={isOpen} onClose={closeModal} className="relative z-[9999]">
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
       <div className="fixed inset-0 overflow-y-auto">
         <div className="min-h-full flex items-center justify-center p-4">

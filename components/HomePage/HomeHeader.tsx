@@ -4,13 +4,26 @@ import React, { useState } from 'react';
 import ManageHeader from '../ManageHeader';
 import ExpenseModal from '../ManageExpense/ExpenseModal';
 import { refreshBalances } from '@/lib/actions/user.action';
+import TransactionModal from '../Transaction/TransactionModal';
 const HomeHeader = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const { updateBalances } = useBalance();
 
-  const openModal = () => setIsModalOpen(true);
-  const closeModal = async () => {
-    setIsModalOpen(false);
+  const openExpenseModal = () => setIsExpenseModalOpen(true);
+  const openTransactionModal = () => setIsTransactionModalOpen(true);
+
+  const closeExpenseModal = async () => {
+    setIsExpenseModalOpen(false);
+    await refreshBalancesData();
+  };
+
+  const closeTransactionModal = async () => {
+    setIsTransactionModalOpen(false);
+    await refreshBalancesData();
+  };
+
+  const refreshBalancesData = async () => {
     try {
       const newBalances = await refreshBalances();
       updateBalances(newBalances);
@@ -23,12 +36,12 @@ const HomeHeader = () => {
     {
       label: "New expense",
       primary: true,
-      onClick: openModal,
+      onClick: openExpenseModal,
     },
     {
       label: "Settle up",
       secondary: true,
-      onClick: () => {}, 
+      onClick: openTransactionModal,
     }
   ];
 
@@ -41,9 +54,14 @@ const HomeHeader = () => {
       />
       
       <ExpenseModal 
-        isOpen={isModalOpen} 
-        closeModal={closeModal}
+        isOpen={isExpenseModalOpen} 
+        closeModal={closeExpenseModal}
         refreshAll={true}
+      />
+
+      <TransactionModal
+        isOpen={isTransactionModalOpen}
+        closeModal={closeTransactionModal}
       />
     </>
   );
