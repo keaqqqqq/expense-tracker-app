@@ -109,7 +109,7 @@ const ManualSplit: React.FC = () => {
     }, [amounts, expense.splitter.length, expense.split_data?.length]);
 
     // Render expense.splitter list with the entered amounts or calculated ones
-    const renderFriends = expense.splitter.map((friend, index) => {
+    const renderFriends = expense.splitter.map((friend) => {
         const friendInfo = friendList.find(user => user.id === friend.id);
         if (friendInfo) {
             return (<div key={friend.id}>

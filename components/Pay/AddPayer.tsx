@@ -3,12 +3,9 @@ import { useExpense } from '@/context/ExpenseContext';
 import React, { useEffect, useState } from 'react';
 import DisplayPayer from './DisplayPayer';
 import FormInput from '../FormInput';
-import Image from 'next/image';
-interface PayerInfoProps {
-
-}
-
-const PayerInfo: React.FC<PayerInfoProps> = ({ }) => {
+ 
+ 
+const PayerInfo: React.FC = () => {
     const { expense, userData, removePayer, addPayer, setPayPreference, updatePayerAmount, friendList } = useExpense();
     const [isAddPayer, setIsAddPayer] = useState(false);
     const onClickChangePayer = () => {
@@ -33,41 +30,8 @@ const PayerInfo: React.FC<PayerInfoProps> = ({ }) => {
             })
         }
     }, [expense.pay_preference, expense.payer.length, expense.amount])
-    // useEffect(()=>{
-    //     if(expense.pay_preference === 'custom'){
-    //         expense.payer.map((p) => {
-    //             updatePayerAmount(p.id, 0)
-    //         })
-    //     }
-    // },[expense.pay_preference])
-    const renderPayer = expense.payer.map((p) => {
-        const payerInfo = friendList.find(user=>user.id===p.id)
-        if(payerInfo){
-        return(
-        <>
-            <div className="flex flex-row w-full justify-start items-center space-x-4 p-1"> {/* Added space-x-4 for spacing */}
-                <Image
-                    src={payerInfo.image}
-                    alt={payerInfo.name}
-                    className="w-8 h-8 rounded-full object-cover" // Circle styling
-                    unoptimized
-                    width={100}
-                    height={100}
-                />
-                <div className="flex flex-row w-full justify-between">
-                    <p className="my-auto">{payerInfo.name}</p>
-                    <p className="my-auto">RM {p.amount.toFixed(2)}</p>
-                </div>
-            </div>
-            <button
-                className="w-8 border-l py-2 m-0 text-center hover:bg-gray-100"
-                onClick={() => removePayer(p.id)} // Trigger the removal when clicked
-            >
-                x
-            </button>
-        </>)
-        }
-    })
+ 
+ 
     return (<>
         {expense.payer.length === 1 && !isAddPayer &&
             (<>
@@ -105,7 +69,7 @@ const PayerInfo: React.FC<PayerInfoProps> = ({ }) => {
                     <div className='my-auto'>
                         <a
                             className='text-indigo-600 underline cursor-pointer'
-                            onClick={() => { userData ? addPayer(userData.id) : null }}
+                            onClick={() => addPayer(userData?.id ?? '')}
                         >
                             Only I paid
                         </a>
@@ -125,7 +89,7 @@ const PayerInfo: React.FC<PayerInfoProps> = ({ }) => {
                             <option value="equal">Equally</option>
                             <option value="custom">Custom</option>
                         </select>
-
+ 
                     </div>
                     <div className='my-auto'>by</div>
                     <div className='flex-grow px-3'>
@@ -134,7 +98,13 @@ const PayerInfo: React.FC<PayerInfoProps> = ({ }) => {
                     <div className='my-auto'>
                         <a
                             className='text-indigo-600 underline cursor-pointer'
-                            onClick={() => { onClickChangePayer(); userData ? addPayer(userData.id) : null; setIsAddPayer(false) }}
+                            onClick={() => {
+                                onClickChangePayer();
+                                if (userData?.id) {
+                                    addPayer(userData.id);
+                                }
+                                setIsAddPayer(false);
+                            }}
                         >
                             Only I paid
                         </a>
@@ -143,11 +113,11 @@ const PayerInfo: React.FC<PayerInfoProps> = ({ }) => {
                 <div className=''>
                     {expense.payer.map((p) => {
                         return (  // <-- Add return here
-                            <div className='border flex flex-row my-2 rounded justify-between'>
-                                <div className='flex flex-row p-2 justify-between text-xs flex-grow' key={p.id}>  {/* Add a key for list rendering */}
+                            <div className='border flex flex-row my-2 rounded justify-between' key={p.id}>
+                                <div className='flex flex-row p-2 justify-between text-xs flex-grow'>  {/* Add a key for list rendering */}
                                     <div className='my-auto'>{friendList.find(user=>user.id===p.id)?.name}</div>
                                    {expense.pay_preference === 'equal' && <div>RM {p.amount}</div>}
-                                   {expense.pay_preference === 'custom' && 
+                                   {expense.pay_preference === 'custom' &&
                                    <div>RM
                                     <FormInput type='number' value={p.amount} onChange={(e)=>updatePayerAmount(p.id, Number(Number(e.target.value).toFixed(2)))}></FormInput>
                                    </div>
@@ -160,9 +130,9 @@ const PayerInfo: React.FC<PayerInfoProps> = ({ }) => {
                 </div>
             </div>
         )}
-
+ 
     </>
     );
 };
-
+ 
 export default PayerInfo;

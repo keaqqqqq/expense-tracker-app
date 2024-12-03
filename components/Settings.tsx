@@ -500,8 +500,6 @@ const DeleteAccount = () => {
 const Settings = () => {
   const { currentUser, loading: authLoading, userDataObj } = useAuth();
   const router = useRouter();
-  // eslint-disable-next-line
-  const [isLoading, setIsLoading] = useState(false); 
   const [toast, setToast] = useState<ToastState>({
     show: false,
     message: '',
@@ -525,7 +523,7 @@ const Settings = () => {
   }, [currentUser, router, authLoading, userDataObj]);
 
   // Show loading state while auth state is being determined
-  if (authLoading || isLoading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-gray-600">Loading...</div>

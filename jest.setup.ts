@@ -8,9 +8,9 @@ declare global {
 }
 
 beforeEach(() => {
-  // eslint-disable-next-line
-  jest.spyOn(console, 'log').mockImplementation(() => {});
+  jest.spyOn(console, 'log').mockImplementation(() => undefined);
 });
+
 
 afterEach(() => {
   jest.clearAllMocks();
