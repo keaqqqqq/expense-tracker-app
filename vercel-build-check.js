@@ -1,11 +1,11 @@
-// vercel-build-check.js
+/* eslint-disable no-undef */
 const https = require('https');
 
 async function checkCI() {
   if (process.env.VERCEL_GIT_COMMIT_REF === "main") {
     const options = {
       hostname: 'api.github.com',
-      path: `/repos/keachung/expense-tracker-frontend/commits/${process.env.VERCEL_GIT_COMMIT_SHA}/check-runs`,
+      path: `/repos/keaqqqqq/expense-tracker-app/commits/${process.env.VERCEL_GIT_COMMIT_SHA}/check-runs`,
       headers: {
         'Authorization': `Bearer ${process.env.GITHUB_TOKEN}`,
         'User-Agent': 'Vercel-Build',
