@@ -1,9 +1,8 @@
 name: CI/CD
 on:
-  push:
-    branches: [ main ]  
+  push: 
   pull_request:
-    branches: [ main ]
+    branches: [ main ] 
 
 jobs:
   verify-and-deploy:
@@ -27,19 +26,19 @@ jobs:
       - name: Run Tests
         run: npm run test
 
-      # Install Vercel CLI
+      # Only run Vercel steps if we're on main
       - name: Install Vercel CLI
+        if: github.ref == 'refs/heads/main'
         run: npm install --global vercel@latest
 
-      # Pull Vercel Environment Information
       - name: Pull Vercel Environment Information
+        if: github.ref == 'refs/heads/main'
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
-      # Build Project
       - name: Build Project Artifacts
+        if: github.ref == 'refs/heads/main'
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 
-      # Deploy to Vercel
       - name: Deploy to Vercel
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
