@@ -19,6 +19,7 @@ import ExpenseCard from '@/components/ExpenseCard';
 import { Transaction } from '@/types/Transaction';
 import { Balance } from '@/types/Balance';
 import { FriendGroupBalance } from '@/types/Balance';
+import { Friend } from '@/types/Friend';
 interface Props {
   params: {
     id: string;
@@ -30,7 +31,7 @@ const calculateTotalBalance = (
   friendGroupBalances: FriendGroupBalance[],  
   friendId: string
 ) => {
-  const hasNetBalance = (balance: any): boolean => 
+  const hasNetBalance = (balance: Balance | FriendGroupBalance): boolean => 
     balance && typeof balance.netBalance === 'number';
 
   if (!userBalances.every(hasNetBalance) || !friendGroupBalances.every(hasNetBalance)) {
@@ -64,7 +65,7 @@ async function FriendDetails({ params }: Props) {
               Request / Invitation Pending
             </h2>
             <p className="text-gray-500 mb-4">
-              This friend isn't accessible until the friend request is accepted.
+            This friend isn&#39;t accessible until the friend request is accepted.
             </p>
             <ul className="text-sm text-gray-500 mb-6 space-y-2 text-left max-w-sm mx-auto">
               <li className="flex items-start gap-2">
@@ -105,7 +106,7 @@ async function FriendDetails({ params }: Props) {
     const uid = cookieStore.get('currentUserUid')?.value;
   
     if (!uid) {
-      redirect('/login');
+      redirect('/auth');
     }
 
     const relationships = await getFriendships(uid);
@@ -167,7 +168,7 @@ async function FriendDetails({ params }: Props) {
       params.id
     );
 
-    const userData = serializeFirebaseData(rawUserData);
+    const userData = serializeFirebaseData(rawUserData) as Friend;    
       return (
         <ExpenseProvider 
           initialTransactions={initialTransactions}

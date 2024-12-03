@@ -1,5 +1,4 @@
 import { useExpense } from '@/context/ExpenseContext';
-import Image from 'next/image';
 import React, { useEffect } from 'react';
 import DisplaySplitter from './DisplaySplitter';
 
@@ -24,7 +23,7 @@ const EqualSplit: React.FC = () => {
     }, [expense.splitter])
 
     const renderFriends = expense.splitter.map((friend) => {
-        let friendInfo = friendList.find(user => user.id === friend.id)
+        const friendInfo = friendList.find(user => user.id === friend.id)
         if(friendInfo){
             return (
                 <div className="flex flex-row border rounded" key={friend.id}>

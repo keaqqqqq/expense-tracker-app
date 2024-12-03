@@ -1,12 +1,13 @@
 'use client'
-import React, { useState, useMemo, useEffect } from 'react';
-import { ChevronDown, Utensils, Edit2, DollarSign, User, Receipt, Users } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { ChevronDown, Edit2, DollarSign, User, Receipt, Users } from 'lucide-react';
 import type { GroupedTransactions} from '@/types/ExpenseList';
 import { useExpenseList } from '@/context/ExpenseListContext';
 import { Expense } from '@/types/Expense';
 import { Transaction } from '@/types/Transaction';
 import ExpenseCategoryDisplay
  from './ExpenseCategoryDisplay';
+import Image from 'next/image';
 interface ExpenseItemProps {
   groupedTransactions: GroupedTransactions;
   onEdit: (id: string) => void;
@@ -132,7 +133,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
               <div className="flex items-center gap-1.5">
                 <div className="w-5 h-5 rounded-full overflow-hidden bg-gray-200 relative">
                   {userData?.image ? (
-                    <img src={userData.image} alt={userData.name} className="w-full h-full object-cover" />
+                    <Image src={userData.image} alt={userData.name || 'User image'} className="w-full h-full object-cover" unoptimized width={100} height={100} />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <User className="w-3 h-3 text-gray-500" />
@@ -310,10 +311,13 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                                 <div className="flex items-center gap-1.5">
                                   <div className="w-5 h-5 rounded-full overflow-hidden bg-gray-200 relative">
                                     {payerData?.image ? (
-                                      <img 
+                                      <Image
                                         src={payerData.image}
-                                        alt={payerData.name}
+                                        alt={payerData.name || 'User image'}
                                         className="w-full h-full object-cover"
+                                        width={100}
+                                        height={100}
+                                        unoptimized
                                       />
                                     ) : (
                                       <div className="w-full h-full flex items-center justify-center">
@@ -334,10 +338,13 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                                   <div className="flex items-center gap-1.5">
                                     <div className="w-5 h-5 rounded-full overflow-hidden bg-gray-200 relative">
                                       {receiverData?.image ? (
-                                        <img 
+                                        <Image
                                           src={receiverData.image}
-                                          alt={receiverData.name}
+                                          alt={receiverData.name || 'User image'}
                                           className="w-full h-full object-cover"
+                                          width={100}
+                                          height={100}
+                                          unoptimized
                                         />
                                       ) : (
                                         <div className="w-full h-full flex items-center justify-center">
@@ -383,10 +390,13 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                                       <div className="flex items-center gap-1.5">
                                         <div className="w-5 h-5 rounded-full overflow-hidden bg-gray-200 relative">
                                           {payerData?.image ? (
-                                            <img 
+                                            <Image
                                               src={payerData.image}
-                                              alt={payerData.name}
+                                              alt={payerData.name || 'User image'}
                                               className="w-full h-full object-cover"
+                                              unoptimized
+                                              width={100}
+                                              height={100}
                                             />
                                           ) : (
                                             <div className="w-full h-full flex items-center justify-center">
@@ -404,10 +414,13 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                                       <div className="flex items-center gap-1.5">
                                         <div className="w-5 h-5 rounded-full overflow-hidden bg-gray-200 relative">
                                           {receiverData?.image ? (
-                                            <img 
+                                            <Image
                                               src={receiverData.image}
-                                              alt={receiverData.name}
+                                              alt={receiverData.name || 'User image'}
                                               className="w-full h-full object-cover"
+                                              unoptimized
+                                              width={100}
+                                              height={100}
                                             />
                                           ) : (
                                             <div className="w-full h-full flex items-center justify-center">
@@ -447,10 +460,13 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                       <div className="flex items-center gap-1.5">
                         <div className="w-5 h-5 rounded-full overflow-hidden bg-gray-200 relative">
                           {payerData?.image ? (
-                            <img 
+                            <Image
                               src={payerData.image}
-                              alt={payerData.name}
+                              alt={payerData.name || 'User image'}
                               className="w-full h-full object-cover"
+                              unoptimized
+                              width={100}
+                              height={100}
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
@@ -468,10 +484,13 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                       <div className="flex items-center gap-1.5">
                         <div className="w-5 h-5 rounded-full overflow-hidden bg-gray-200 relative">
                           {receiverData?.image ? (
-                            <img 
+                            <Image
                               src={receiverData.image}
-                              alt={receiverData.name}
+                              alt={receiverData.name || 'User image'}
                               className="w-full h-full object-cover"
+                              unoptimized
+                              width={100}
+                              height={100}
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
@@ -507,10 +526,13 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                       <div className="flex items-center gap-2">
                       <div className="w-5 h-5 rounded-full overflow-hidden bg-gray-200 relative">
                       {getUserData(participant.id)?.image ? (
-                            <img 
-                              src={getUserData(participant.id)?.image} 
+                            <Image
+                              src={getUserData(participant.id)?.image || '/default-avatar.jpg'} // Add fallback image
                               alt={participant.name}
                               className="w-full h-full object-cover"
+                              unoptimized
+                              width={100}
+                              height={100}
                             />
                           ) : (
                             <User className="w-3 h-3 text-gray-500" />

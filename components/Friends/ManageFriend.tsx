@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Star, UserMinus, Settings2 } from 'lucide-react';
+import { UserMinus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { removeFriend } from '@/lib/actions/user.action';
 import Toast from '../Toast';
@@ -25,6 +25,7 @@ const ManageFriend = ({ friendId, friendName, currentUserId }: ManageFriendProps
       setShowToast(true);
       router.push('/friends');
     } catch (error) {
+      console.error('Error in handleRemoveFriend:', error); 
       setToastMessage('Failed to remove friend');
       setToastType('error');
       setShowToast(true);

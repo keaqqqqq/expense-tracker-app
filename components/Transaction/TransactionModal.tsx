@@ -7,21 +7,10 @@ import { SplitFriend } from '@/types/SplitFriend';
 import { ArrowRightLeft, MoveRight } from 'lucide-react';
 import SearchableSelect from '../SearchableSelect';
 import { useTransaction } from '@/context/TransactionContext';
-// import SearchableSelect from './SearchableSelect';
-
+import Image from 'next/image';
 interface TransactionModalProps {
   isOpen: boolean;
   closeModal: () => void;
-}
-
-interface Expense {
-  id: string;
-  description: string;
-}
-
-interface Group {
-  id: string;
-  name: string;
 }
 
 const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal }) => {
@@ -134,7 +123,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal 
 
     // If a group is selected, filter by group members
     if (selectedGroup) {
-      let group = groupList.find(g => g.id === selectedGroup);
+      const group = groupList.find(g => g.id === selectedGroup);
       if (group && (!selectedExpense)) {
         const activeGroupMemberIds = group.members
           .filter(member => member.status === 'ACTIVE')
@@ -181,7 +170,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal 
 
     // If a group is selected, filter by group members
     if (selectedGroup) {
-      let group = groupList.find(g => g.id === selectedGroup);
+      const group = groupList.find(g => g.id === selectedGroup);
       if (group && (!selectedExpense)) {
         const activeGroupMemberIds = group.members
           .filter(member => member.status === 'ACTIVE')
@@ -269,19 +258,6 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal 
     }));
   }, [groupList, payer, receiver]);
 
-  const handleSubmit = () => {
-    // Validate required fields
-    if (!payer || !receiver || !amount || !selectedDate) {
-      // Handle validation error
-      return;
-    }
-
-    // Process the transaction
-    // Add your submission logic here
-
-    closeModal();
-  };
-
   return (
     <Dialog open={isOpen} onClose={closeModal} className="relative z-[9999]">
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
@@ -297,10 +273,13 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal 
               <div className='flex flex-row justify-center'>
                 <div className='w-20 h-20 rounded-full overflow-hidden border'>
                   {payer ? (
-                    <img
+                    <Image
                       src={payer.image}
                       alt='Payer'
                       className='w-full h-full object-cover'
+                      unoptimized
+                      width={100}
+                      height={100}
                     />
                   ) : (
                     <div className='bg-gray-200 w-full h-full' />
@@ -317,10 +296,13 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal 
 
                 <div className='w-20 h-20 rounded-full overflow-hidden border'>
                   {receiver ? (
-                    <img
+                    <Image
                       src={receiver.image}
                       alt='Receiver'
                       className='w-full h-full object-cover'
+                      unoptimized
+                      width={100}
+                      height={100}
                     />
                   ) : (
                     <div className='bg-gray-200 w-full h-full' />

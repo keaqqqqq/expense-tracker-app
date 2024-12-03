@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Search, Menu, Settings, LogOut } from 'lucide-react';
+import { Menu, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import SearchBar from './SearchBar';
 import type { Friend } from '@/types/Friend';
 import type { Group } from '@/types/Group';
+import Cookies from 'js-cookie'; 
+import Image from 'next/image';
 interface TopBarProps {
   name: string | null;
   image: string | null;
@@ -15,7 +17,6 @@ interface TopBarProps {
 }
 
 const TopBar: React.FC<TopBarProps> = ({ name: initialName, image: initialImage, onMenuClick, friends, groups  }) => {
-  const [searchQuery, setSearchQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const { userDataObj, logout } = useAuth();
   const router = useRouter();
@@ -24,13 +25,11 @@ const TopBar: React.FC<TopBarProps> = ({ name: initialName, image: initialImage,
   const displayImage = userDataObj !== null ? userDataObj.image : initialImage;
   const userEmail = userDataObj?.email;
 
-  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(event.target.value);
-  };
-
   const handleLogout = async () => {
     try {
       await logout();
+      Cookies.remove('loggedin');
+      Cookies.remove('currentUserUid', { path: '/' });
       window.location.href = '/auth';
     } catch (error) {
       console.error('Error logging out:', error);
@@ -53,7 +52,7 @@ const TopBar: React.FC<TopBarProps> = ({ name: initialName, image: initialImage,
         className="fixed bg-white rounded-md shadow-lg py-1"
         style={{
           top: `${buttonRect.bottom + window.scrollY + 8}px`,
-          left: `${buttonRect.right - 192}px`, // 192px is the width of the dropdown (w-48)
+          left: `${buttonRect.right - 192}px`, 
           width: '12rem',
           zIndex: 9999
         }}
@@ -106,7 +105,7 @@ const TopBar: React.FC<TopBarProps> = ({ name: initialName, image: initialImage,
           >
             {displayImage ? (
               <div className="relative w-8 h-8">
-                <img
+                <Image
                   src={displayImage}
                   alt="Profile"
                   className="w-full h-full rounded-full object-cover"
@@ -114,6 +113,9 @@ const TopBar: React.FC<TopBarProps> = ({ name: initialName, image: initialImage,
                     const target = e.target as HTMLImageElement;
                     target.src = '/default-avatar.jpg';
                   }}
+                  unoptimized
+                  width={100}
+                  height={100}
                 />
               </div>
             ) : (

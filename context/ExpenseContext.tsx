@@ -5,11 +5,9 @@ import { Expense } from '@/types/Expense';
 import { SplitFriend } from '@/types/SplitFriend';
 import { createExpenseAPI, editExpenseAPI, deleteExpenseAPI, fetchExpensesAPI } from '@/api/expenses';
 import { fetchUserData, getGroups, loadFriends } from '@/lib/actions/user.action';
-import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
-import { db } from '@/firebase/config';
 import { Group } from '@/types/Group';
-import { Friend } from '@/types/Friend';
 import { useTransaction } from './TransactionContext';
+import { useExpenseList } from './ExpenseListContext';
 
 // Define the context state type
 interface ExpenseContextType {
@@ -80,7 +78,7 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
         payer: [],
         split_data: [],
     });
-
+    const { refreshAllTransactions, refreshGroupTransactions } = useExpenseList();
     const {calculateTransaction, deleteTransactionsByExpense} = useTransaction();
     const setSplitData = (data: { id: string, value: number }[]) => {
         expense.split_data = data;
@@ -103,6 +101,7 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
             // Sort filtered expenses by date
             setExpenses(filteredExpenses.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()));
         } catch (err) {
+            console.log('Error fetchExpenses: ' + err)
             setError('Failed to fetch expenses');
         } finally {
             setLoading(false);
@@ -143,8 +142,6 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
             return;
         }
 
-
-
         console.log('new expense: ' + JSON.stringify(newExpense))
 
         try {
@@ -161,11 +158,14 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
                 created_by: currentUser.uid, // Add the user UID to the created_by field
             });
 
-            calculateTransaction(response);
-            // Fetch expenses again to make sure we're up-to-date
+            await calculateTransaction(response, {
+                refreshAllTransactions,
+                refreshGroupTransactions
+            });           
             fetchExpenses(currentUser.uid);
 
         } catch (err) {
+            console.log('Error addExpenses: ' + err)
             setError('Failed to create expense');
         } finally {
             setLoading(false);
@@ -181,10 +181,14 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
                 const response = await editExpenseAPI({ ...updatedExpense, id: updatedExpense.id });
                 await deleteTransactionsByExpense(updatedExpense.id);
 
-                calculateTransaction(response);
+                await calculateTransaction(response, {
+                    refreshAllTransactions,
+                    refreshGroupTransactions
+                });           
                 if (currentUser?.uid)
                     fetchExpenses(currentUser.uid); // Re-fetch expenses after editing
             } catch (err) {
+                console.log('Error editExpenses: ' + err)
                 setError('Failed to edit expense');
             } finally {
                 setLoading(false);
@@ -202,6 +206,7 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
             if (currentUser)
                 fetchExpenses(currentUser.uid); // Re-fetch expenses after deletion
         } catch (err) {
+            console.log('Error deleteExpenses: ' + err)
             setError('Failed to delete expense');
         }
     };

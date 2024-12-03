@@ -10,6 +10,8 @@ import { Timestamp } from 'firebase/firestore';
 import { Users, UserPlus2, LogIn } from 'lucide-react';
 import { fetchUserData } from '@/lib/actions/user.action';
 import Button from '../ButtonProps';
+import Image from 'next/image';
+import { GroupMember } from '@/types/Group';
 const fugaz = Fugaz_One({ subsets: ['latin'], weight: ['400'] });
 
 interface InvitationData {
@@ -38,7 +40,7 @@ const InvitationHeader: React.FC<{
             <div className="flex flex-col items-center space-y-3">
                 <div className="relative">
                     {details.requesterImage ? (
-                        <img 
+                        <Image
                             src={details.requesterImage} 
                             alt={details.requesterName}
                             className="w-20 h-20 rounded-full border-4 border-white shadow-lg object-cover"
@@ -46,6 +48,9 @@ const InvitationHeader: React.FC<{
                                 const target = e.target as HTMLImageElement;
                                 target.src = '/default-avatar.jpg'; 
                             }}
+                            unoptimized
+                            width={100}
+                            height={100}
                         />
                     ) : (
                         <div className="w-20 h-20 rounded-full bg-indigo-100 flex items-center justify-center">
@@ -96,8 +101,7 @@ export default function AuthForm() {
     const [authenticating, setAuthenticating] = useState(false);
     const [invitationData, setInvitationData] = useState<InvitationData | null>(null);
     const [invitationDetails, setInvitationDetails] = useState<InvitationDetails | null>(null);
-    const [loading, setLoading] = useState(true);
-    const { signup, login, currentUser, signInWithGoogle} = useAuth();
+    const { signup, login, signInWithGoogle} = useAuth();
     const [googleLoading, setGoogleLoading] = useState(false);
     const router = useRouter();
 
@@ -105,7 +109,6 @@ export default function AuthForm() {
         async function fetchInvitationDetails() {
             const storedInvitation = localStorage.getItem('invitationData');
             if (!storedInvitation) {
-                setLoading(false);
                 return;
             }
 
@@ -116,7 +119,7 @@ export default function AuthForm() {
                 // Fetch requester details
                 const requesterData = await fetchUserData(parsedData.requesterId);
                 
-                let details: InvitationDetails = {
+                const details: InvitationDetails = {
                     requesterName: requesterData?.name || 'Someone',
                     requesterImage: requesterData?.image || null
                 };
@@ -137,7 +140,6 @@ export default function AuthForm() {
             } catch (error) {
                 console.error('Error fetching invitation details:', error);
             }
-            setLoading(false);
         }
 
         fetchInvitationDetails();
@@ -172,7 +174,7 @@ export default function AuthForm() {
                 for (const groupDoc of groupsSnapshot.docs) {
                     const groupData = groupDoc.data();
                     const pendingMember = groupData.pending_members?.find(
-                        (member: any) => member.email === email
+                        (member: GroupMember) => member.email === email
                     );
 
                     if (pendingMember) {
@@ -188,7 +190,7 @@ export default function AuthForm() {
                         };
 
                         const updatedPendingMembers = (groupData.pending_members || [])
-                            .filter((member: any) => member.email !== email);
+                            .filter((member: GroupMember) => member.email !== email);
 
                         await updateDoc(groupDoc.ref, {
                             members: arrayUnion(newMember),

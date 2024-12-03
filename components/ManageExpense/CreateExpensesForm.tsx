@@ -3,8 +3,6 @@ import FormInput from "../FormInput";
 // import { useDispatch, useSelector } from 'react-redux';
 import { useExpense } from '@/context/ExpenseContext';
 import AddPayer from '../Pay/AddPayer';
-import PayTab from '../Pay/PayTab';
-import ExpenseModal from './ExpenseModal';
 import ExpenseCategories from '@/types/ExpenseCategories';
 import ExpenseCategoryDisplay from '../ExpenseCategoryDisplay';
 // import { setAmount, setCategory, setDate, setDescription } from '@/store/expensesSlice';

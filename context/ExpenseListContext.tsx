@@ -26,9 +26,9 @@ const defaultContextValue: ExtendedExpenseContextType = {
   isLoading: false,
   isGroupLoading: false,
   isAllTransactionsLoading: false,
-  refreshTransactions: async () => {},
-  refreshGroupTransactions: async () => {},
-  refreshAllTransactions: async () => {},
+  refreshTransactions: () => Promise.resolve(),
+  refreshGroupTransactions: () => Promise.resolve(),
+  refreshAllTransactions: () => Promise.resolve(),
   usersData: {}
 };
 

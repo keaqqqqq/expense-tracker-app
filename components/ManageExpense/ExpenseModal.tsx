@@ -96,6 +96,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
             });
             closeModal();
         } catch (error) {
+            console.log('Error handleCreate: ' + error)
             setToast({
                 show: true,
                 message: 'Failed to create expense',
@@ -115,6 +116,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
             });
             closeModal();
         } catch (error) {
+            console.log('Error handleEdit: ' + error)
             setToast({
                 show: true,
                 message: 'Failed to update expense',
@@ -134,6 +136,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
                     type: 'success'
                 });
             } catch (error) {
+                console.log('Error handleDelete: ' + error)
                 setToast({
                     show: true,
                     message: 'Failed to delete expense',

@@ -5,10 +5,12 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { doc, deleteDoc} from 'firebase/firestore';
 import { db } from '@/firebase/config';
-import { ref, uploadBytes, getDownloadURL, deleteObject} from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, deleteObject, StorageError} from 'firebase/storage';
 import { storage } from '@/firebase/config';
 import Toast from './Toast';
 import { ToastState } from '@/types/Toast';
+import Image from 'next/image';
+import { FirebaseError } from 'firebase/app';
 interface ProfileSettingsProps {
   userData: UserData | null;
 }
@@ -69,9 +71,10 @@ const ProfileSettings = ({ userData }: ProfileSettingsProps) => {
       });      
       setProfile(prev => ({ ...prev, image: imageUrl }));
       setToast({ show: true, message: 'Photo uploaded successfully', type: 'success' });
-    } catch (error: any) {
+    } catch (error: unknown) {
       let errorMessage = 'Error uploading photo';
-      if (error.message) {
+      
+      if (error instanceof Error || error instanceof StorageError) {
         errorMessage = error.message;
       }
       setToast({ show: true, message: errorMessage, type: 'error' });
@@ -89,8 +92,8 @@ const ProfileSettings = ({ userData }: ProfileSettingsProps) => {
       try {
         const storageRef = ref(storage, `profile_images/${currentUser.uid}`);
         await deleteObject(storageRef);
-      } catch (error: any) {
-        if (error.code !== 'storage/object-not-found') {
+      } catch (error: unknown) {
+        if (error instanceof StorageError && error.code !== 'storage/object-not-found') {
           throw error;
         }
       }
@@ -163,15 +166,23 @@ const ProfileSettings = ({ userData }: ProfileSettingsProps) => {
       if (!showEmailUpdate) {
         setShowEmailUpdate(false);
         setCurrentPassword('');
-      } } catch (error: any) {
+      }
+     } catch (error: unknown) {
+        let errorMessage = 'An error occurred while updating profile';
+        
+        if (error instanceof FirebaseError || error instanceof Error) {
+          errorMessage = error.message;
+          
+          if (error.message.includes('password')) {
+            setEmailUpdateError(error.message);
+          }
+        }
+        
         setToast({ 
           show: true, 
-          message: error.message, 
+          message: errorMessage,
           type: 'error' 
         });
-        if (error.message.includes('password')) {
-          setEmailUpdateError(error.message);
-        }
       } finally {
         setIsLoading(false);
       }
@@ -191,7 +202,7 @@ return (
       <div className="w-1/3">
         <h2 className="text-xl font-semibold mb-2">Profile Information</h2>
         <p className="text-gray-600 text-sm">
-          Update your account's profile information and email address.
+          Update your account&apos;s profile information and email address.
         </p>
       </div>
       <div className="w-2/3">
@@ -203,10 +214,13 @@ return (
               <div className="flex items-center gap-4">
                 <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
                   {profile.image ? (
-                    <img 
+                    <Image
                       src={profile.image} 
                       alt="Profile" 
                       className="w-full h-full object-cover"
+                      unoptimized
+                      width={100}
+                      height={100}
                     />
                   ) : (
                     <div className="w-full h-full bg-gray-200 rounded-lg" />
@@ -486,7 +500,6 @@ const DeleteAccount = () => {
 const Settings = () => {
   const { currentUser, loading: authLoading, userDataObj } = useAuth();
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false); 
   const [toast, setToast] = useState<ToastState>({
     show: false,
     message: '',
@@ -510,7 +523,7 @@ const Settings = () => {
   }, [currentUser, router, authLoading, userDataObj]);
 
   // Show loading state while auth state is being determined
-  if (authLoading || isLoading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-gray-600">Loading...</div>

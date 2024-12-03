@@ -1,6 +1,6 @@
-// lib/utils/relationship-utils.ts
 import { DocumentData } from 'firebase/firestore';
 import { fetchUserData } from "@/lib/actions/user.action";
+import { Relationship } from '@/types/Friend';
 
 interface FirestoreUserData extends DocumentData {
   id: string;
@@ -9,7 +9,6 @@ interface FirestoreUserData extends DocumentData {
   image?: string;
 }
 
-// Moved from your existing code
 const getInitials = (name: string = '') => {
   return name
     .split(' ')
@@ -51,7 +50,7 @@ const convertToUserData = (data: FirestoreUserData | undefined) => {
   };
 };
 
-export async function enrichRelationships(relationships: any[], currentUserId: string) {
+export async function enrichRelationships(relationships: Relationship[], currentUserId: string) {
   return Promise.all(
     relationships.map(async (relationship) => {
       let requesterData: FirestoreUserData | undefined;
@@ -83,8 +82,7 @@ export async function enrichRelationships(relationships: any[], currentUserId: s
   );
 }
 
-// Export utility functions if needed elsewhere
-export {
+ export {
   getInitials,
   createDisplayInfo,
   convertToUserData

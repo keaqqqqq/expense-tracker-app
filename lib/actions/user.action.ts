@@ -13,6 +13,7 @@ import { Expense } from '@/types/Expense';
 import { Transaction } from '@/types/Transaction';
 import { FriendGroupBalance, Balance } from '@/types/Balance';
 import { cookies } from 'next/headers';
+import { GroupBalance } from '@/types/Balance';
 export const updateUserProfile = async (
   currentUser: User | null,
   name: string,
@@ -558,7 +559,7 @@ export const acceptFriendshipAndAddToGroup = async (
       };
 
       const updatedPendingMembers = (groupData.pending_members || [])
-        .filter((member: any) => 
+        .filter((member: GroupMember) => 
           member.id !== currentUserId && 
           member.email !== userData.email
         );
@@ -583,60 +584,55 @@ export const acceptFriendshipAndAddToGroup = async (
 
 
 export const loadFriends = async (uid: string): Promise<Friend[]> => {
-  try {
-    const [requesterSnapshot, addresseeSnapshot] = await Promise.all([
-      getDocs(query(
-        collection(db, 'Friendships'),
-        where('requester_id', '==', uid),
-        where('status', '==', 'ACCEPTED')
-      )),
-      getDocs(query(
-        collection(db, 'Friendships'),
-        where('addressee_id', '==', uid),
-        where('status', '==', 'ACCEPTED')
-      ))
-    ]);
+  const [requesterSnapshot, addresseeSnapshot] = await Promise.all([
+    getDocs(query(
+      collection(db, 'Friendships'),
+      where('requester_id', '==', uid),
+      where('status', '==', 'ACCEPTED')
+    )),
+    getDocs(query(
+      collection(db, 'Friendships'),
+      where('addressee_id', '==', uid),
+      where('status', '==', 'ACCEPTED')
+    ))
+  ]);
 
-    const friendIds = new Set<string>();
-    [...requesterSnapshot.docs, ...addresseeSnapshot.docs].forEach(doc => {
-      const data = doc.data();
-      const friendId = data.requester_id === uid ? data.addressee_id : data.requester_id;
-      friendIds.add(friendId);
-    });
+  const friendIds = new Set<string>();
+  [...requesterSnapshot.docs, ...addresseeSnapshot.docs].forEach(doc => {
+    const data = doc.data();
+    const friendId = data.requester_id === uid ? data.addressee_id : data.requester_id;
+    friendIds.add(friendId);
+  });
 
-    if (friendIds.size === 0) {
-      return [];
-    }
+  if (friendIds.size === 0) {
+    return [];
+  }
 
-    const friendPromises = Array.from(friendIds).map(async friendId => {
-      try {
-        const userDoc = doc(db, 'Users', friendId);
-        const userSnapshot = await getDoc(userDoc);
+  const friendPromises = Array.from(friendIds).map(async friendId => {
+    try {
+      const userDoc = doc(db, 'Users', friendId);
+      const userSnapshot = await getDoc(userDoc);
 
-        if (userSnapshot.exists()) {
-          const userData = userSnapshot.data();
-          return {
-            id: friendId,
-            name: userData.name || 'Unknown',
-            email: userData.email || '',
-            image: userData.image || ''
-          };
-        } else {
-          return null;
-        }
-      } catch (error) {
+      if (userSnapshot.exists()) {
+        const userData = userSnapshot.data();
+        return {
+          id: friendId,
+          name: userData.name || 'Unknown',
+          email: userData.email || '',
+          image: userData.image || ''
+        };
+      } else {
         return null;
       }
-    });
+    } catch (error) {
+      console.log('Error loadFriends: ' + error);
+      return null;
+    }
+  });
 
-    
-    const friends = (await Promise.all(friendPromises))
-      .filter((friend): friend is Friend => friend !== null);
-    return friends;
-
-  } catch (error) {
-    throw error;
-  }
+  const friends = (await Promise.all(friendPromises))
+    .filter((friend): friend is Friend => friend !== null);
+  return friends;
 };
 
 export async function getGroups(userEmail: string): Promise<Group[]> {
@@ -669,7 +665,7 @@ export async function getGroups(userEmail: string): Promise<Group[]> {
       });
     });
 
-    let userDataMap = new Map<string, { name: string, image: string }>();
+    const userDataMap = new Map<string, { name: string, image: string }>();
 
     if (memberEmails.size > 0) {
       const usersRef = collection(db, 'Users');
@@ -1195,7 +1191,7 @@ async function calculateBalancesFromTransactions(
   };
 }
 
-export async function fetchGroupBalances(userId: string, groupId: string) {
+export async function fetchGroupBalances(userId: string, groupId: string): Promise<GroupBalance[]> {
   try {
     const [groupDoc, transactionsSnap] = await Promise.all([
       getDoc(doc(db, 'Groups', groupId)),
@@ -1215,14 +1211,14 @@ export async function fetchGroupBalances(userId: string, groupId: string) {
       ...doc.data()
     })) as Transaction[];
     
-    const currentUserMember = groupData.members.find((member: any) => member.id === userId);
+    const currentUserMember = groupData.members.find((member: GroupMember) => member.id === userId);
     
     if (!currentUserMember || !currentUserMember.balances) {
       return [];
     }
 
-    const balances = await Promise.all(currentUserMember.balances.map(async (balance: any) => {
-      const member = groupData.members.find((m: any) => m.id === balance.id);
+    const balances = await Promise.all(currentUserMember.balances.map(async (balance: Balance) => {
+      const member = groupData.members.find((m: GroupMember) => m.id === balance.id);
       
       try {
         const memberData = await fetchUserData(balance.id);
@@ -1243,7 +1239,7 @@ export async function fetchGroupBalances(userId: string, groupId: string) {
           memberName: memberData.name || member?.name || 'Unknown',
           memberImage: memberData.image || '/default-avatar.jpg',
           memberEmail: memberData.email || member?.email || '',
-          netBalance: balance.balance || 0, // Negate to maintain consistency
+          netBalance: balance.balance || 0, 
           settledBalance,
           unsettledBalance
         };
@@ -1264,7 +1260,7 @@ export async function fetchGroupBalances(userId: string, groupId: string) {
           memberName: member?.name || 'Unknown Member',
           memberImage: '/default-avatar.jpg',
           memberEmail: member?.email || '',
-          netBalance: balance.balance || 0, // Negate to maintain consistency
+          netBalance: balance.balance || 0, 
           settledBalance,
           unsettledBalance
         };
@@ -1351,7 +1347,7 @@ export async function updateGroupBalance(groupId: string, userId: string, newBal
     const groupData = groupSnap.data();
     const members = groupData.members || [];
     
-    const memberIndex = members.findIndex((m: any) => m.id === userId);
+    const memberIndex = members.findIndex((m: GroupMember) => m.id === userId);
     
     if (memberIndex === -1) {
       throw new Error('User not found in group');
@@ -1409,7 +1405,7 @@ export const updateGroup = async (groupId: string, groupData: Omit<Group, 'id'>,
     }
 
     const currentGroup = groupSnapshot.data();
-    const currentMembers = new Set(currentGroup.members.map((m: any) => m.email));
+    const currentMembers = new Set(currentGroup.members.map((m: GroupMember) => m.email));
     
     const originalCreator = currentGroup.members[0];
 
@@ -1419,7 +1415,7 @@ export const updateGroup = async (groupId: string, groupData: Omit<Group, 'id'>,
         if (!member.email) return member;
 
         if (currentMembers.has(member.email)) {
-          const existingMember = currentGroup.members.find((m: any) => m.email === member.email);
+          const existingMember = currentGroup.members.find((m: GroupMember) => m.email === member.email);
           if (existingMember) return {
             ...existingMember,
             balances: existingMember.balances || [] 
@@ -1482,7 +1478,7 @@ export const updateGroup = async (groupId: string, groupData: Omit<Group, 'id'>,
             };
           }
 
-          const existingMember = currentGroup.members.find((m: any) => m.id === userId);
+          const existingMember = currentGroup.members.find((m: GroupMember) => m.id === userId);
           return {
             id: userId,
             name: userData.name,

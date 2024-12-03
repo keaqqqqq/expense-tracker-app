@@ -1,17 +1,14 @@
 // DisplayPayer.tsx
 import React, { useState } from 'react';
 import { useExpense } from '@/context/ExpenseContext';
-
-interface DisplayPayerProps {
-
-}
-
-const DisplayPayer: React.FC<DisplayPayerProps> = ({}) => {
+ 
+ 
+const DisplayPayer: React.FC = () => {
 //   const { expense, userData } = useExpense();
   const { friendList, expense, addPayer } = useExpense();
   const [selectedFriend, setSelectedFriend] = useState<string | null>(null);
-
-
+ 
+ 
   // Handle when a user selects a friend to add to the split
   const handleSelectFriend = (friend:string) => {
     if (!expense.payer.some(f => f.id === friend)) {
@@ -19,7 +16,7 @@ const DisplayPayer: React.FC<DisplayPayerProps> = ({}) => {
       setSelectedFriend(null); // Clear the selected friend
     }
   };
-  
+ 
   return (
     <div className="flex flex-col w-full my-2">
       <select
@@ -51,5 +48,5 @@ const DisplayPayer: React.FC<DisplayPayerProps> = ({}) => {
     </div>
   );
 };
-
+ 
 export default DisplayPayer;

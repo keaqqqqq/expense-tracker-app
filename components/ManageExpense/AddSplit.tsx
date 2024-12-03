@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { SplitFriend } from '@/types/SplitFriend';
 import { useExpense } from '@/context/ExpenseContext';
 import { Group } from '@/types/Group';
 
 const AddSplit: React.FC = () => {
-  const { friendList, expense, addFriendToSplit , groupList, setGroup, setFriendList, removeFriendFromSplit, setExpense, initialFriendList} = useExpense();
+  const { friendList, expense, addFriendToSplit , groupList, setGroup, setFriendList, setExpense, initialFriendList} = useExpense();
   const [selectedFriend, setSelectedFriend] = useState<Omit<SplitFriend, 'amount'> | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<Group|null>(null);
   const [groupFriend, setGroupFriend] = useState<{id:string, amount: number}[]>([]);
@@ -25,7 +25,7 @@ const AddSplit: React.FC = () => {
     const splitter = expense.splitter.filter(s => !groupFriend.some(gf => gf.id === s.id));
     
     // Initialize new group members array with type specification
-    let tempGroupFriend: {id: string, amount: number}[] = [];
+    const tempGroupFriend: {id: string, amount: number}[] = [];
     
     // Process each group member, checking against filtered splitter
     group?.members.forEach((m) => {

@@ -3,7 +3,7 @@ import { Search } from 'lucide-react';
 import Link from 'next/link';
 import { Friend } from '@/types/Friend';
 import { Group } from '@/types/Group';
-
+import Image from 'next/image';
 interface SearchBarProps {
   initialFriends: Friend[];
   initialGroups: Group[];
@@ -76,7 +76,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ initialFriends, initialGroups }) 
                         className="flex items-center px-3 py-2 hover:bg-gray-50 rounded-lg"
                       >
                         {friend.image ? (
-                          <img
+                          <Image
                             src={friend.image}
                             alt={friend.name}
                             className="w-8 h-8 rounded-full object-cover"
@@ -84,6 +84,9 @@ const SearchBar: React.FC<SearchBarProps> = ({ initialFriends, initialGroups }) 
                               const target = e.currentTarget;
                               target.src = '/default-avatar.jpg';
                             }}
+                            unoptimized
+                            width={100}
+                            height={100}
                           />
                         ) : (
                           <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
@@ -109,7 +112,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ initialFriends, initialGroups }) 
                         className="flex items-center px-3 py-2 hover:bg-gray-50 rounded-lg"
                       >
                         {group.image ? (
-                          <img
+                          <Image
                             src={group.image}
                             alt={group.name}
                             className="w-8 h-8 rounded-full object-cover"
@@ -117,6 +120,9 @@ const SearchBar: React.FC<SearchBarProps> = ({ initialFriends, initialGroups }) 
                               const target = e.currentTarget;
                               target.src = '/default-group.jpg';
                             }}
+                            unoptimized
+                            width={100}
+                            height={100}
                           />
                         ) : (
                           <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">

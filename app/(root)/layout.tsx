@@ -15,7 +15,6 @@ interface UserData {
 
 async function getInitialFriends(uid: string): Promise<Friend[]> {
     try {
-        const friendships = [];
         const relationshipsRef = collection(db, 'Friendships');
         
         const requesterQuery = query(

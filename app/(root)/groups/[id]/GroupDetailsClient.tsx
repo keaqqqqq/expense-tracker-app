@@ -10,15 +10,19 @@ import ExpenseList from '@/components/ExpenseList';
 import ManageGroup from '@/components/Groups/ManageGroup';
 import Balances from '@/components/Balances/Balance';
 import { Suspense } from 'react';
-
+import { Group } from '@/types/Group';
+import { Friend } from '@/types/Friend';
+import { UserData } from '@/types/User';
+import { GroupedTransactions } from '@/types/ExpenseList';
+import { GroupBalance } from '@/types/Balance';
 interface GroupDetailsClientProps {
-  group: any; 
+  group: Group; 
   uid: string;
-  groupFriends: any[]; 
-  usersData: any; 
+  groupFriends: Friend[]; 
+  usersData: Record<string, UserData>; 
   balance: number;
-  initialTransactions: any;
-  groupBalances: any;
+  initialTransactions: GroupedTransactions[];
+  groupBalances: GroupBalance[];
   inviteLink: string;
 }
 

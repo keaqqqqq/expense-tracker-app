@@ -40,12 +40,6 @@ const FriendList = ({ relationships, onAcceptRequest, balances }: FriendListProp
   const router = useRouter();
   const {currentUser} = useAuth()
 
-  const getBalanceColor = (amount: number) => {
-    if (amount > 0) return 'bg-green-300 text-green-600';
-    if (amount < 0) return 'bg-red-300 text-red-600';
-    return 'bg-zinc-300 text-zinc-600';
-  };
-
   const shouldReplaceExisting = (existing: EnrichedRelationship, new_rel: EnrichedRelationship) => {
     if (new_rel.related_group_id && !existing.related_group_id) return true;
     return new Date(new_rel.created_at || '') > new Date(existing.created_at || '');
@@ -116,6 +110,7 @@ const FriendList = ({ relationships, onAcceptRequest, balances }: FriendListProp
         setShowToast(true);
       }
     } catch (error) {
+      console.error('Error in handleAcceptRequest:', error); 
       setToastMessage(
         relationship.related_group_id 
           ? "Failed to join group. Please try again."
@@ -147,7 +142,6 @@ const FriendList = ({ relationships, onAcceptRequest, balances }: FriendListProp
             ? relationship.addressee_id
             : relationship.requester_id;
           const balance = balances?.find(b => b.friendId === friendId)?.totalBalance || 0;
-          const balanceColor = getBalanceColor(balance);
           
           return (
             <Card 

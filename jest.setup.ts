@@ -1,17 +1,16 @@
 import '@testing-library/jest-dom';
-import { expect, jest } from '@jest/globals';
+import { jest } from '@jest/globals';
 
 declare global {
-  namespace jest {
-    interface Matchers<R> {
-      toBeInTheDocument(): R;
-    }
+  interface JestMatchers<R> {
+    toBeInTheDocument(): R;
   }
 }
 
 beforeEach(() => {
-  jest.spyOn(console, 'log').mockImplementation(() => {});
+  jest.spyOn(console, 'log').mockImplementation(() => undefined);
 });
+
 
 afterEach(() => {
   jest.clearAllMocks();

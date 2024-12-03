@@ -1,26 +1,13 @@
 'use client'
 
-import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useState, useRef, useEffect } from 'react';
 import { Search, UserCircle, Plane, Home, Heart, PartyPopper, Briefcase, MoreHorizontal } from 'lucide-react';
 import { Group, GroupMember, GroupType } from '@/types/Group';
 import { Friend } from '@/types/Friend';
-import { ToastState } from '@/types/Toast';
 import { saveGroup, updateGroup } from '@/lib/actions/user.action';
-
-interface EditGroupMember {
-  id?: string;
-  email?: string;
-  name?: string;
-  balances?: {
-    [key: string]: {
-      balance: number;
-    };
-  };
-  image?: string;
-}
+import Image from 'next/image';
 interface TypeOption {
   value: GroupType;
   label: string;
@@ -28,13 +15,6 @@ interface TypeOption {
   description: string;
 }
 
-interface PendingGroupMember {
-  email: string;
-  name?: string;
-  image?: string;
-  balances: { [key: string]: { balance: number } };
-  status?: 'PENDING_INVITATION';
-}
 
 const typeOptions: TypeOption[] = [
   {
@@ -129,11 +109,6 @@ export default function AddGroup({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewImage, setPreviewImage] = useState<string>('');
   const [members, setMembers] = useState<GroupMember[]>([]);
-  const [toast, setToast] = useState<ToastState>({
-    show: false,
-    message: '',
-    type: 'success'
-  });
 
   const [formData, setFormData] = useState<Omit<Group, 'id'>>({
     type: editData?.type || 'trip',
@@ -345,10 +320,8 @@ export default function AddGroup({
   
       if (isEditing && groupId) {
         await updateGroup(groupId, updatedFormData, currentUserId);
-        setToast({ show: true, message: 'Group updated successfully', type: 'success' });
       } else {
         await saveGroup(updatedFormData, currentUserId);
-        setToast({ show: true, message: 'Group created successfully', type: 'success' });
       }
   
       if (onSuccess) {
@@ -374,7 +347,6 @@ export default function AddGroup({
       setPreviewImage('');
     } catch (error) {
       console.error('Error saving/updating group:', error);
-      setToast({ show: true, message: 'Failed to save group changes', type: 'error' });
     }
   };
 
@@ -387,11 +359,6 @@ export default function AddGroup({
     friend.id !== currentUserId
   );
 
-  const creatorMember = editData?.members.find(member => member.id === currentUserId);
-  const creatorData = {
-    name: creatorMember?.name || name || email,
-    image: currentUserImage
-  };
     return (
       <>
         <div className="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto z-[9999]">
@@ -444,10 +411,13 @@ export default function AddGroup({
                   <div className="flex items-center gap-3">
                     <div className="relative w-20 h-20 mb-2">
                       {previewImage ? (
-                        <img 
+                        <Image
                           src={previewImage}
                           alt="Group avatar"
                           className="w-20 h-20 rounded-full object-cover"
+                          unoptimized
+                          width={100}
+                          height={100}
                         />
                       ) : (
                         <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center">
@@ -481,10 +451,13 @@ export default function AddGroup({
               {isEditing ? (
                 <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-md ">
                   {formData.members[0]?.image ? (
-                    <img 
+                    <Image
                       src={formData.members[0].image}
-                      alt={formData.members[0].name || formData.members[0].email}
+                      alt={formData.members[0].name || 'User image'}
                       className="w-6 h-6 rounded-full object-cover"
+                      unoptimized
+                      width={100}
+                      height={100}
                     />
                   ) : (
                     <UserCircle className="w-6 h-6 text-gray-400" />
@@ -497,10 +470,13 @@ export default function AddGroup({
               ) : (
                 <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-md">
                   {currentUserImage ? (
-                    <img 
+                    <Image
                       src={currentUserImage}
-                      alt={name || email}
+                      alt={name || 'User image'}
                       className="w-6 h-6 rounded-full object-cover"
+                      unoptimized
+                      width={100}
+                      height={100}
                     />
                   ) : (
                     <UserCircle className="w-6 h-6 text-gray-400" />
@@ -515,10 +491,13 @@ export default function AddGroup({
                     <div key={member.id || member.email} className="flex items-center justify-between bg-gray-50 p-2 rounded-md">
                       <div className="flex items-center gap-2">
                         {member.image ? (
-                          <img 
+                          <Image
                             src={member.image} 
-                            alt={member.name} 
+                            alt={member.name || 'User image'} 
                             className="w-6 h-6 rounded-full object-cover"
+                            unoptimized
+                            width={100}
+                            height={100}
                           />
                         ) : (
                           <UserCircle className="w-6 h-6 text-gray-400" />
@@ -582,10 +561,13 @@ export default function AddGroup({
                           onClick={() => handleFriendSelect(friend)}
                         >
                           {friend.image ? (
-                            <img 
+                            <Image
                               src={friend.image} 
                               alt={friend.name} 
                               className="w-6 h-6 rounded-full object-cover"
+                              unoptimized
+                              width={100}
+                              height={100}
                             />
                           ) : (
                             <UserCircle className="w-6 h-6 text-gray-400" />
