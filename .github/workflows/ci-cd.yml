@@ -20,12 +20,12 @@ jobs:
         run: |
           podman login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
       
-          - name: Build Podman image
-          run: |
-            podman build \
-              --build-arg NEXT_PUBLIC_FIREBASE_API_KEY=${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }} \
-              --build-arg NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }} \
-              -t ghcr.io/${{ github.repository }}:${{ github.sha }} .
+      - name: Build Podman image
+        run: |
+          podman build \
+            --build-arg NEXT_PUBLIC_FIREBASE_API_KEY=${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }} \
+            --build-arg NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }} \
+            -t ghcr.io/${{ github.repository }}:${{ github.sha }} .
       
       - name: Run ESLint
         run: podman run --rm ghcr.io/${{ github.repository }}:${{ github.sha }} npm run lint
