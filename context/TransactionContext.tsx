@@ -1,21 +1,27 @@
 'use client'
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { Expense } from "@/types/Expense";
-import { Group } from "@/types/Group";
-import { SplitFriend } from "@/types/SplitFriend";
 import { Transaction } from '@/types/Transaction';
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import { db } from '@/firebase/config';
-
 // Define the context type based on your provided interface
 interface TransactionContextType {
     transaction: Transaction | null;
-    friendList: Omit<SplitFriend, 'amount'>[];
-    groupList: Group[];
     deleteTransactionsByExpense:(expenseId: string) => void;
-    calculateTransaction: (response: Expense) => void;
+    calculateTransaction: (
+        response: Expense,
+        refreshFunctions: {
+          refreshAllTransactions: (friendIds?: string[], groupIds?: string[]) => Promise<void>;
+          refreshGroupTransactions: (groupId: string) => Promise<void>;
+        }
+      ) => Promise<{ 
+        amount: number; 
+        payer_id: string; 
+        receiver_id: string; 
+        created_at: string; 
+        type: string; 
+      }[]>;
     setTransaction: (transaction: Transaction| null) => void;
-    updateGroupList: (friendId?: string, expenseId?: string) => void;
     createTransaction: (transaction: Omit<Transaction, 'id'>) => void;
     editTransaction: (transaction: Transaction) => void;
 }
@@ -32,24 +38,6 @@ const TransactionContext = createContext<TransactionContextType | undefined>(und
 export const TransactionProvider: React.FC<TransactionProviderProps> = ({ children }) => {
     // State to store the current transaction, friend list, and group list
     const [transaction, setTransaction] = useState<Transaction | null>(null);
-    // eslint-disable-next-line
-    const [friendList, setFriendList] = useState<Omit<SplitFriend, 'amount'>[]>([]);
-    // eslint-disable-next-line
-    const [groupList, setGroupList] = useState<Group[]>([]);
-
-
-
-    // Method to update the group list (could involve logic such as adding/removing friends from groups)
-    const updateGroupList = useCallback((friendId?: string, expenseId?: string) => {
-        // Example logic to modify the group list (you would replace this with actual logic)
-        if (friendId && expenseId) {
-            // Perform group list update based on friendId and expenseId (this is just an example)
-            console.log(`Updating group list with friendId: ${friendId} and expenseId: ${expenseId}`);
-        } else {
-            // Default action or logic for updating the group list
-            console.log('Updating group list');
-        }
-    }, []);
     
     // Method to create a new transaction (you could integrate with a database or API here)
     const createTransaction = async (newTransaction: Omit<Transaction,'id'>) =>{
@@ -106,6 +94,7 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
                     created_at: serverTimestamp(),
                     updated_at: serverTimestamp()
                 });
+                // window.location.reload(); 
                 console.log('Created new ACCEPTED friendship');
             }
     
@@ -287,7 +276,10 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
         }
     };
 
-    const calculateTransaction = async (response: Expense) => {
+    const calculateTransaction = async (response: Expense, refreshFunctions: {
+        refreshAllTransactions: (friendIds?: string[], groupIds?: string[]) => Promise<void>;
+        refreshGroupTransactions: (groupId: string) => Promise<void>;
+    }) => {
 
         // Initialize users array from the 'payer' list
         const users = response.payer.map((p) => ({
@@ -432,6 +424,13 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
                 }
 
                 await checkFriend(trans.payer_id, trans.receiver_id);
+                if(response.group_id) {
+                    await refreshFunctions.refreshGroupTransactions(response.group_id);
+                }
+                await refreshFunctions.refreshAllTransactions(
+                    [trans.payer_id, trans.receiver_id],
+                    response.group_id ? [response.group_id] : undefined
+                );
             }
             console.log("Transactions stored successfully!");
         } catch (error) {
@@ -534,12 +533,9 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
         <TransactionContext.Provider
             value={{
                 transaction,
-                friendList,
-                groupList,
                 deleteTransactionsByExpense,
                 calculateTransaction,
                 setTransaction,
-                updateGroupList,
                 createTransaction,
                 editTransaction
             }}

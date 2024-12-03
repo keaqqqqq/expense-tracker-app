@@ -7,6 +7,7 @@ import { createExpenseAPI, editExpenseAPI, deleteExpenseAPI, fetchExpensesAPI } 
 import { fetchUserData, getGroups, loadFriends } from '@/lib/actions/user.action';
 import { Group } from '@/types/Group';
 import { useTransaction } from './TransactionContext';
+import { useExpenseList } from './ExpenseListContext';
 
 // Define the context state type
 interface ExpenseContextType {
@@ -77,7 +78,7 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
         payer: [],
         split_data: [],
     });
-
+    const { refreshAllTransactions, refreshGroupTransactions } = useExpenseList();
     const {calculateTransaction, deleteTransactionsByExpense} = useTransaction();
     const setSplitData = (data: { id: string, value: number }[]) => {
         expense.split_data = data;
@@ -141,8 +142,6 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
             return;
         }
 
-
-
         console.log('new expense: ' + JSON.stringify(newExpense))
 
         try {
@@ -159,8 +158,10 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
                 created_by: currentUser.uid, // Add the user UID to the created_by field
             });
 
-            calculateTransaction(response);
-            // Fetch expenses again to make sure we're up-to-date
+            await calculateTransaction(response, {
+                refreshAllTransactions,
+                refreshGroupTransactions
+            });           
             fetchExpenses(currentUser.uid);
 
         } catch (err) {
@@ -180,7 +181,10 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
                 const response = await editExpenseAPI({ ...updatedExpense, id: updatedExpense.id });
                 await deleteTransactionsByExpense(updatedExpense.id);
 
-                calculateTransaction(response);
+                await calculateTransaction(response, {
+                    refreshAllTransactions,
+                    refreshGroupTransactions
+                });           
                 if (currentUser?.uid)
                     fetchExpenses(currentUser.uid); // Re-fetch expenses after editing
             } catch (err) {
