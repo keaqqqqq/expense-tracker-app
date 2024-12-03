@@ -1,8 +1,8 @@
 name: CI/CD
 on:
-  push: 
+  push:
   pull_request:
-    branches: [ main ] 
+    branches: [ main ]
 
 jobs:
   verify-and-deploy:
@@ -11,20 +11,38 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-          cache: 'npm'
-          
-      - name: Install dependencies
-        run: npm ci
-        
+      - name: Install Podman
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y podman
+      
+      - name: Login to GitHub Container Registry
+        run: |
+          podman login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Build Podman image
+        run: |
+          podman build \
+            --build-arg NEXT_PUBLIC_FIREBASE_API_KEY=${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }} \
+            --build-arg NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }} \
+            --build-arg NEXT_PUBLIC_FIREBASE_PROJECT_ID=${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }} \
+            --build-arg NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }} \
+            --build-arg NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }} \
+            --build-arg NEXT_PUBLIC_FIREBASE_APP_ID=${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }} \
+            -t ghcr.io/${{ github.repository }}:${{ github.sha }} .
+      
       - name: Run ESLint
-        run: npm run lint
-        
+        run: podman run --rm ghcr.io/${{ github.repository }}:${{ github.sha }} npm run lint
+      
       - name: Run Tests
-        run: npm run test
+        run: podman run --rm ghcr.io/${{ github.repository }}:${{ github.sha }} npm run test
+      
+      - name: Push Podman image
+        if: github.ref == 'refs/heads/main'
+        run: |
+          podman tag ghcr.io/${{ github.repository }}:${{ github.sha }} ghcr.io/${{ github.repository }}:latest
+          podman push ghcr.io/${{ github.repository }}:${{ github.sha }}
+          podman push ghcr.io/${{ github.repository }}:latest
 
       - name: Install Vercel CLI
         if: github.ref == 'refs/heads/main'
