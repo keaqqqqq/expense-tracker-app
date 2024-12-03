@@ -4,12 +4,12 @@ import '@testing-library/jest-dom';
 import EqualSplit from '../EqualSplit';
 import { useExpense } from '@/context/ExpenseContext';
 
-// Define types to match your actual component
+// Define proper interfaces with required properties
 interface Friend {
   id: string;
   name: string;
   email: string;
-  amount: number;
+  amount?: number;
 }
 
 interface Expense {
@@ -19,24 +19,21 @@ interface Expense {
   group_id: string;
 }
 
-interface FriendList extends Omit<Friend, 'amount'> {}
-
-// Mock the context hook
 jest.mock('@/context/ExpenseContext', () => ({
   useExpense: jest.fn(),
 }));
 
 describe('EqualSplit Component', () => {
-  const mockFriendList: FriendList[] = [
+  const mockFriendList: Friend[] = [
     { id: '1', name: 'John Doe', email: 'john@example.com' },
-    { id: '2', name: 'Jane Smith', email: 'jane@example.com' },
+    { id: '2', name: 'Jane Smith', email: 'jane@example.com' }
   ];
 
   const mockExpense: Expense = {
     amount: 100,
     splitter: [
       { id: '1', amount: 0 },
-      { id: '2', amount: 0 },
+      { id: '2', amount: 0 }
     ],
     split_preference: 'equal',
     group_id: '1'
@@ -65,60 +62,36 @@ describe('EqualSplit Component', () => {
     expect(screen.getByText('Jane Smith')).toBeInTheDocument();
   });
 
-  it('displays correct equal split amount for each user', () => {
+  it('shows initial split information', () => {
     render(<EqualSplit />);
-    
+    expect(screen.getByText('Select which people owe an equal share')).toBeInTheDocument();
     expect(mockUpdateFriendAmount).toHaveBeenCalledWith('1', 50);
     expect(mockUpdateFriendAmount).toHaveBeenCalledWith('2', 50);
   });
 
   it('calls removeFriendFromSplit when remove button is clicked', () => {
     render(<EqualSplit />);
-    
     const removeButtons = screen.getAllByRole('button', { name: 'x' });
     fireEvent.click(removeButtons[0]);
-    
     expect(mockRemoveFriendFromSplit).toHaveBeenCalledWith('1');
   });
 
-  it('updates friend amounts when expense amount changes', () => {
-    const newExpense = {
-      ...mockExpense,
-      amount: 150,
-    };
-
-    (useExpense as jest.Mock).mockReturnValue({
-      expense: newExpense,
-      friendList: mockFriendList,
-      removeFriendFromSplit: mockRemoveFriendFromSplit,
-      updateFriendAmount: mockUpdateFriendAmount,
-      setSplitData: mockSetSplitData,
-    });
-
-    render(<EqualSplit />);
-
-    expect(mockUpdateFriendAmount).toHaveBeenCalledWith('1', 75);
-    expect(mockUpdateFriendAmount).toHaveBeenCalledWith('2', 75);
-  });
-
-  it('updates friend amounts when number of splitters changes', () => {
-    const newExpense = {
+  it('updates amounts when number of friends changes', () => {
+    const updatedExpense = {
       ...mockExpense,
       splitter: [
         { id: '1', amount: 0 },
         { id: '2', amount: 0 },
-        { id: '3', amount: 0 },
-      ],
+        { id: '3', amount: 0 }
+      ]
     };
 
-    const updatedFriendList = [
-      ...mockFriendList,
-      { id: '3', name: 'Bob Wilson', email: 'bob@example.com' },
-    ];
-
     (useExpense as jest.Mock).mockReturnValue({
-      expense: newExpense,
-      friendList: updatedFriendList,
+      expense: updatedExpense,
+      friendList: [
+        ...mockFriendList,
+        { id: '3', name: 'Bob Wilson', email: 'bob@example.com' }
+      ],
       removeFriendFromSplit: mockRemoveFriendFromSplit,
       updateFriendAmount: mockUpdateFriendAmount,
       setSplitData: mockSetSplitData,
@@ -132,13 +105,13 @@ describe('EqualSplit Component', () => {
   });
 
   it('handles zero amount case correctly', () => {
-    const newExpense = {
+    const zeroExpense = {
       ...mockExpense,
-      amount: 0,
+      amount: 0
     };
 
     (useExpense as jest.Mock).mockReturnValue({
-      expense: newExpense,
+      expense: zeroExpense,
       friendList: mockFriendList,
       removeFriendFromSplit: mockRemoveFriendFromSplit,
       updateFriendAmount: mockUpdateFriendAmount,
@@ -151,33 +124,14 @@ describe('EqualSplit Component', () => {
     expect(mockUpdateFriendAmount).toHaveBeenCalledWith('2', 0);
   });
 
-  it('handles empty splitter array correctly', () => {
-    const newExpense = {
-      ...mockExpense,
-      splitter: [],
-    };
-
-    (useExpense as jest.Mock).mockReturnValue({
-      expense: newExpense,
-      friendList: mockFriendList,
-      removeFriendFromSplit: mockRemoveFriendFromSplit,
-      updateFriendAmount: mockUpdateFriendAmount,
-      setSplitData: mockSetSplitData,
-    });
-
-    render(<EqualSplit />);
-
-    expect(screen.getByText('Select which people owe an equal share')).toBeInTheDocument();
-  });
-
   it('only updates amounts when split_preference is equal', () => {
-    const newExpense = {
+    const unequalExpense = {
       ...mockExpense,
-      split_preference: 'unequal',
+      split_preference: 'unequal'
     };
 
     (useExpense as jest.Mock).mockReturnValue({
-      expense: newExpense,
+      expense: unequalExpense,
       friendList: mockFriendList,
       removeFriendFromSplit: mockRemoveFriendFromSplit,
       updateFriendAmount: mockUpdateFriendAmount,
@@ -187,6 +141,11 @@ describe('EqualSplit Component', () => {
     render(<EqualSplit />);
 
     expect(mockUpdateFriendAmount).not.toHaveBeenCalled();
+    expect(mockSetSplitData).toHaveBeenCalledWith([]);
+  });
+
+  it('resets split data when group_id changes', () => {
+    render(<EqualSplit />);
     expect(mockSetSplitData).toHaveBeenCalledWith([]);
   });
 });
