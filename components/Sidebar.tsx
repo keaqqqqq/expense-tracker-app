@@ -81,6 +81,15 @@ const Sidebar: React.FC<SideBarProps> = ({
                     </li>
                 ))}
             </ul>
+            {initialFriends.length > 5 && (
+            <Link 
+                href="/friends"
+                className="block px-4 py-2 text-sm text-indigo-600 hover:bg-gray-50 font-medium"
+                onClick={() => isMobile && onClose()}
+            >
+                See all friends →
+            </Link>
+        )}
         </div>
     );
 
@@ -119,6 +128,15 @@ const Sidebar: React.FC<SideBarProps> = ({
                     </li>
                 ))}
             </ul>
+            {initialGroups.length > 5 && (
+            <Link 
+                href="/groups"
+                className="block px-4 py-2 text-sm text-indigo-600 hover:bg-gray-50 font-medium"
+                onClick={() => isMobile && onClose()}
+            >
+                See all groups →
+            </Link>
+        )}
         </div>
     );
 
