@@ -19,6 +19,7 @@ import ExpenseCard from '@/components/ExpenseCard';
 import { Transaction } from '@/types/Transaction';
 import { Balance } from '@/types/Balance';
 import { FriendGroupBalance } from '@/types/Balance';
+import { Friend } from '@/types/Friend';
 interface Props {
   params: {
     id: string;
@@ -167,7 +168,7 @@ async function FriendDetails({ params }: Props) {
       params.id
     );
 
-    const userData = serializeFirebaseData(rawUserData);
+    const userData = serializeFirebaseData(rawUserData) as Friend;    
       return (
         <ExpenseProvider 
           initialTransactions={initialTransactions}
