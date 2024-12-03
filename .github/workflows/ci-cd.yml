@@ -26,7 +26,6 @@ jobs:
       - name: Run Tests
         run: npm run test
 
-      # Only run Vercel steps if we're on main
       - name: Install Vercel CLI
         if: github.ref == 'refs/heads/main'
         run: npm install --global vercel@latest
