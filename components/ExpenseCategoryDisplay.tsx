@@ -62,7 +62,7 @@ export const ExpenseCategoryDisplay: React.FC<ExpenseCategoryDisplayProps> = ({ 
     if (!category) return value;
 
     return (
-        <div className="flex items-center gap-2 cursor-pointer">
+        <div className="flex items-center gap-1 cursor-pointer">
             {getIcon(value)}
             <span className="text-xs text-gray-700"> {category.label}</span>
         </div>

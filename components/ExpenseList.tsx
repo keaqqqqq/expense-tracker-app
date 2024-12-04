@@ -140,7 +140,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                     </div>
                   )}
                 </div>
-                <span className="text-xs text-gray-600">
+                <span className="text-xs text-gray-600 hidden sm:block">
                   {payer.id === currentUserId ? 'You' : userData?.name || payer.id}
                 </span>
               </div>
@@ -210,7 +210,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
           ? 'border-l-4 border-green-400'
           : 'border-l-4 border-red-400'
     }`}>
-        <div className="p-3">
+        <div className="p-3 mb-10 sm:mb-0">
         <div className="flex items-center gap-2 mb-2 text-xs text-gray-500">
           {isDirectPayment ? (
             <>
@@ -220,18 +220,18 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
           ) : (
             <>
               <Receipt className="w-3 h-3" />
-              <span>{isPersonalExpense ? 'Personal Expense' : 'Expense with Split'}</span>
+              <span className='text-xs'>{isPersonalExpense ? 'Personal Expense' : 'Expense with Split'}</span>
             </>
           )}
         </div>
 
           <div className="flex justify-between items-start">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center">
               <button 
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="flex items-center gap-2 focus:outline-none"
               >
-                <span className="text-gray-900 font-medium text-sm">
+                <span className="text-gray-900 font-medium text-xs sm:text-sm">
                   {isDirectPayment ? 'Transfer' : expense?.description}
                 </span>
                 <ChevronDown 
@@ -240,21 +240,21 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
               </button>
 
               {!isDirectPayment && expense?.category && (
-                <div className="flex items-center gap-2 text-gray-500 text-sm">
-                  <div className="flex items-center gap-1 px-2 py-0.5 bg-gray-50 rounded-md">
+                <div className="flex items-center text-gray-500">
+                  <div className="flex items-center py-0.5 ">
                     <ExpenseCategoryDisplay value={expense.category} />
                   </div>
                 </div>
               )}
             </div>
 
-            <div className="flex items-center gap-4">
-              <span className="font-medium text-sm">
+            <div className="flex items-center gap-3">
+              <span className="font-medium text-sm sm: text-xs">
                 RM {summary.totalAmount}
               </span>
               <button 
                 onClick={() => onEdit(expense?.id || transactions[0].payer_id)}
-                className="p-1 text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600"
               >
                 <Edit2 className="w-3 h-3" />
               </button>
@@ -264,7 +264,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
           {allExpense && expense?.group_id && (
             <div className="flex items-center gap-1 text-xs text-gray-500 mt-3">  
               <Users className="w-3 h-3" />
-              <span>{groupName}</span>  
+              <span className='text-xs'>{groupName}</span>  
             </div>
           )}
 
@@ -325,7 +325,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                                       </div>
                                     )}
                                   </div>
-                                  <span className="text-xs text-gray-600">
+                                  <span className="text-xs text-gray-600 hidden sm:block">
                                     {getDisplayName(transaction.payer_id)}
                                   </span>
                                 </div>
@@ -352,7 +352,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                                         </div>
                                       )}
                                     </div>
-                                    <span className="text-xs text-gray-600">
+                                    <span className="text-xs text-gray-600 hidden sm:block">
                                       {getDisplayName(transaction.receiver_id)}
                                     </span>
                                   </div>
@@ -404,7 +404,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                                             </div>
                                           )}
                                         </div>
-                                        <span className="text-xs text-gray-600">
+                                        <span className="text-xs text-gray-600 hidden sm:block">
                                           {getDisplayName(transaction.payer_id)}
                                         </span>
                                       </div>
@@ -428,7 +428,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                                             </div>
                                           )}
                                         </div>
-                                        <span className="text-xs text-gray-600">
+                                        <span className="text-xs text-gray-600 hidden sm:block">
                                           {getDisplayName(transaction.receiver_id)}
                                         </span>
                                       </div>
@@ -474,7 +474,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                             </div>
                           )}
                         </div>
-                        <span className="text-xs text-gray-600">
+                        <span className="text-xs text-gray-600 hidden sm:block">
                           {getDisplayName(transaction.payer_id)}
                         </span>
                       </div>
@@ -498,7 +498,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                             </div>
                           )}
                         </div>
-                        <span className="text-xs text-gray-600">
+                        <span className="text-xs text-gray-600 hidden sm:block">
                           {getDisplayName(transaction.receiver_id)}
                         </span>
                       </div>
@@ -523,7 +523,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                   
                   {summary.participants.map(participant => (
                     <React.Fragment key={participant.id}>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
                       <div className="w-5 h-5 rounded-full overflow-hidden bg-gray-200 relative">
                       {getUserData(participant.id)?.image ? (
                             <Image
@@ -538,7 +538,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                             <User className="w-3 h-3 text-gray-500" />
                           )}
                         </div>
-                        <span className="text-xs text-gray-600">{participant.name}</span>
+                        <span className="hidden sm:block text-gray-600 sm:text-xs">{participant.name}</span>                        
                       </div>
                       <span className="text-xs text-gray-600 text-right">
                         RM {participant.paid}
@@ -589,8 +589,8 @@ const ExpenseList: React.FC<{ currentUserId: string; showAll?: boolean; allExpen
 
   if (!transactions || transactions.length === 0) {
     return (
-      <div className="mt-4">
-        <div className="space-y-4">
+      <div className="mt-4 mb-5">
+        <div className="space-y-4 mb-50">
           <div className="bg-white rounded-lg shadow w-full max-w-7xl">
             <div className="flex flex-col items-center justify-center p-8 text-center">
               <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mb-4">

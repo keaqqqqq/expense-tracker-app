@@ -56,12 +56,12 @@ export function HomeBalanceCard({
         <div className="p-4 h-20">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Avatar className="h-12 w-12">
+              <Avatar className="h-8 w-8 md:h-12 md:w-12">
                 <AvatarImage src={image || '/default-avatar.jpg'} alt={name} />
                 <AvatarFallback>{name[0]}</AvatarFallback>
               </Avatar>
               <div>
-                <h3 className="font-semibold text-base">{name}</h3>
+                <h3 className="font-semibold text-sm sm:text-base">{name}</h3>
                 {!isSettledUp && (
                   <div className={`text-xs font-medium px-2 py-1 rounded-full inline-flex items-center mt-1
                     ${isPositive ? 'text-green-700 bg-green-50' : 'text-red-700 bg-red-50'}`}
@@ -89,10 +89,10 @@ export function HomeBalanceCard({
           <div className="space-y-2 text-sm text-gray-600">
             {directBalance !== 0 && (
               <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <span className="w-5 h-5 flex items-center justify-center mr-2 text-indigo-500">👤</span>
-                  1:1 
-                </div>
+              <div className="flex items-center">
+                <span className="w-5 h-5 flex items-center justify-center mr-2 text-indigo-500">👤</span>
+                <span className="text-xs sm:text-sm">1:1</span>
+              </div>
                 <span className={`ml-1 ${directBalance > 0 ? 'text-green-600' : 'text-red-600'}`}>
                   RM {formattedDirectAmount}
                 </span>
@@ -104,8 +104,8 @@ export function HomeBalanceCard({
                 <div key={index} className="flex items-center justify-between">
                   <div className="flex items-center">
                     <span className="w-5 h-5 flex items-center justify-center mr-2">👥</span>
-                    {group.name}
-                  </div>
+                    <span className="text-xs sm:text-sm">{group.name}</span>
+                    </div>
                   <span className={`ml-1 ${group.balance > 0 ? 'text-green-600' : 'text-red-600'}`}>
                     RM {Math.abs(group.balance).toFixed(2)}
                   </span>
@@ -122,11 +122,11 @@ export function HomeBalanceCard({
           <DialogTrigger asChild onClick={handleCardClick}>
             <div className="p-4 h-16 cursor-pointer hover:bg-gray-100 rounded-b-lg">
               <div className="flex">
-                <button className="px-2.5 py-1.5 text-sm">
+                <button className="px-2.5 py-1.5 text-xs sm:text-sm">
                   Settle up
                 </button>
-                <div className="py-1 text-xs">
-                  <ArrowRight/>
+                <div className="py-2">
+                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
               </div>
             </div>
