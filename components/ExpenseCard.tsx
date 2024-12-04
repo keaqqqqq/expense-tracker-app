@@ -5,6 +5,7 @@ import ExpenseModal from './ManageExpense/ExpenseModal';
 import { useBalances } from '@/context/BalanceContext';
 import TransactionModal from './Transaction/TransactionModal';
 import Image from 'next/image';
+
 interface ExpenseCardProps {
   name: string;
   amount: number;
@@ -47,11 +48,13 @@ const ExpenseCard = ({
   
   return (
     <>
-      <div className="w-full max-w-7xl p-3 bg-white rounded-lg shadow gap-6 ">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <div className="w-12 h-12 bg-gray-200 rounded-full overflow-hidden">
+      <div className="w-full max-w-7xl p-2 sm:p-3 bg-white rounded-lg shadow">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4">
+          {/* Left side - Avatar and Info */}
+          <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+            {/* Avatar */}
+            <div className="relative shrink-0">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-200 rounded-full overflow-hidden">
                 {displayImage ? (
                   <Image
                     unoptimized
@@ -64,32 +67,35 @@ const ExpenseCard = ({
                 ) : (
                   <div className="w-full h-full bg-gray-300 flex items-center justify-center">
                     {type === 'group' ? (
-                      <Users className="text-gray-600" size={24} />
+                      <Users className="text-gray-600 w-5 h-5 sm:w-6 sm:h-6" />
                     ) : (
-                      <User className="text-gray-600" size={24} />
+                      <User className="text-gray-600 w-5 h-5 sm:w-6 sm:h-6" />
                     )}
                   </div>
                 )}
               </div>
               
               {type === 'group' && groupType && (
-                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-gray-100 rounded-full text-xs text-gray-600 whitespace-nowrap border border-gray-200">
+                <div className="absolute -bottom-1 sm:-bottom-2 left-1/2 -translate-x-1/2 px-1.5 sm:px-2 py-0.5 bg-gray-100 rounded-full text-[10px] sm:text-xs text-gray-600 whitespace-nowrap border border-gray-200">
                   {groupType}
                 </div>
               )}
             </div>
             
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base text-lg font-semibold text-gray-900">{name}</h2>
+            {/* Name and Status */}
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <h2 className="text-sm sm:text-base font-semibold text-gray-900 truncate max-w-[200px] sm:max-w-none">
+                  {name}
+                </h2>
                 {type === 'group' && memberCount && (
-                  <span className="text-sm text-gray-500">
+                  <span className="text-xs sm:text-sm text-gray-500">
                     • {memberCount} {memberCount === 1 ? 'member' : 'members'}
                   </span>
                 )}
               </div>
               
-              <div className={`inline-flex items-center gap-1.5 px-3 py-1 mt-1.5 rounded-full text-sm font-medium
+              <div className={`inline-flex items-center gap-1.5 px-2 sm:px-3 py-1 mt-1.5 rounded-full text-xs sm:text-sm font-medium
                 ${isSettled 
                   ? 'text-emerald-700 bg-emerald-50'
                   : isPositive 
@@ -99,34 +105,33 @@ const ExpenseCard = ({
               >
                 {isSettled ? (
                   <>
-                    <Check className="w-4 h-4" />
+                    <Check className="w-3 h-3 sm:w-4 sm:h-4" />
                     <span>Settled up</span>
                   </>
                 ) : (
                   isPositive 
-                ? `Owes you RM${Math.abs(displayAmount).toFixed(2)}`
-                : `You owe RM${Math.abs(displayAmount).toFixed(2)}`
+                    ? `Owes you RM${Math.abs(displayAmount).toFixed(2)}`
+                    : `You owe RM${Math.abs(displayAmount).toFixed(2)}`
                 )}
               </div>
             </div>
           </div>
 
-          <div className="flex gap-3">
+          {/* Right side - Buttons */}
+          <div className="flex gap-2 sm:gap-3 ml-auto sm:ml-0 mt-2 sm:mt-0">
             <button 
               onClick={openExpenseModal}
-              className="flex items-center gap-2 px-2.5 py-1.5 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 text-sm"
+              className="flex items-center justify-center gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 text-xs sm:text-sm flex-1 sm:flex-none whitespace-nowrap"
             >
               New expense
             </button>
             
-            {!isSettled && (
               <button 
                 onClick={openTransactionModal}
-                className="px-2.5 py-1.5 text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 text-sm"
+                className="px-2 sm:px-2.5 py-1 sm:py-1.5 text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 text-xs sm:text-sm flex-1 sm:flex-none whitespace-nowrap"
               >
                 Settle up
               </button>
-            )}
           </div>
         </div>
       </div>

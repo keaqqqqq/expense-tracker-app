@@ -72,9 +72,9 @@ const GroupList: React.FC<GroupListProps> = ({ groups, userEmail }) => {
               <div className="flex-grow">
                 <div className="flex items-center gap-3 mb-2">
                   <h3 className="text-sm font-semibold">{group.name}</h3>
-                  <div className="flex items-center gap-1 text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                  <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
                     {getTypeIcon(group.type)}
-                    <span className="capitalize">{group.type}</span>
+                    <span className="capitalize text-xs sm:text-sm">{group.type}</span>
                   </div>
                 </div>
 
@@ -98,7 +98,7 @@ const GroupList: React.FC<GroupListProps> = ({ groups, userEmail }) => {
                         ) : (
                           <CircleUserRound className="w-4 h-4" />
                         )}
-                        <span>{member.name || 'User'}</span>
+                        <span className='text-xs sm:text-sm'>{member.name || 'User'}</span>
                         {member.email === userEmail && <span className="text-xs">(You)</span>}
                       </div>
                     ))}

@@ -67,11 +67,16 @@ export default function Balances({
 
   const canShowFriendBalance = type === 'friend' && friendData && friendBalance;
   const canShowGroupBalance = type === 'group' && groupData && groupId;
+  const hasGroupBalancesToShow = friendGroupBalances && friendGroupBalances.length > 0;
+
+  const hasFriendBalancesToShow = friendBalance?.netBalance !==0 || friendBalance.settledBalance !==0 || friendBalance.unsettledBalance !==0;
   return (
     <div className="space-y-4 xl:ml-10">
-      <h2 className="text-sm mb-4">
+      {hasFriendBalancesToShow && (
+        <h2 className="text-sm mb-4">
         {type === 'friend' ? 'Friend Balance' : 'Group Members Balance'}
-      </h2>
+        </h2>
+      )}
       
       {canShowFriendBalance && friendBalance && (
         <>
@@ -90,7 +95,9 @@ export default function Balances({
           {/* Friend's group balances */}
           {friendGroupBalances && friendGroupBalances.length > 0 && (
             <>
-              <h3 className="text-sm mb-3 mt-4">Shared Group Balances</h3>
+              { hasGroupBalancesToShow &&               
+              <h3 className="text-sm mb-3 mt-4 ml-2">Shared Group Balances</h3>
+              }
               <div className="space-y-3">
                 {friendGroupBalances.map((groupBalance) => (
                   <BalanceCard

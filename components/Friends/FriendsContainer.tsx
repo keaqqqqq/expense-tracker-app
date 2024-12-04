@@ -115,13 +115,6 @@ function FriendsContainer({ initialBalances }: FriendsContainerProps) {
             balances={balances}
           />
         }
-        nonZeroContent={
-          <FriendList 
-            relationships={filteredRelationships.nonZero}
-            onAcceptRequest={handleAcceptRequest}
-            balances={balances}
-          />
-        }
         owesYouContent={
           <FriendList 
             relationships={filteredRelationships.owesYou}
@@ -137,7 +130,6 @@ function FriendsContainer({ initialBalances }: FriendsContainerProps) {
           />
         }
         allCount={filteredRelationships.all.length}
-        nonZeroCount={filteredRelationships.nonZero.length}
         owesYouCount={filteredRelationships.owesYou.length}
         youOweCount={filteredRelationships.youOwe.length}
       />
