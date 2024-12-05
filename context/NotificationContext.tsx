@@ -36,6 +36,27 @@ export function NotificationProvider({
         }
     }, [userId]);
 
+// In NotificationProvider
+    useEffect(() => {
+        if (userId) {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+                    scope: '/firebase-cloud-messaging-push-scope'
+                })
+                .then(async (registration) => {
+                    await navigator.serviceWorker.ready;
+                    const permission = await Notification.requestPermission();
+                    setNotificationPermission(permission);
+                    if (permission === 'granted') {
+                        const token = await initializeNotifications(userId);
+                        if (token) setToken(token);
+                    }
+                })
+                .catch(err => console.error('SW registration failed:', err));
+            }
+        }
+    }, [userId]);
+
     return (
         <NotificationContext.Provider value={{ token, notificationPermission }}>
             {children}

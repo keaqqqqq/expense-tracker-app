@@ -175,6 +175,14 @@ export async function initializeNotifications(userId: string) {
             return null;
         }
 
+        if ('serviceWorker' in navigator) {
+            const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+            console.log('Service Worker registered:', registration);
+        }
+
+        // Wait for service worker to be ready
+        await navigator.serviceWorker.ready;
+
         const permission = await Notification.requestPermission();
         if (permission !== 'granted') {
             return null;
@@ -185,8 +193,10 @@ export async function initializeNotifications(userId: string) {
 
         const token = await getToken(messaging, {
             vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY
+        }).catch(error => {
+            console.error('Token generation error:', error);
+            return null;
         });
-        console.log('FCM token generated:', token); // Add this
 
         if (token) {
             // Save token to user's document
