@@ -14,6 +14,7 @@ import { Transaction } from '@/types/Transaction';
 import { FriendGroupBalance, Balance } from '@/types/Balance';
 import { cookies } from 'next/headers';
 import { GroupBalance } from '@/types/Balance';
+import { getUserFCMToken, sendNotification } from './notifications';
 export const updateUserProfile = async (
   currentUser: User | null,
   name: string,
@@ -136,6 +137,29 @@ export const saveFriendship = async (requesterId: string, addresseeEmail: string
       };
       
       await addDoc(collection(db, 'Friendships'), friendshipData);
+
+      // Send notification only for existing users
+      const requesterDoc = await getDoc(doc(db, 'Users', requesterId));
+      const requesterName = requesterDoc.data()?.name || 'Someone';
+
+      const addresseeToken = await getUserFCMToken(addresseeId);
+      console.log('Addressee token:', addresseeToken); 
+
+      if (addresseeToken) {
+        try {
+        await sendNotification(
+          addresseeToken,
+          'FRIEND_REQUEST',
+          {
+            fromUser: requesterName,
+            requesterId: requesterId
+          }
+        );
+        console.log('Notification sent successfully'); // Add this
+      }catch (error) {
+        console.error('Error sending notification:', error); // Add this
+    }
+  }
       return { success: true, type: 'friendship_request' };
     } else {
       const invitationsRef = collection(db, 'Invitations');
