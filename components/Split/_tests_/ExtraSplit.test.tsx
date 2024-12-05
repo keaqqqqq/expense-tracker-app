@@ -1,3 +1,4 @@
+/* eslint no-use-before-define: 0 */ // --> OFF
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
