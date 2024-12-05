@@ -44,7 +44,7 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
         // Perform the logic to create a transaction (e.g., add to Firebase, update state)
         console.log('Creating new transaction:', newTransaction);
 
-        await addDoc(collection(db, "Transactions"), newTransaction);
+        await addDoc(collection(db, "Transactions"), {...newTransaction, group_id: newTransaction.group_id || ""});
         await updateUserBalance(newTransaction.payer_id, newTransaction.receiver_id, newTransaction.amount);
         if(newTransaction.group_id){
             await updateGroupBalance(newTransaction.payer_id, newTransaction.receiver_id, newTransaction.group_id, newTransaction.amount);
@@ -466,7 +466,7 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
                 amount: updatedTransaction.amount,
                 created_at: updatedTransaction.created_at,
                 expense_id: updatedTransaction.expense_id,
-                group_id: updatedTransaction.group_id,
+                group_id: updatedTransaction.group_id || "",
                 payer_id: updatedTransaction.payer_id,
                 receiver_id: updatedTransaction.receiver_id,
                 type: updatedTransaction.type,

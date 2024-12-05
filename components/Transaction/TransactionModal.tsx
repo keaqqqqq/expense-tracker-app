@@ -14,7 +14,7 @@ interface TransactionModalProps {
 }
 
 const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal }) => {
-  const { createTransaction, transaction, editTransaction } = useTransaction();
+  const { createTransaction, transaction, editTransaction, setTransaction } = useTransaction();
   const { friendList, expenses, groupList } = useExpense();
   const [payer, setPayer] = useState<Omit<SplitFriend, 'amount'> | undefined>();
   const [receiver, setReceiver] = useState<Omit<SplitFriend, 'amount'> | undefined>();
@@ -67,7 +67,8 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal 
   }
 
   useEffect(() => {
-    if (transaction && transaction.id) {
+    console.log(transaction);
+    if (transaction) {
       const payerFriend = friendList.find(friend => friend.id === transaction.payer_id);
       const receiverFriend = friendList.find(friend => friend.id === transaction.receiver_id);
       setPayer(payerFriend);
@@ -89,6 +90,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal 
   }, [selectedExpense])
 
   const resetTransaction = () => {
+    setTransaction(null);
     setPayer(undefined);
     setReceiver(undefined);
     setAmount(undefined);
