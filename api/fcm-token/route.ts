@@ -14,7 +14,10 @@ export async function POST() {
 
         const client = await auth.getClient();
         const accessToken = await client.getAccessToken();
-
+        console.log('Credentials present:', {
+            hasClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
+            hasPrivateKey: !!process.env.FIREBASE_PRIVATE_KEY
+        });
         return NextResponse.json({ token: accessToken.token });
     } catch (error) {
         console.error('Error getting FCM token:', error);
