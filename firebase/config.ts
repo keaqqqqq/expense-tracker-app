@@ -12,7 +12,6 @@ const firebaseConfig = {
     messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
-console.log('VAPID key starts with:', process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY?.substring(0, 5));
 const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app)

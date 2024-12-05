@@ -140,7 +140,15 @@ export async function sendNotification(
                 })
             }
         );
-
+        console.log('FCM API Response:', response);
+        console.log('Sending notification:', {
+            token: userToken,
+            type,
+            data,
+            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
+        });
+        const accessToken = await getAccessToken();
+        console.log('Access token obtained:', accessToken?.substring(0, 10));
         return response.json();
     } catch (error) {
         console.error('Error sending notification:', error);
