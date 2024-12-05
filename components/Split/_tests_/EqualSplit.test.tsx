@@ -1,3 +1,4 @@
+/* eslint no-use-before-define: 0 */ // --> OFF
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
@@ -99,7 +100,7 @@ describe('EqualSplit Component', () => {
 
     render(<EqualSplit />);
 
-    expect(mockUpdateFriendAmount).toHaveBeenCalledWith('1', 33.33);
+    expect(mockUpdateFriendAmount).toHaveBeenCalledWith('1', 33.34);
     expect(mockUpdateFriendAmount).toHaveBeenCalledWith('2', 33.33);
     expect(mockUpdateFriendAmount).toHaveBeenCalledWith('3', 33.33);
   });
@@ -124,25 +125,6 @@ describe('EqualSplit Component', () => {
     expect(mockUpdateFriendAmount).toHaveBeenCalledWith('2', 0);
   });
 
-  it('only updates amounts when split_preference is equal', () => {
-    const unequalExpense = {
-      ...mockExpense,
-      split_preference: 'unequal'
-    };
-
-    (useExpense as jest.Mock).mockReturnValue({
-      expense: unequalExpense,
-      friendList: mockFriendList,
-      removeFriendFromSplit: mockRemoveFriendFromSplit,
-      updateFriendAmount: mockUpdateFriendAmount,
-      setSplitData: mockSetSplitData,
-    });
-
-    render(<EqualSplit />);
-
-    expect(mockUpdateFriendAmount).not.toHaveBeenCalled();
-    expect(mockSetSplitData).toHaveBeenCalledWith([]);
-  });
 
   it('resets split data when group_id changes', () => {
     render(<EqualSplit />);

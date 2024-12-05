@@ -46,6 +46,12 @@ const PercentageSplit: React.FC = () => {
 
     // Handle friend removal from the split
     const handleRemoveFriend = (friendId: string) => {
+        setPercentages((prev) => {
+            const updated = { ...prev };
+            delete updated[friendId]; // Remove the friend's entry
+            return updated;
+        });
+
         if (expense.split_data) {
             const updatedSplitData = expense.split_data.filter((data) => data.id !== friendId);
             setSplitData(updatedSplitData); // Update the split data
@@ -55,13 +61,46 @@ const PercentageSplit: React.FC = () => {
 
     // Update friend amounts in the context whenever percentages change
     useEffect(() => {
+        // Update each friend's amount based on their percentage
         expense.splitter.forEach((friend) => {
             const friendPercentage = percentages[friend.id] || 0;
             const amountOwed = (friendPercentage / 100) * totalExpense;
             updateFriendAmount(friend.id, amountOwed); // Update each friend's owed amount
         });
-       
+    
+        // Calculate the total distributed amount to all friends
+        let totalDistributed = 0;
+        expense.splitter.forEach((friend) => {
+            totalDistributed += percentages[friend.id] ? (percentages[friend.id] / 100) * totalExpense : 0;
+        });
+    
+        const totalPercentage = Object.values(percentages).reduce((acc, curr) => acc + curr, 0);
+        
+        // Only adjust if total percentage is exactly 100
+        if (totalPercentage === 100) {
+            let difference = Math.round((totalExpense - totalDistributed) * 100); // Difference in cents
+            let i = 0;
+    
+            while (Math.abs(difference) > 0 && i < expense.splitter.length) {
+                const friendId = expense.splitter[i].id;
+                const currentAmountInCents = Math.round((percentages[friendId] / 100) * totalExpense * 100);
+    
+                if (difference > 0) {
+                    // Add 0.01 to the first friend if total is less than the expense
+                    updateFriendAmount(friendId, (currentAmountInCents + 1) / 100);
+                    difference -= 1;
+                } else if (difference < 0) {
+                    // Deduct 0.01 from the first friend if total exceeds the expense
+                    const newAmountInCents = Math.max(0, currentAmountInCents - 1);
+                    updateFriendAmount(friendId, newAmountInCents / 100);
+                    difference += 1;
+                }
+                i++;
+            }
+        }
     }, [percentages, totalExpense, expense.splitter.length]);
+    
+    
 
     useEffect(()=>{
         if(expense.id && expense.split_data){

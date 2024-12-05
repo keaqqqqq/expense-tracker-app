@@ -8,6 +8,8 @@ import { Transaction } from '@/types/Transaction';
 import ExpenseCategoryDisplay
  from './ExpenseCategoryDisplay';
 import Image from 'next/image';
+import { useExpense } from '@/context/ExpenseContext';
+import ExpenseModal from './ManageExpense/ExpenseModal';
 interface ExpenseItemProps {
   groupedTransactions: GroupedTransactions;
   onEdit: (id: string) => void;
@@ -570,9 +572,15 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
   );
 };
 
-const ExpenseList: React.FC<{ currentUserId: string; showAll?: boolean; allExpense?: boolean; }> = ({ currentUserId, showAll = false, allExpense= false }) => {
+const ExpenseList: React.FC<{ currentUserId: string; showAll?: boolean; allExpense?: boolean;}> = ({ currentUserId, showAll = false, allExpense= false }) => {
   const { groupTransactions, groupedTransactions, groupDetails } = useExpenseList();
-  
+  const {setExpenseById} = useExpense();
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const handleEditExpense = (id: string) => {
+            console.log('this is id', id)
+            setExpenseById(id);
+            setIsExpenseModalOpen(true);
+        }
   const transactions = useMemo(() => {
     if (!showAll) {
       return groupTransactions?.length > 0 ? groupTransactions : groupedTransactions;
@@ -616,13 +624,18 @@ const ExpenseList: React.FC<{ currentUserId: string; showAll?: boolean; allExpen
 
   return (
     <div className="mt-4">
+       <ExpenseModal
+                  isOpen={isExpenseModalOpen}
+                  closeModal={() => setIsExpenseModalOpen(false)}
+                  refreshAll={false}
+                />
       <div className="space-y-4">
         {transactions.map((group: GroupedTransactions, index: number) => (
           <ExpenseItem 
             key={group.expense?.id || `payment-${index}`}
             groupedTransactions={group}
             currentUserId={currentUserId}
-            onEdit={(id: string) => console.log('Edit:', id)}
+            onEdit={() => handleEditExpense(group.expense?.id || "")}
             allExpense={allExpense}
             groupName={group.expense?.group_id && groupDetails ? groupDetails[group.expense.group_id] : undefined}
           />

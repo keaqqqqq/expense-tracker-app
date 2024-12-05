@@ -16,10 +16,10 @@ import { UserData } from '@/types/User';
 import { GroupedTransactions } from '@/types/ExpenseList';
 import { GroupBalance } from '@/types/Balance';
 interface GroupDetailsClientProps {
-  group: Group; 
+  group: Group;
   uid: string;
-  groupFriends: Friend[]; 
-  usersData: Record<string, UserData>; 
+  groupFriends: Friend[];
+  usersData: Record<string, UserData>;
   balance: number;
   initialTransactions: GroupedTransactions[];
   groupBalances: GroupBalance[];
@@ -46,13 +46,13 @@ export default function GroupDetailsClient({
 
   return (
     <div className="relative">
-      <ExpenseProvider 
+      <ExpenseProvider
         initialTransactions={initialTransactions}
         usersData={usersData}
       >
         <BalancesProvider
           userId={uid}
-          initialGroupBalances={groupBalances} 
+          initialGroupBalances={groupBalances}
           groupId={group.id}
         >
           {/* Mobile-only sequence */}
@@ -103,7 +103,7 @@ export default function GroupDetailsClient({
           <div className="hidden md:grid md:grid-cols-4 gap-5 xl:gap-0">
             <div className="md:col-span-3">
               <div className="flex flex-col gap-2">
-                <ExpenseCard  
+                <ExpenseCard
                   name={group.name}
                   amount={balance}
                   type="group"
@@ -112,21 +112,22 @@ export default function GroupDetailsClient({
                   imageUrl={group.image}
                   groupId={group.id}
                 />
+               
                 <Suspense fallback={<div className="text-center">Loading expenses...</div>}>
-                  <ExpenseList currentUserId={uid}/>
+                  <ExpenseList currentUserId={uid} />
                 </Suspense>
               </div>
             </div>
-            
+
             <div className="md:col-span-1 space-y-4">
               <div className="sticky top-4">
-                <ManageGroup 
+                <ManageGroup
                   groupId={group.id}
                   groupName={group.name}
                   inviteLink={inviteLink}
                   groupData={group}
                   currentUserId={uid}
-                  groupFriends={groupFriends}  
+                  groupFriends={groupFriends}
                   currentUserEmail={usersData[uid]?.email || ''}
                   currentUserImage={usersData[uid]?.image}
                   modalStateProps={{
@@ -138,7 +139,7 @@ export default function GroupDetailsClient({
                 <div className="mt-4">
                   <Balances
                     type="group"
-                    groupData={group}   
+                    groupData={group}
                     currentUserId={uid}
                     groupId={group.id}
                   />
@@ -154,7 +155,7 @@ export default function GroupDetailsClient({
               closeModal={() => setIsEditModalOpen(false)}
               currentUserId={uid}
               currentUserImage={usersData[uid]?.image}
-              friends={groupFriends} 
+              friends={groupFriends}
               email={usersData[uid]?.email || ''}
               onSuccess={handleEditSuccess}
               isEditing={true}

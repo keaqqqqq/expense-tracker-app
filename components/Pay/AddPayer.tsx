@@ -76,7 +76,7 @@ const PayerInfo: React.FC = () => {
                     </div>
                 </div>
             </div>)}
-        {(isAddPayer || expense.payer.length>1) && (
+        {(isAddPayer && expense.payer.length>0) && (
             <div className='p-3 text-xs'>
                 <div className='flex flex-row'>
                     <div className='my-auto'>paid</div>
@@ -119,7 +119,13 @@ const PayerInfo: React.FC = () => {
                                    {expense.pay_preference === 'equal' && <div>RM {p.amount}</div>}
                                    {expense.pay_preference === 'custom' &&
                                    <div>RM
-                                    <FormInput type='number' value={p.amount} onChange={(e)=>updatePayerAmount(p.id, Number(Number(e.target.value).toFixed(2)))}></FormInput>
+                                    <FormInput type='number' 
+                                    value={String(Number(p.amount))} // Display a proper number without leading zeros
+                                     onChange={(e) => {
+                                       // Remove leading zeros by parsing the string into a number
+                                       const sanitizedValue = e.target.value.replace(/^0+(?!\.)/, ''); // Regex to remove leading zeros
+                                       updatePayerAmount(p.id, Number(Number(sanitizedValue).toFixed(2))); // Update the state with sanitized and formatted value
+                                     }}></FormInput>
                                    </div>
                                    }
                                 </div>
