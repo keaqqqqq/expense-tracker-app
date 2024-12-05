@@ -19,6 +19,7 @@
 # misc
 .DS_Store
 *.pem
+public/firebase-messaging-sw.js
 
 # debug
 npm-debug.log*

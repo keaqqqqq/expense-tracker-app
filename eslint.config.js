@@ -6,7 +6,10 @@ import nextPlugin from '@next/eslint-plugin-next';
 
 export default [
   {
-    ignores: ['**/node_modules/**', '**/.next/**', '**/out/**', '**/coverage/**', '**/functions/lib/**', '**/functions/build/**']
+    ignores: ['**/node_modules/**', '**/.next/**', '**/out/**', '**/coverage/**', '**/functions/lib/**', '**/functions/build/**', '**/public/firebase-messaging-sw.js', 
+      '**/public/sw.js',
+      '**/public/workbox-*.js',
+      '**/public/worker-*.js']
   },
   js.configs.recommended,
   {
@@ -37,7 +40,21 @@ export default [
         require: 'readonly',
         exports: 'readonly',
         module: 'readonly',
-        jest: 'readonly'
+        jest: 'readonly',
+        navigator: 'readonly',
+        self: 'readonly',
+        clients: 'readonly',
+        caches: 'readonly',
+        ServiceWorker: 'readonly',
+        ServiceWorkerContainer: 'readonly',
+        ServiceWorkerRegistration: 'readonly',
+        Notification: 'readonly',
+        NotificationEvent: 'readonly',
+        PushManager: 'readonly',
+        PushSubscription: 'readonly',
+        PushEvent: 'readonly',
+        firebase: 'readonly',
+        importScripts: 'readonly'
       }
     },
     plugins: {
@@ -63,6 +80,11 @@ export default [
       'prefer-const': 'warn',
       'no-debugger': 'warn',
       'no-constant-condition': 'warn',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/no-floating-promises': 'off'
     },
     settings: {
       react: {

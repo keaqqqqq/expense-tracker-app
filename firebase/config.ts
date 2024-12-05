@@ -2,6 +2,7 @@ import { initializeApp } from "firebase/app";
 import {getAuth, GoogleAuthProvider} from 'firebase/auth'
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from 'firebase/storage';
+import { getMessaging, isSupported, Messaging } from 'firebase/messaging';
 
 const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -19,3 +20,24 @@ export const googleProvider = new GoogleAuthProvider();
 export const db = getFirestore(app)
 export const storage = getStorage(app);
 
+let messagingInstance: Messaging | null = null;
+
+export const initializeMessaging = async () => {
+    try {
+        if (typeof window !== 'undefined') {
+            const isSupportedBrowser = await isSupported();
+            if (isSupportedBrowser) {
+                messagingInstance = getMessaging(app);
+                return messagingInstance;
+            }
+        }
+        return null;
+    } catch (error) {
+        console.error('Error initializing messaging:', error);
+        return null;
+    }
+};
+
+export const getMessagingInstance = () => {
+    return messagingInstance;
+};
