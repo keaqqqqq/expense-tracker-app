@@ -23,39 +23,21 @@ export function NotificationProvider({
     const [notificationPermission, setNotificationPermission] = 
         useState<NotificationPermission>('default');
 
-    useEffect(() => {
-        if (userId) {
-            Notification.requestPermission().then(permission => {
-                setNotificationPermission(permission);
-                if (permission === 'granted') {
-                    initializeNotifications(userId).then(token => {
-                        if (token) setToken(token);
-                    });
-                }
-            });
-        }
-    }, [userId]);
-
-// In NotificationProvider
-    useEffect(() => {
-        if (userId) {
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-                    scope: '/firebase-cloud-messaging-push-scope'
-                })
-                .then(async (registration) => {
-                    await navigator.serviceWorker.ready;
-                    const permission = await Notification.requestPermission();
-                    setNotificationPermission(permission);
-                    if (permission === 'granted') {
-                        const token = await initializeNotifications(userId);
-                        if (token) setToken(token);
-                    }
-                })
-                .catch(err => console.error('SW registration failed:', err));
+        useEffect(() => {
+            if (userId && 'serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/firebase-messaging-sw.js')
+                    .then(async () => {
+                        await navigator.serviceWorker.ready;
+                        const permission = await Notification.requestPermission();
+                        setNotificationPermission(permission);
+                        if (permission === 'granted') {
+                            const token = await initializeNotifications(userId);
+                            if (token) setToken(token);
+                        }
+                    })
+                    .catch(err => console.error('SW registration failed:', err));
             }
-        }
-    }, [userId]);
+        }, [userId]);
 
     return (
         <NotificationContext.Provider value={{ token, notificationPermission }}>
