@@ -94,9 +94,9 @@ export function BalanceCard({
                       variant="outline" 
                       size="sm"
                       onClick={onSettle}
-                      className="w-full mt-2"
+                      className="w-full mt-2 text-xs sm:text-sm"
                   >
-                      Settle Up
+                      Settle up
                   </Button>
               )}
           </div>

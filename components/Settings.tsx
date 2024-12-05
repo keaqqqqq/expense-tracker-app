@@ -189,120 +189,119 @@ const ProfileSettings = ({ userData }: ProfileSettingsProps) => {
     };
   
 
-return (
-  <div className="mb-12">
-    {toast.show && (
-      <Toast
-        message={toast.message}
-        type={toast.type}
-        onClose={() => setToast({ ...toast, show: false })}
-      />
-    )}
-    <div className="flex gap-8">
-      <div className="w-1/3">
-        <h2 className="text-xl font-semibold mb-2">Profile Information</h2>
-        <p className="text-gray-600 text-sm">
-          Update your account&apos;s profile information and email address.
-        </p>
-      </div>
-      <div className="w-2/3">
-        <Card>
-          <CardContent className="pt-6">
-            {/* Photo section */}
-            <div className="mb-6">
-              <label className="block mb-2">Photo</label>
-              <div className="flex items-center gap-4">
-                <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-                  {profile.image ? (
-                    <Image
-                      src={profile.image} 
-                      alt="Profile" 
-                      className="w-full h-full object-cover"
-                      unoptimized
-                      width={100}
-                      height={100}
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-200 rounded-lg" />
-                  )}
+    return (
+      <div className="mb-8 lg:mb-12">
+        {toast.show && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast({ ...toast, show: false })}
+          />
+        )}
+        <div className="flex flex-col lg:flex-row lg:gap-8">
+          <div className="w-full lg:w-1/3 mb-4 lg:mb-0">
+            <h2 className="text-xl font-semibold mb-2">Profile Information</h2>
+            <p className="text-gray-600 text-sm">
+              Update your account&apos;s profile information and email address.
+            </p>
+          </div>
+          <div className="w-full lg:w-2/3">
+            <Card>
+              <CardContent className="p-4 lg:p-6">
+                {/* Photo section */}
+                <div className="mb-6">
+                  <label className="block mb-2">Photo</label>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                    <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                      {profile.image ? (
+                        <Image
+                          src={profile.image}
+                          alt="Profile"
+                          className="w-full h-full object-cover"
+                          unoptimized
+                          width={100}
+                          height={100}
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 rounded-lg" />
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <label className="px-4 py-2 border rounded-md hover:bg-gray-50 cursor-pointer">
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                        />
+                        Select a new photo
+                      </label>
+                      <button
+                        className="px-4 py-2 border rounded-md hover:bg-gray-50"
+                        onClick={handleRemovePhoto}
+                      >
+                        Remove photo
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="px-4 py-2 border rounded-md hover:bg-gray-50 mr-2 cursor-pointer">
+  
+                {/* Form fields */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block mb-2">Name</label>
                     <input
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={handleImageUpload}
+                      type="text"
+                      className="w-full p-2 border rounded-md"
+                      value={profile.name}
+                      onChange={(e) => setProfile(prev => ({ ...prev, name: e.target.value }))}
                     />
-                    Select a new photo
-                  </label>
+                  </div>
+  
+                  <div>
+                    <label className="block mb-2">Email</label>
+                    <input
+                      type="email"
+                      className="w-full p-2 border rounded-md"
+                      value={profile.email}
+                      onChange={handleEmailChange}
+                    />
+                  </div>
+  
+                  {showEmailUpdate && (
+                    <div>
+                      <label className="block mb-2">Current Password (required to update email)</label>
+                      <input
+                        type="password"
+                        className="w-full p-2 border rounded-md"
+                        value={currentPassword}
+                        onChange={(e) => {
+                          setCurrentPassword(e.target.value);
+                          setEmailUpdateError('');
+                        }}
+                        placeholder="Enter password to confirm email change"
+                      />
+                      {emailUpdateError && (
+                        <p className="mt-1 text-sm text-red-600">{emailUpdateError}</p>
+                      )}
+                    </div>
+                  )}
+  
                   <button
-                    className="px-4 py-2 border rounded-md hover:bg-gray-50"
-                    onClick={handleRemovePhoto}
+                    className="w-full sm:w-auto px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                    onClick={handleSave}
+                    disabled={isLoading || (showEmailUpdate && !currentPassword)}
                   >
-                    Remove photo
+                    {isLoading ? 'Saving...' : 'Save'}
                   </button>
                 </div>
-              </div>
-            </div>
-
-            {/* Name section */}
-            <div className="mb-4">
-              <label className="block mb-2">Name</label>
-              <input
-                type="text"
-                className="w-full p-2 border rounded-md"
-                value={profile.name}
-                onChange={(e) => setProfile(prev => ({ ...prev, name: e.target.value }))}
-              />
-            </div>
-
-            {/* Email section */}
-            <div className="mb-6">
-              <label className="block mb-2">Email</label>
-              <input
-                type="email"
-                className="w-full p-2 border rounded-md"
-                value={profile.email}
-                onChange={handleEmailChange}
-              />
-            </div>
-
-            {/* Password section for email update */}
-            {showEmailUpdate && (
-              <div className="mb-6">
-                <label className="block mb-2">Current Password (required to update email)</label>
-                <input
-                  type="password"
-                  className="w-full p-2 border rounded-md"
-                  value={currentPassword}
-                  onChange={(e) => {
-                    setCurrentPassword(e.target.value);
-                    setEmailUpdateError('');
-                  }}
-                  placeholder="Enter password to confirm email change"
-                />
-                {emailUpdateError && (
-                  <p className="mt-1 text-sm text-red-600">{emailUpdateError}</p>
-                )}
-              </div>
-            )}
-
-            {/* Save button */}
-            <button
-              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
-              onClick={handleSave}
-              disabled={isLoading || (showEmailUpdate && !currentPassword)}
-            >
-              {isLoading ? 'Saving...' : 'Save'}
-            </button>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-);
-};
+    );
+  };
 
 const PasswordSettings = () => {
   const { currentUser, updateUserPassword } = useAuth();
@@ -347,70 +346,72 @@ const PasswordSettings = () => {
   };
 
   return (
-    <div className="mb-12">
-          {toast.show && (
-      <Toast
-        message={toast.message}
-        type={toast.type}
-        onClose={() => setToast({ ...toast, show: false })}
-      />
-    )}
-      <div className="flex gap-8">
-        <div className="w-1/3">
-          <h2 className="text-2xl font-semibold mb-2">Update Password</h2>
+    <div className="mb-8 lg:mb-12">
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast({ ...toast, show: false })}
+        />
+      )}
+      <div className="flex flex-col lg:flex-row lg:gap-8">
+        <div className="w-full lg:w-1/3 mb-4 lg:mb-0">
+          <h2 className="text-xl font-semibold mb-2">Update Password</h2>
           <p className="text-gray-600">
             Ensure your account is using a long, random password to stay secure.
           </p>
         </div>
-        <div className="w-2/3">
+        <div className="w-full lg:w-2/3">
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className="p-4 lg:p-6">
               {error && (
                 <div className="mb-4 p-2 bg-red-100 text-red-600 rounded">
                   {error}
                 </div>
               )}
               
-              <div className="mb-4">
-                <label className="block mb-2">Current Password</label>
-                <input
-                  type="password"
-                  className="w-full p-2 border rounded-md"
-                  value={passwords.current}
-                  onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
-                  disabled={isLoading}
-                />
-              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block mb-2">Current Password</label>
+                  <input
+                    type="password"
+                    className="w-full p-2 border rounded-md"
+                    value={passwords.current}
+                    onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
+                    disabled={isLoading}
+                  />
+                </div>
 
-              <div className="mb-4">
-                <label className="block mb-2">New Password</label>
-                <input
-                  type="password"
-                  className="w-full p-2 border rounded-md"
-                  value={passwords.new}
-                  onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
-                  disabled={isLoading}
-                />
-              </div>
+                <div>
+                  <label className="block mb-2">New Password</label>
+                  <input
+                    type="password"
+                    className="w-full p-2 border rounded-md"
+                    value={passwords.new}
+                    onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
+                    disabled={isLoading}
+                  />
+                </div>
 
-              <div className="mb-6">
-                <label className="block mb-2">Confirm Password</label>
-                <input
-                  type="password"
-                  className="w-full p-2 border rounded-md"
-                  value={passwords.confirm}
-                  onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
-                  disabled={isLoading}
-                />
-              </div>
+                <div>
+                  <label className="block mb-2">Confirm Password</label>
+                  <input
+                    type="password"
+                    className="w-full p-2 border rounded-md"
+                    value={passwords.confirm}
+                    onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
+                    disabled={isLoading}
+                  />
+                </div>
 
-              <button
-                onClick={handlePasswordChange}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
-                disabled={isLoading}
-              >
-                {isLoading ? 'Saving...' : 'Save'}
-              </button>
+                <button
+                  onClick={handlePasswordChange}
+                  className="w-full sm:w-auto px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Saving...' : 'Save'}
+                </button>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -418,6 +419,7 @@ const PasswordSettings = () => {
     </div>
   );
 };
+
 
 const DeleteAccount = () => {
   const { currentUser, logout } = useAuth();
@@ -460,31 +462,31 @@ const DeleteAccount = () => {
   };
 
   return (
-    <div className="mb-12">
-    {toast.show && (
-      <Toast
-        message={toast.message}
-        type={toast.type}
-        onClose={() => setToast({ ...toast, show: false })}
-      />
-    )}
-      <div className="flex gap-8">
-        <div className="w-1/3">
-          <h2 className="text-2xl font-semibold mb-2">Delete Account</h2>
+    <div className="mb-8 lg:mb-12">
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast({ ...toast, show: false })}
+        />
+      )}
+      <div className="flex flex-col lg:flex-row lg:gap-8">
+        <div className="w-full lg:w-1/3 mb-4 lg:mb-0">
+          <h2 className="text-xl font-semibold mb-2">Delete Account</h2>
           <p className="text-gray-600">
             Permanently delete your account.
           </p>
         </div>
-        <div className="w-2/3">
+        <div className="w-full lg:w-2/3">
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className="p-4 lg:p-6">
               <p className="mb-6">
                 Once your account is deleted, all of its resources and data will be permanently deleted. 
                 Before deleting your account, please download any data or information that you wish to retain.
               </p>
               <button
                 onClick={handleDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+                className="w-full sm:w-auto px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
                 disabled={isLoading}
               >
                 {isLoading ? 'Deleting...' : 'Delete Account'}

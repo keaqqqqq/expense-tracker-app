@@ -15,7 +15,7 @@ const Button: React.FC<ButtonProps> = ({
     ...rest
 }) => {
     const defaultClassName =
-        "px-3 mx-3 py-1 my-3 rounded " +
+        "px-3 mx-1 py-1 my-3 rounded " +
         (primary ? "bg-indigo-700 text-white hover:bg-indigo-800 " : secondary ? "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 " : "");
         
     const finalClassName = defaultClassName + className;

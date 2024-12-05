@@ -161,7 +161,6 @@ async function FriendDetails({ params }: Props) {
     const usersDataArray = await Promise.all(usersDataPromises);
     const usersData = Object.fromEntries(usersDataArray);
     
-    // Calculate total balance using the new helper function
     const totalBalance = calculateTotalBalance(
       userBalances,
       initialFriendGroupBalances,
@@ -169,19 +168,18 @@ async function FriendDetails({ params }: Props) {
     );
 
     const userData = serializeFirebaseData(rawUserData) as Friend;    
-      return (
-        <ExpenseProvider 
-          initialTransactions={initialTransactions}
-          usersData={usersData}
-        >
-          <BalancesProvider 
-            userId={uid}
-            initialBalances={userBalances}
-            initialFriendGroupBalances={initialFriendGroupBalances}
+        return (
+          <ExpenseProvider 
+            initialTransactions={initialTransactions}
+            usersData={usersData}
           >
-            <div className="grid md:grid-cols-4 gap-5 xl:gap-0">
-              <div className="md:col-span-3">
-                <div className="flex flex-col gap-2">
+            <BalancesProvider 
+              userId={uid}
+              initialBalances={userBalances}
+              initialFriendGroupBalances={initialFriendGroupBalances}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="md:col-span-3 flex flex-col gap-4">
                   <ExpenseCard  
                     name={userData.name}
                     amount={totalBalance}
@@ -189,20 +187,13 @@ async function FriendDetails({ params }: Props) {
                     avatarUrl={userData.image || '/default-avatar.jpg'}
                     friendId={params.id}
                   />
-                  <Suspense fallback={<div className="text-center">Loading expenses...</div>}>
-                    <ExpenseList currentUserId={uid} />
-                  </Suspense>
-                </div>
-              </div>
-              
-              <div className="md:col-span-1 space-y-4">
-                <div className="sticky top-4">
-                  <ManageFriend
-                    friendId={params.id}
-                    friendName={userData.name}
-                    currentUserId={uid}
-                  />
-                  <div className="mt-4">
+      
+                  <div className="md:hidden space-y-4">
+                    <ManageFriend
+                      friendId={params.id}
+                      friendName={userData.name}
+                      currentUserId={uid}
+                    />
                     <Balances
                       type="friend"
                       friendData={userData}
@@ -210,12 +201,33 @@ async function FriendDetails({ params }: Props) {
                       friendId={params.id}
                     />
                   </div>
+      
+                  <Suspense fallback={<div className="text-center">Loading expenses...</div>}>
+                    <ExpenseList currentUserId={uid}/>
+                  </Suspense>
+                </div>
+                
+                <div className="hidden md:block md:col-span-1 space-y-4">
+                  <div className="sticky top-4">
+                    <ManageFriend
+                      friendId={params.id}
+                      friendName={userData.name}
+                      currentUserId={uid}
+                    />
+                    <div className="mt-4">
+                      <Balances
+                        type="friend"
+                        friendData={userData}
+                        currentUserId={uid}
+                        friendId={params.id}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </BalancesProvider>
-        </ExpenseProvider>
-    );
+            </BalancesProvider>
+          </ExpenseProvider>
+        );
   } catch (error) {
     console.error('Error fetching data:', error);
     return (

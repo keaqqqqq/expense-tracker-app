@@ -61,7 +61,7 @@ const Sidebar: React.FC<SideBarProps> = ({
                     <li key={friend.id}>
                         <Link
                             href={`/friends/${friend.id}`}
-                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            className="flex items-center px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100"
                             onClick={() => isMobile && onClose()}
                         >
                             {friend.image ? (
@@ -103,7 +103,7 @@ const Sidebar: React.FC<SideBarProps> = ({
                     <li key={group.id}>
                         <Link
                             href={`/groups/${group.id}`}
-                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            className="flex items-center px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100"
                             onClick={() => isMobile && onClose()}
                         >
                             {group.image ? (
@@ -171,7 +171,7 @@ const Sidebar: React.FC<SideBarProps> = ({
                     <div className="h-full flex flex-col overflow-y-auto pt-16 md:pt-0">
                         <div className="flex-1">
                             <Link href="/" onClick={() => isMobile && onClose()}>
-                                <h2 className="text-xl font-semibold text-black px-4 py-4 mb-5 cursor-pointer hover:text-indigo-600">
+                                <h2 className="text-base sm:text-xl font-semibold text-black px-4 py-4 mb-1 cursor-pointer hover:text-indigo-600">
                                     ExpenseTracker
                                 </h2>
                             </Link>
@@ -181,7 +181,7 @@ const Sidebar: React.FC<SideBarProps> = ({
                                     <li>
                                         <Link
                                             href="/"
-                                            className={`block py-2 px-4 font-semibold text-gray-800 text-md mb-2 ${pathname === '/' ? 'bg-gray-100 text-indigo-600' : ''}`}
+                                            className={`block py-2 px-4 font-semibold text-gray-800 text-sm sm:text-md mb-2 ${pathname === '/' ? 'bg-gray-100 text-indigo-600' : ''}`}
                                             onClick={() => isMobile && onClose()}
                                         >
                                             🏠 Home
@@ -190,7 +190,7 @@ const Sidebar: React.FC<SideBarProps> = ({
                                     <li>
                                         <Link
                                             href="/expense"
-                                            className={`block py-2 px-4 font-semibold text-gray-800 text-md mb-2 ${pathname === '/expense' ? 'bg-gray-100 text-indigo-600' : ''}`}
+                                            className={`block py-2 px-4 font-semibold text-gray-800 text-sm sm:text-md mb-2 ${pathname === '/expense' ? 'bg-gray-100 text-indigo-600' : ''}`}
                                             onClick={() => isMobile && onClose()}
                                         >
                                             💰 Expense
@@ -199,7 +199,7 @@ const Sidebar: React.FC<SideBarProps> = ({
                                     <li>
                                         <Link
                                             href="/friends"
-                                            className={`block py-2 px-4 font-semibold text-gray-800 text-md mb-2 ${pathname === '/friends' ? 'bg-gray-100 text-indigo-600' : ''}`}
+                                            className={`block py-2 px-4 font-semibold text-gray-800 text-sm sm:text-md mb-2 ${pathname === '/friends' ? 'bg-gray-100 text-indigo-600' : ''}`}
                                             onClick={() => isMobile && onClose()}
                                         >
                                             👤 Friends
@@ -208,7 +208,7 @@ const Sidebar: React.FC<SideBarProps> = ({
                                     <li>
                                         <Link
                                             href="/groups"
-                                            className={`block py-2 px-4 font-semibold text-gray-800 text-md mb-2 ${pathname === '/groups' ? 'bg-gray-100 text-indigo-600' : ''}`}
+                                            className={`block py-2 px-4 font-semibold text-gray-800 text-sm sm:text-md mb-2 ${pathname === '/groups' ? 'bg-gray-100 text-indigo-600' : ''}`}
                                             onClick={() => isMobile && onClose()}
                                         >
                                             👥 Groups
@@ -227,7 +227,7 @@ const Sidebar: React.FC<SideBarProps> = ({
                                 className={`flex items-center px-4 py-3 text-gray-800 hover:bg-gray-100 ${pathname === '/settings' ? 'bg-gray-100 text-indigo-600' : ''}`}
                                 onClick={() => isMobile && onClose()}
                             >
-                                <span className="font-semibold flex items-center">
+                                <span className="font-semibold flex items-center text-sm sm:text-md">
                                     <Settings className="mr-2" /> Settings
                                 </span>
                             </Link>

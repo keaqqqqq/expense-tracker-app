@@ -35,7 +35,7 @@ const ManageFriend = ({ friendId, friendName, currentUserId }: ManageFriendProps
   return (
     <div className="bg-white rounded-lg shadow-md p-5 xl:ml-8">
       <div className="flex items-center gap-2 mb-5">
-        <h3 className="text-base text-sm text-gray-900">Manage Friend</h3>
+        <h3 className="text-sm sm:text-base text-gray-900">Manage Friend</h3>
       </div>
 
       <div className="space-y-2">
@@ -46,7 +46,7 @@ const ManageFriend = ({ friendId, friendName, currentUserId }: ManageFriendProps
         >
           <div className="flex items-center gap-3">
               <UserMinus className="h-2.5 w-2.5 text-red-500" />
-            <span className='text-base text-sm'>Remove friend</span>
+            <span className='text-xs sm:text-sm'>Remove friend</span>
           </div>
         </Button>
       </div>
