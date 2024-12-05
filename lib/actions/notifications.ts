@@ -186,12 +186,14 @@ export async function initializeNotifications(userId: string) {
         const token = await getToken(messaging, {
             vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY
         });
+        console.log('FCM token generated:', token); // Add this
 
         if (token) {
             // Save token to user's document
             await updateDoc(doc(db, 'Users', userId), {
                 fcmToken: token
             });
+            console.log('FCM token saved to user doc'); // Add this
 
             // Handle foreground messages
             onMessage(messaging, (payload) => {

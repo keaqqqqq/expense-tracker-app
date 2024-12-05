@@ -143,8 +143,10 @@ export const saveFriendship = async (requesterId: string, addresseeEmail: string
       const requesterName = requesterDoc.data()?.name || 'Someone';
 
       const addresseeToken = await getUserFCMToken(addresseeId);
-      
+      console.log('Addressee token:', addresseeToken); 
+
       if (addresseeToken) {
+        try {
         await sendNotification(
           addresseeToken,
           'FRIEND_REQUEST',
@@ -153,8 +155,11 @@ export const saveFriendship = async (requesterId: string, addresseeEmail: string
             requesterId: requesterId
           }
         );
-      }
-
+        console.log('Notification sent successfully'); // Add this
+      }catch (error) {
+        console.error('Error sending notification:', error); // Add this
+    }
+  }
       return { success: true, type: 'friendship_request' };
     } else {
       const invitationsRef = collection(db, 'Invitations');
