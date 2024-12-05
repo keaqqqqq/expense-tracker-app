@@ -802,7 +802,7 @@ export const fetchExpenseData = async (expenseId: string): Promise<Expense | und
     }
 
     const serializedData = serializeFirebaseData(rawData);
-    return serializedData as Expense;
+    return {...serializedData, id: expenseId} as Expense;
   } catch (error) {
     console.error('Error fetching expense:', error);
     return undefined;

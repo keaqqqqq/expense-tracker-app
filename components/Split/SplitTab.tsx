@@ -7,7 +7,11 @@ import ExtraSplit from './ExtraSplit';
 import ManualSplit from './ManualSplit';
 import { useExpense } from '@/context/ExpenseContext';
 
-const SplitTab: React.FC = () => {
+interface SplitTabProps {
+    errors: { [key: string]: string };
+}
+
+const SplitTab: React.FC<SplitTabProps> = ({errors}) => {
     const tabClass = "flex-1 px-3 py-1 border ";
     const selectedTabClass = "bg-blue-100 outline-none text-indigo-800";
     const [selectedIndex, setSelectedIndex] = useState(0);
@@ -48,6 +52,7 @@ const SplitTab: React.FC = () => {
                 <div className="my-auto">with</div>
             </div>
             <TabPanels>
+            {errors.splitter && <p className="text-red-500 text-xs">{errors.splitter}</p>}
                 <TabPanel><EqualSplit /></TabPanel>
                 <TabPanel><PercentageSplit /></TabPanel>
                 <TabPanel><WeightSplit /></TabPanel>

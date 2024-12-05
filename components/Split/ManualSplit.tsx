@@ -84,18 +84,35 @@ const ManualSplit: React.FC = () => {
     // Calculate the total entered amount
     const totalEnteredAmount = Object.values(amounts).reduce((acc, amount) => acc + amount, 0);
 
-    // Calculate amounts owed by friends who haven't entered a value
     const calculateAmounts = () => {
-        const remainingAmount = totalExpense - totalEnteredAmount;
-        const friendsWithoutAmount = expense.splitter.filter(friend => !(friend.id in amounts)).length;
-
+        const remainingAmount = Number((totalExpense - totalEnteredAmount).toFixed(2));
+        const friendsWithoutAmount = expense.splitter.filter(friend => !(friend.id in amounts));
+    
         // Distribute the remaining amount equally among friends who haven't entered an amount
-        const perfriendAmount = friendsWithoutAmount > 0 ? remainingAmount / friendsWithoutAmount : 0;
-
-        return expense.splitter.map((friend) => {
-            return amounts[friend.id] !== undefined ? amounts[friend.id] : perfriendAmount; // Return entered amount or calculated amount
+        const perfriendAmount = friendsWithoutAmount.length > 0 ? Number((remainingAmount / friendsWithoutAmount.length).toFixed(2)) : 0;
+    
+        // Initial calculated amounts
+        const calculated = expense.splitter.map((friend) => {
+            return amounts[friend.id] !== undefined ? amounts[friend.id] : perfriendAmount;
         });
+    
+        // Adjust the sum of calculated amounts to match the totalExpense
+        const adjustedTotal = calculated.reduce((acc, amount) => acc + amount, 0);
+        let difference = Number((totalExpense - adjustedTotal).toFixed(2)); // Calculate the remaining difference
+    
+        // Add or deduct 0.01 to the calculated amounts until the difference is 0
+        if (friendsWithoutAmount.length > 0) {
+            for (let i = 0; Math.abs(difference) >= 0.01 && i < friendsWithoutAmount.length; i++) {
+                const adjustment = difference > 0 ? 0.01 : -0.01;
+                const friendIndex = expense.splitter.findIndex(friend => friend.id === friendsWithoutAmount[i].id);
+                calculated[friendIndex] = Number((calculated[friendIndex] + adjustment).toFixed(2));
+                difference = Number((difference - adjustment).toFixed(2));
+            }
+        }
+    
+        return calculated;
     };
+    
 
     const calculatedAmounts = calculateAmounts();
 

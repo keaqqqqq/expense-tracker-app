@@ -190,7 +190,7 @@ async function FriendDetails({ params }: Props) {
                     friendId={params.id}
                   />
                   <Suspense fallback={<div className="text-center">Loading expenses...</div>}>
-                    <ExpenseList currentUserId={uid}/>
+                    <ExpenseList currentUserId={uid} />
                   </Suspense>
                 </div>
               </div>

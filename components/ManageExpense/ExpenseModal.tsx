@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import Button from "./Button";
 import SplitTab from "../Split/SplitTab";
@@ -7,12 +7,17 @@ import AddSplit from './AddSplit';
 import { useExpense } from '@/context/ExpenseContext';
 import { useExpenseList } from '@/context/ExpenseListContext';
 import Toast from '../Toast';
+// import { ExpenseSchema } from '@/validationSchemas'; // Import validation schema
+import { z } from 'zod';
+import { ExpenseSchema } from '@/validation/expenseFormValidation';
+// import { ExpenseSchema } from '@/validation/expenseFormValidation';
+
 interface ExpenseModalProps {
     isOpen: boolean;
     closeModal: () => void;
     refreshAll?: boolean;
     friendId?: string | string[];
-    groupId?: string | string[]; 
+    groupId?: string | string[];
 }
 
 const ExpenseModal: React.FC<ExpenseModalProps> = ({ 
@@ -33,11 +38,13 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
         show: boolean;
         message: string;
         type: 'success' | 'error';
-    }>({
+    }>( {
         show: false,
         message: '',
         type: 'success'
     });
+
+    const [errors, setErrors] = useState<{ [key: string]: string }>({});  // Error state for form validation
 
     const handleRefresh = async () => {
         const participantIds = Array.from(new Set(
@@ -87,6 +94,11 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
     const handleCreate = async () => {
         try {
+            // Validate the expense object using Zod
+            ExpenseSchema.parse(expense);
+            setErrors({});  // Clear errors if validation passes
+
+            // Proceed with creating the expense
             await addExpense(expense);
             await handleRefresh();
             setToast({
@@ -95,18 +107,27 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 type: 'success'
             });
             closeModal();
-        } catch (error) {
-            console.log('Error handleCreate: ' + error)
-            setToast({
-                show: true,
-                message: 'Failed to create expense',
-                type: 'error'
-            });
+        } catch (err) {
+            if (err instanceof z.ZodError) {
+                const formErrors: { [key: string]: string } = {};
+                err.errors.forEach((error) => {
+                    formErrors[error.path[0]] = error.message;
+                });
+                setErrors(formErrors);  // Display validation errors
+            } else {
+                setToast({
+                    show: true,
+                    message: 'Failed to create expense',
+                    type: 'error'
+                });
+            }
         }
     };
-     
+
     const handleEdit = async () => {
         try {
+            ExpenseSchema.parse(expense);  // Validate before editing
+            setErrors({});  // Clear errors if validation passes
             await editExpense(expense);
             await handleRefresh();
             setToast({
@@ -115,18 +136,25 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 type: 'success'
             });
             closeModal();
-        } catch (error) {
-            console.log('Error handleEdit: ' + error)
-            setToast({
-                show: true,
-                message: 'Failed to update expense',
-                type: 'error'
-            });
+        } catch (err) {
+            if (err instanceof z.ZodError) {
+                const formErrors: { [key: string]: string } = {};
+                err.errors.forEach((error) => {
+                    formErrors[error.path[0]] = error.message;
+                });
+                setErrors(formErrors);  // Display validation errors
+            } else {
+                setToast({
+                    show: true,
+                    message: 'Failed to update expense',
+                    type: 'error'
+                });
+            }
         }
     };
-     
+
     const handleDelete = async () => {
-        if(expense.id){
+        if (expense.id) {
             try {
                 await deleteExpense(expense.id);
                 await handleRefresh();
@@ -136,12 +164,12 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
                     type: 'success'
                 });
             } catch (error) {
-                console.log('Error handleDelete: ' + error)
                 setToast({
                     show: true,
                     message: 'Failed to delete expense',
                     type: 'error'
                 });
+                console.log(error);
                 return;
             }
         }
@@ -155,40 +183,41 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
     return (
         <>
-        <Dialog open={isOpen} onClose={handleClose} className="relative z-50">
-            <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-            <div className="fixed inset-0 overflow-y-auto">
-                <div className="min-h-full flex items-center justify-center p-4">
-                    <DialogPanel className="rounded bg-white my-4 mx-2 sm:mx-0">
-                        <DialogTitle className="font-semibold text-sm border-b px-5 py-3">
-                            {expense.id ? 'Edit Expense' : 'New Expense'}
-                        </DialogTitle>
-                        <CreateExpenseForm />
-
-                        <div className="px-5 py-2 flex flex-col font-semibold text-xs text-gray-700 border-b">
-                            <SplitTab />
-                        </div>
-                        <div className="px-5 py-2 flex flex-col sm:flex-row font-semibold text-xs text-gray-700 border-b">
-                            <AddSplit/>
-                        </div>
-                        {expense.id ? 
-                            <div className='bg-gray-100 rounded-b-lg text-xs font-semibold flex flex-row justify-between'>
-                                <Button className='bg-red-500 rounded text-white border border-gray-100' onClick={handleDelete}>Delete</Button>                            
-                                <div className="flex justify-end px-2">
-                                    <Button className="border rounded bg-white mx-1" onClick={handleClose}>Cancel</Button>
-                                    <Button primary className="mx-1" onClick={handleEdit}>Edit</Button>
-                                </div>
-                            </div> :
-                            <div className="bg-gray-100 rounded-b-lg text-xs font-semibold flex justify-end px-2">
-                                <Button className="border rounded bg-white mx-1" onClick={handleClose}>Cancel</Button>
-                                <Button primary className="mx-1" onClick={handleCreate}>Create</Button>
+            <Dialog open={isOpen} onClose={handleClose} className="relative z-30">
+                <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+                <div className="fixed inset-0 overflow-y-auto">
+                    <div className="min-h-full flex items-center justify-center p-4">
+                        <DialogPanel className="rounded bg-white my-4 mx-2 sm:mx-0">
+                            <DialogTitle className="font-semibold text-sm border-b px-5 py-3">
+                                {expense.id ? 'Edit Expense' : 'New Expense'}
+                            </DialogTitle>
+                            <CreateExpenseForm errors={errors} />  {/* Pass errors to the form */}
+                            
+                            <div className="px-5 py-2 flex flex-col font-semibold text-xs text-gray-700 border-b">
+                                <SplitTab errors={errors}/>
                             </div>
-                        }
-                    </DialogPanel>
+                            <div className="px-5 py-2 flex flex-col sm:flex-row font-semibold text-xs text-gray-700 border-b">
+                                <AddSplit />
+                            </div>
+                            {expense.id ? (
+                                <div className='bg-gray-100 rounded-b-lg text-xs font-semibold flex flex-row justify-between'>
+                                    <Button className='bg-red-500 rounded text-white border border-gray-100' onClick={handleDelete}>Delete</Button>
+                                    <div className="flex justify-end px-2">
+                                        <Button className="border rounded bg-white mx-1" onClick={handleClose}>Cancel</Button>
+                                        <Button primary className="mx-1" onClick={handleEdit}>Edit</Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="bg-gray-100 rounded-b-lg text-xs font-semibold flex justify-end px-2">
+                                    <Button className="border rounded bg-white mx-1" onClick={handleClose}>Cancel</Button>
+                                    <Button primary className="mx-1" onClick={handleCreate}>Create</Button>
+                                </div>
+                            )}
+                        </DialogPanel>
+                    </div>
                 </div>
-            </div>
-        </Dialog>
-        {toast.show && (
+            </Dialog>
+            {toast.show && (
                 <Toast
                     message={toast.message}
                     type={toast.type}
@@ -197,6 +226,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
             )}
         </>
     );
-}
+};
 
 export default ExpenseModal;

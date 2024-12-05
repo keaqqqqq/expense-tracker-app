@@ -81,11 +81,38 @@ const ExtraSplit: React.FC = () => {
 
     // Update each friend's adjusted amount in the context
     useEffect(() => {
-        expense.splitter.forEach((friend) => {
-            const adjustedAmount = (adjustments[friend.id] || 0) + splitAmount;
-            updateFriendAmount(friend.id, adjustedAmount); // Update the amount in the context
+        let totalDistributedAmount = 0;
+    
+        // Calculate total distributed amount and round to two decimal places
+        const updatedAmounts = expense.splitter.map((friend) => {
+            const adjustedAmount = Number(((adjustments[friend.id] || 0) + splitAmount).toFixed(2));
+            totalDistributedAmount += adjustedAmount;
+            return { id: friend.id, amount: adjustedAmount };
         });
-    }, [adjustments, splitAmount, expense.splitter.length, expense.split_data?.length]);
+    
+        // Calculate the remainder and round to two decimal places
+        let remainder = Number((expense.amount - totalDistributedAmount).toFixed(2));
+    
+        // Distribute the remainder among the first few friends
+        let distributed = 0;
+        const finalAmounts = updatedAmounts.map((friend) => {
+            if (distributed < Math.abs(remainder) && remainder !== 0) {
+                const adjustment = remainder > 0 ? 0.01 : -0.01;
+                distributed = Number((distributed + Math.abs(adjustment)).toFixed(2));
+                remainder = Number((remainder - adjustment).toFixed(2));
+                return { id: friend.id, amount: Number((friend.amount + adjustment).toFixed(2)) };
+            }
+            return friend;
+        });
+    
+        // Update the amounts in the context
+        finalAmounts.forEach((friend) => {
+            updateFriendAmount(friend.id, friend.amount);
+        });
+    }, [adjustments, splitAmount, expense.splitter.length, expense.amount]);
+    
+
+
 
 
     // Render the selected expense.splitter with their adjusted amounts
