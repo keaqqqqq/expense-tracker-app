@@ -55,7 +55,52 @@ export default function GroupDetailsClient({
           initialGroupBalances={groupBalances}
           groupId={group.id}
         >
-          <div className="grid md:grid-cols-4 gap-5 xl:gap-0">
+          {/* Mobile-only sequence */}
+          <div className="block md:hidden space-y-6">
+            {/* 1. Expense Card */}
+            <ExpenseCard  
+              name={group.name}
+              amount={balance}
+              type="group"
+              memberCount={group.members.length}
+              groupType={group.type}
+              imageUrl={group.image}
+              groupId={group.id}
+            />
+            
+            {/* 2. Manage Group */}
+            <ManageGroup 
+              groupId={group.id}
+              groupName={group.name}
+              inviteLink={inviteLink}
+              groupData={group}
+              currentUserId={uid}
+              groupFriends={groupFriends}  
+              currentUserEmail={usersData[uid]?.email || ''}
+              currentUserImage={usersData[uid]?.image}
+              modalStateProps={{
+                isEditModalOpen,
+                setIsEditModalOpen,
+                onEditSuccess: handleEditSuccess
+              }}
+            />
+            
+            {/* 3. Balances */}
+            <Balances
+              type="group"
+              groupData={group}   
+              currentUserId={uid}
+              groupId={group.id}
+            />
+            
+            {/* 4. Expense List */}
+            <Suspense fallback={<div className="text-center">Loading expenses...</div>}>
+              <ExpenseList currentUserId={uid}/>
+            </Suspense>
+          </div>
+
+          {/* Desktop grid layout (hidden on mobile) */}
+          <div className="hidden md:grid md:grid-cols-4 gap-5 xl:gap-0">
             <div className="md:col-span-3">
               <div className="flex flex-col gap-2">
                 <ExpenseCard

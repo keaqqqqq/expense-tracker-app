@@ -135,7 +135,7 @@ const FriendList = ({ relationships, onAcceptRequest, balances }: FriendListProp
   };
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-w-6xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-w-8xl mx-auto">
         {organizedRelationships.map((relationship) => {
           const status = getRequestStatus(relationship);
           const friendId = currentUser?.uid === relationship.requester_id
@@ -162,13 +162,13 @@ const FriendList = ({ relationships, onAcceptRequest, balances }: FriendListProp
                       </AvatarFallback>
                     )}
                   </Avatar>
-                  <div className="min-w-0 flex-1 border-l border-zinc-200 dark:border-zinc-700 pl-3">
+                  <div className="min-w-0 flex-1 border-l border-zinc-200 dark:border-zinc-700 pl-2">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium truncate text-zinc-900 dark:text-zinc-100 mr-5">
+                      <p className="text-xs sm:text-sm font-medium truncate text-zinc-900 dark:text-zinc-100 mr-2">
                         {relationship.displayInfo.displayName}
                       </p>
                       {relationship.status === 'ACCEPTED' && (
-                        <div className={`text-xs font-medium px-2 py-0.5 rounded-full inline-flex items-center ${
+                        <div className={`text-[10px] sm:text-xs text-center font-medium px-1 py-0.5 rounded-full inline-flex items-center ${
                           balance > 0 
                             ? 'bg-green-100 dark:bg-green-900/20' 
                             : balance < 0 

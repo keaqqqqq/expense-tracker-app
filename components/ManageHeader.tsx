@@ -17,19 +17,18 @@ interface ManageHeaderProps {
 }
 
 const ManageHeader: React.FC<ManageHeaderProps> = ({ title, buttons, homeType }) => {
-
     return (
         <div className={`${homeType ? '' : 'border rounded'} w-full`}>
-            <div className='flex flex-row justify-between font-semibold content-center px-2'>
-                <h2 className='my-auto text-md'>{title}</h2>
-                <div className='text-sm'>
+            <div className='flex flex-row justify-between items-center font-semibold sm:p-2'>
+                <h2 className='text-sm sm:text-base ml-1'>{title}</h2>
+                <div className='flex flex-row items-center'>
                     {buttons.map((button, index) => (
                         <Button 
                             key={index} 
                             primary={button.primary} 
                             secondary={button.secondary} 
                             onClick={button.onClick} 
-                            className='mx-1'
+                            className=' sm:mx-1 text-xs sm:text-sm'
                         >
                             {button.label}
                         </Button>
