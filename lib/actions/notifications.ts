@@ -116,70 +116,79 @@ export async function initializeNotifications(userId: string) {
             try {
                 swRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
                 console.log('Service Worker registered:', swRegistration);
-                
-                // Wait specifically for the service worker to be activated
-                if (swRegistration.installing) {
-                    console.log('Service Worker installing');
-                    await new Promise<void>((resolve) => {
-                        swRegistration!.installing!.addEventListener('statechange', (e: Event) => {
-                            if ((e.target as ServiceWorker).state === 'activated') {
-                                console.log('Service Worker activated');
-                                resolve();
-                            }
-                        });
+
+                // Add Push Subscription
+                try {
+                    const pushSubscription = await swRegistration.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY
                     });
+                    console.log('Push Subscription:', pushSubscription);
+
+                    // Wait for service worker activation
+                    if (swRegistration.installing) {
+                        console.log('Service Worker installing');
+                        await new Promise<void>((resolve) => {
+                            swRegistration!.installing!.addEventListener('statechange', (e: Event) => {
+                                if ((e.target as ServiceWorker).state === 'activated') {
+                                    console.log('Service Worker activated');
+                                    resolve();
+                                }
+                            });
+                        });
+                    }
+
+                    // Only proceed if we have an active service worker
+                    if (!swRegistration?.active) {
+                        console.error('No active service worker found');
+                        return null;
+                    }
+
+                    const permission = await Notification.requestPermission();
+                    console.log('Notification permission:', permission);
+                    
+                    if (permission !== 'granted') {
+                        return null;
+                    }
+
+                    const messaging = await initializeMessaging();
+                    console.log('Messaging initialized:', !!messaging);
+
+                    if (!messaging) return null;
+
+                    const token = await getToken(messaging, {
+                        vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+                        serviceWorkerRegistration: swRegistration
+                    });
+                    console.log('Token generated:', !!token);
+
+                    if (token) {
+                        // Save both FCM token and push subscription
+                        await updateDoc(doc(db, 'Users', userId), {
+                            fcmToken: token,
+                            pushSubscription: JSON.stringify(pushSubscription)
+                        });
+                        console.log('Token and subscription saved to user document');
+
+                        onMessage(messaging, (payload) => {
+                            console.log('Received foreground message:', payload);
+                            new Notification(payload.notification?.title || 'New Notification', {
+                                body: payload.notification?.body,
+                                icon: '/icons/icon-192x192.png',
+                                data: payload.data
+                            });
+                        });
+
+                        return token;
+                    }
+                } catch (subscriptionError) {
+                    console.error('Push subscription error:', subscriptionError);
+                    return null;
                 }
             } catch (swError) {
                 console.error('Service Worker registration failed:', swError);
                 return null;
             }
-        }
-
-        // Only proceed if we have an active service worker
-        if (!swRegistration?.active) {
-            console.error('No active service worker found');
-            return null;
-        }
-
-        const permission = await Notification.requestPermission();
-        console.log('Notification permission:', permission);
-        
-        if (permission !== 'granted') {
-            return null;
-        }
-
-        const messaging = await initializeMessaging();
-        console.log('Messaging initialized:', !!messaging);
-
-        if (!messaging) return null;
-
-        try {
-            const token = await getToken(messaging, {
-                vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
-                serviceWorkerRegistration: swRegistration  // Pass the registration
-            });
-            console.log('Token generated:', !!token);
-
-            if (token) {
-                await updateDoc(doc(db, 'Users', userId), {
-                    fcmToken: token
-                });
-                console.log('Token saved to user document');
-
-                onMessage(messaging, (payload) => {
-                    console.log('Received foreground message:', payload);
-                    new Notification(payload.notification?.title || 'New Notification', {
-                        body: payload.notification?.body,
-                        icon: '/icons/icon-192x192.png',
-                        data: payload.data
-                    });
-                });
-
-                return token;
-            }
-        } catch (tokenError) {
-            console.error('Token generation detailed error:', tokenError);
-            return null;
         }
 
         return null;

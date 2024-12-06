@@ -31,22 +31,32 @@ const notificationActions = {
     ]
 };
 
-messaging.onBackgroundMessage((payload) => {
-    console.log('Received background message:', payload);
-
-    const notificationTitle = payload.notification.title;
-    const notificationType = payload.data?.type || 'DEFAULT';
+// public/firebase-messaging-sw.js
+self.addEventListener('push', function(event) {
+    console.log('Push received:', event);
     
-    const notificationOptions = {
-        body: payload.notification.body,
-        icon: '/icons/icon-192x192.png',
-        badge: '/icons/icon-72x72.png',
-        data: payload.data,
-        tag: notificationType,
-        actions: notificationActions[notificationType] || []
-    };
+    if (event.data) {
+        try {
+            const data = event.data.json();
+            console.log('Push data:', data);
 
-    self.registration.showNotification(notificationTitle, notificationOptions);
+            const options = {
+                body: data.notification.body,
+                icon: '/icons/icon-192x192.png',
+                badge: '/icons/icon-72x72.png',
+                data: data.data,
+                tag: data.data?.type || 'default',
+                actions: notificationActions[data.data?.type] || [],
+                requireInteraction: true
+            };
+
+            event.waitUntil(
+                self.registration.showNotification(data.notification.title, options)
+            );
+        } catch (error) {
+            console.error('Error handling push:', error);
+        }
+    }
 });
 
 self.addEventListener('notificationclick', (event) => {
@@ -54,7 +64,6 @@ self.addEventListener('notificationclick', (event) => {
 
     let urlToOpen = '/';
 
-    // Handle different action clicks
     if (event.action) {
         const data = event.notification.data;
         
