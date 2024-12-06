@@ -145,6 +145,13 @@ export const saveFriendship = async (requesterId: string, addresseeEmail: string
       const addresseeToken = await getUserFCMToken(addresseeId);
       console.log('Addressee token:', addresseeToken); 
 
+      console.log('Debug Friend Request:', {
+        requesterName,
+        addresseeId,
+        addresseeToken,
+        hasToken: !!addresseeToken
+    });
+
       if (addresseeToken) {
         try {
         await sendNotification(

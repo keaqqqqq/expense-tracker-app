@@ -189,7 +189,6 @@ export async function initializeNotifications(userId: string) {
     }
 }
 
-// Updated sendNotification function to use FCM v1 API
 export async function sendNotification(
     userToken: string, 
     type: NotificationType, 
@@ -199,13 +198,22 @@ export async function sendNotification(
         const notificationData = getNotificationTemplate(type, data);
         const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
         
+        console.log('Preparing notification:', {
+            projectId,
+            token: userToken.substring(0, 10) + '...',
+            notificationData
+        });
+
+        const accessToken = await getAccessToken();
+        console.log('Access token obtained:', accessToken?.substring(0, 10));
+
         const response = await fetch(
             `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
             {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${await getAccessToken()}`
+                    'Authorization': `Bearer ${accessToken}`
                 },
                 body: JSON.stringify({
                     message: {
@@ -214,37 +222,55 @@ export async function sendNotification(
                             title: notificationData.title,
                             body: notificationData.body
                         },
+                        android: {
+                            priority: "high"
+                        },
+                        apns: {
+                            payload: {
+                                aps: {
+                                    contentAvailable: true
+                                }
+                            }
+                        },
                         webpush: {
+                            headers: {
+                                Urgency: "high"
+                            },
                             notification: {
                                 icon: '/icons/icon-192x192.png',
-                                click_action: notificationData.url || '/'
+                                badge: '/icons/icon-72x72.png',
+                                requireInteraction: true,
+                                silent: false,
+                                actions: [
+                                    {
+                                        action: 'view',
+                                        title: 'View'
+                                    }
+                                ]
                             },
                             fcm_options: {
                                 link: notificationData.url || '/'
                             }
-                        },
-                        data: sanitizeData(data)
+                        }
                     }
                 })
             }
         );
-        console.log('FCM API Response:', response);
-        console.log('Sending notification:', {
-            token: userToken,
-            type,
-            data,
-            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
-        });
-        const accessToken = await getAccessToken();
-        console.log('Access token obtained:', accessToken?.substring(0, 10));
-        return response.json();
+
+        const responseData = await response.json();
+        console.log('Full FCM Response:', responseData);
+        
+        if (!response.ok) {
+            throw new Error(`FCM Error: ${JSON.stringify(responseData)}`);
+        }
+
+        return responseData;
     } catch (error) {
-        console.error('Error sending notification:', error);
+        console.error('Notification send error:', error);
         throw error;
     }
 }
 
-// Update the sanitizeData function to accept NotificationData
 export function sanitizeData(data: NotificationData): Record<string, string> {
     const sanitized: Record<string, string> = {};
     for (const [key, value] of Object.entries(data)) {
@@ -255,7 +281,6 @@ export function sanitizeData(data: NotificationData): Record<string, string> {
     return sanitized;
 }
 
-// Helper function to get access token
 export async function getAccessToken(): Promise<string> {
     const response = await fetch('/api/fcm-token', {
         method: 'POST'
@@ -264,7 +289,6 @@ export async function getAccessToken(): Promise<string> {
     return data.token;
 }
 
-// Helper function to get user's FCM token
 export async function getUserFCMToken(userId: string) {
     try {
         const userDoc = await getDoc(doc(db, 'Users', userId));
