@@ -291,9 +291,12 @@ export async function getAccessToken(): Promise<string> {
 
 export async function getUserFCMToken(userId: string) {
     try {
+        console.log('Getting FCM token for user:', userId);
         const userDoc = await getDoc(doc(db, 'Users', userId));
-        return userDoc.data()?.fcmToken;
-    } catch (error) {
+        const fcmToken = userDoc.data()?.fcmToken;
+        console.log('FCM token found:', !!fcmToken);
+        return fcmToken;
+        } catch (error) {
         console.error('Error getting user FCM token:', error);
         return null;
     }

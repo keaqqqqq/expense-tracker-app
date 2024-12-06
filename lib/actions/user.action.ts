@@ -135,16 +135,21 @@ export const saveFriendship = async (requesterId: string, addresseeEmail: string
         status: 'PENDING',
         created_at: serverTimestamp()
       };
-      
+      console.log('Before adding friendship doc');
       await addDoc(collection(db, 'Friendships'), friendshipData);
+      console.log('After adding friendship doc');
 
       // Send notification only for existing users
       const requesterDoc = await getDoc(doc(db, 'Users', requesterId));
       const requesterName = requesterDoc.data()?.name || 'Someone';
+      console.log('Requester data:', { requesterName, requesterId });
 
       const addresseeToken = await getUserFCMToken(addresseeId);
-      console.log('Addressee token:', addresseeToken); 
-
+      console.log('Addressee token check:', { 
+        addresseeId, 
+        hasToken: !!addresseeToken,
+        tokenPreview: addresseeToken ? addresseeToken.substring(0, 10) : null 
+    });
       console.log('Debug Friend Request:', {
         requesterName,
         addresseeId,
@@ -152,20 +157,21 @@ export const saveFriendship = async (requesterId: string, addresseeEmail: string
         hasToken: !!addresseeToken
     });
 
-      if (addresseeToken) {
-        try {
-        await sendNotification(
-          addresseeToken,
-          'FRIEND_REQUEST',
-          {
-            fromUser: requesterName,
-            requesterId: requesterId
-          }
-        );
-        console.log('Notification sent successfully'); // Add this
-      }catch (error) {
-        console.error('Error sending notification:', error); // Add this
-    }
+    if (addresseeToken) {
+      try {
+          console.log('Attempting to send notification');
+          const notificationResult = await sendNotification(
+              addresseeToken,
+              'FRIEND_REQUEST',
+              {
+                  fromUser: requesterName,
+                  requesterId: requesterId
+              }
+          );
+          console.log('Notification result:', notificationResult);
+      } catch (notificationError) {
+          console.error('Notification send error:', notificationError);
+      }
   }
       return { success: true, type: 'friendship_request' };
     } else {
