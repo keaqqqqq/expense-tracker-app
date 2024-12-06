@@ -21,11 +21,13 @@ const nextConfig = {
   experimental: {
     serverActions: true,
   },
-  domains: [
-    'firebasestorage.googleapis.com',  
-
-  ],
-
+  webpack: (config) => {
+    config.experiments = {
+      ...config.experiments,
+      asyncWebAssembly: true
+    };
+    return config;
+  }
 };
 
 export default pwaConfig(nextConfig);

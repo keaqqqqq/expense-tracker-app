@@ -23,21 +23,19 @@ export function NotificationProvider({
     const [notificationPermission, setNotificationPermission] = 
         useState<NotificationPermission>('default');
 
-        useEffect(() => {
-            if (userId && 'serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/firebase-messaging-sw.js')
-                    .then(async () => {
-                        await navigator.serviceWorker.ready;
-                        const permission = await Notification.requestPermission();
-                        setNotificationPermission(permission);
-                        if (permission === 'granted') {
-                            const token = await initializeNotifications(userId);
-                            if (token) setToken(token);
-                        }
-                    })
-                    .catch(err => console.error('SW registration failed:', err));
-            }
-        }, [userId]);
+    useEffect(() => {
+        if (userId) {
+            const initNotifications = async () => {
+                const permission = await Notification.requestPermission();
+                setNotificationPermission(permission);
+                if (permission === 'granted') {
+                    const token = await initializeNotifications(userId);
+                    if (token) setToken(token);
+                }
+            };
+            initNotifications();
+        }
+    }, [userId]);
 
     return (
         <NotificationContext.Provider value={{ token, notificationPermission }}>

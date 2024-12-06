@@ -2,7 +2,7 @@ import { getToken, onMessage } from 'firebase/messaging';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { initializeMessaging } from '@/firebase/config';
-
+import admin from '@/lib/firebase-admin';
 export const NotificationTypes = {
     NEW_EXPENSE: 'NEW_EXPENSE',
     EXPENSE_SETTLED: 'EXPENSE_SETTLED',
@@ -103,177 +103,60 @@ export function getNotificationTemplate(
 
 export async function initializeNotifications(userId: string) {
     try {
-        if (!('Notification' in window)) {
-            console.log('This browser does not support notifications');
-            return null;
+        if (!('Notification' in window)) return null;
+        
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') return null;
+
+        // Unregister existing service workers
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map(registration => registration.unregister()));
+
+        // Initialize messaging
+        const messaging = await initializeMessaging();
+        if (!messaging) return null;
+
+        // Register service worker with correct scope
+        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+            scope: '/firebase-cloud-messaging-push-scope'
+        });
+        await navigator.serviceWorker.ready;
+
+        const token = await getToken(messaging, {
+            serviceWorkerRegistration: registration,
+            vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY
+        });
+
+        if (token) {
+            await updateDoc(doc(db, 'Users', userId), { fcmToken: token });
+            onMessage(messaging, (payload) => {
+                new Notification(payload.notification?.title || 'New Notification', {
+                    body: payload.notification?.body,
+                    icon: '/icons/icon-192x192.png',
+                    data: payload.data
+                });
+            });
         }
-
-        console.log('VAPID key present:', !!process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY);
-        console.log('VAPID key length:', process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY?.length);
-
-        let swRegistration: ServiceWorkerRegistration | undefined;
-        if ('serviceWorker' in navigator) {
-            try {
-                swRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-                console.log('Service Worker registered:', swRegistration);
-
-                // Add Push Subscription
-                try {
-                    const pushSubscription = await swRegistration.pushManager.subscribe({
-                        userVisibleOnly: true,
-                        applicationServerKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY
-                    });
-                    console.log('Push Subscription:', pushSubscription);
-
-                    // Wait for service worker activation
-                    if (swRegistration.installing) {
-                        console.log('Service Worker installing');
-                        await new Promise<void>((resolve) => {
-                            swRegistration!.installing!.addEventListener('statechange', (e: Event) => {
-                                if ((e.target as ServiceWorker).state === 'activated') {
-                                    console.log('Service Worker activated');
-                                    resolve();
-                                }
-                            });
-                        });
-                    }
-
-                    // Only proceed if we have an active service worker
-                    if (!swRegistration?.active) {
-                        console.error('No active service worker found');
-                        return null;
-                    }
-
-                    const permission = await Notification.requestPermission();
-                    console.log('Notification permission:', permission);
-                    
-                    if (permission !== 'granted') {
-                        return null;
-                    }
-
-                    const messaging = await initializeMessaging();
-                    console.log('Messaging initialized:', !!messaging);
-
-                    if (!messaging) return null;
-
-                    const token = await getToken(messaging, {
-                        vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
-                        serviceWorkerRegistration: swRegistration
-                    });
-                    console.log('Token generated:', !!token);
-
-                    if (token) {
-                        // Save both FCM token and push subscription
-                        await updateDoc(doc(db, 'Users', userId), {
-                            fcmToken: token,
-                            pushSubscription: JSON.stringify(pushSubscription)
-                        });
-                        console.log('Token and subscription saved to user document');
-
-                        onMessage(messaging, (payload) => {
-                            console.log('Received foreground message:', payload);
-                            new Notification(payload.notification?.title || 'New Notification', {
-                                body: payload.notification?.body,
-                                icon: '/icons/icon-192x192.png',
-                                data: payload.data
-                            });
-                        });
-
-                        return token;
-                    }
-                } catch (subscriptionError) {
-                    console.error('Push subscription error:', subscriptionError);
-                    return null;
-                }
-            } catch (swError) {
-                console.error('Service Worker registration failed:', swError);
-                return null;
-            }
-        }
-
-        return null;
+        return token;
     } catch (error) {
-        console.error('Initialization error:', error);
+        console.error('Notification setup failed:', error);
         return null;
     }
 }
 
-export async function sendNotification(
-    userToken: string, 
-    type: NotificationType, 
-    data: NotificationData
-) {
+export async function sendNotification(userToken: string, type: NotificationType, data: NotificationData) {
     try {
         const notificationData = getNotificationTemplate(type, data);
-        const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-        
-        console.log('Preparing notification:', {
-            projectId,
-            token: userToken.substring(0, 10) + '...',
-            notificationData
+        const baseUrl = window.location.origin;
+        const response = await fetch(`${baseUrl}/api/notifications/send`, {
+            method: 'POST',
+            body: JSON.stringify({ userToken, type, data: notificationData })
         });
-
-        const accessToken = await getAccessToken();
-        console.log('Access token obtained:', accessToken?.substring(0, 10));
-
-        const response = await fetch(
-            `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${accessToken}`
-                },
-                body: JSON.stringify({
-                    message: {
-                        token: userToken,
-                        notification: {
-                            title: notificationData.title,
-                            body: notificationData.body
-                        },
-                        android: {
-                            priority: "high"
-                        },
-                        apns: {
-                            payload: {
-                                aps: {
-                                    contentAvailable: true
-                                }
-                            }
-                        },
-                        webpush: {
-                            headers: {
-                                Urgency: "high"
-                            },
-                            notification: {
-                                icon: '/icons/icon-192x192.png',
-                                badge: '/icons/icon-72x72.png',
-                                requireInteraction: true,
-                                silent: false,
-                                actions: [
-                                    {
-                                        action: 'view',
-                                        title: 'View'
-                                    }
-                                ]
-                            },
-                            fcm_options: {
-                                link: notificationData.url || '/'
-                            }
-                        }
-                    }
-                })
-            }
-        );
-
-        const responseData = await response.json();
-        console.log('Full FCM Response:', responseData);
         
         if (!response.ok) {
-            throw new Error(`FCM Error: ${JSON.stringify(responseData)}`);
+            throw new Error('Failed to send notification');
         }
-
-        return responseData;
+        return response.json();
     } catch (error) {
         console.error('Notification send error:', error);
         throw error;
@@ -290,13 +173,6 @@ export function sanitizeData(data: NotificationData): Record<string, string> {
     return sanitized;
 }
 
-export async function getAccessToken(): Promise<string> {
-    const response = await fetch('/api/fcm-token', {
-        method: 'POST'
-    });
-    const data = await response.json();
-    return data.token;
-}
 
 export async function getUserFCMToken(userId: string) {
     try {
