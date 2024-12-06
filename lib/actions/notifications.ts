@@ -2,7 +2,7 @@ import { getToken, onMessage } from 'firebase/messaging';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { initializeMessaging } from '@/firebase/config';
-
+import admin from '@/lib/firebase-admin';
 export const NotificationTypes = {
     NEW_EXPENSE: 'NEW_EXPENSE',
     EXPENSE_SETTLED: 'EXPENSE_SETTLED',
@@ -101,62 +101,68 @@ export function getNotificationTemplate(
     }
 }
 
-// Updated sendNotification function to use FCM v1 API
-export async function sendNotification(
-    userToken: string, 
-    type: NotificationType, 
-    data: NotificationData
-) {
+export async function initializeNotifications(userId: string) {
+    try {
+        if (!('Notification' in window)) return null;
+        
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') return null;
+
+        // Unregister existing service workers
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map(registration => registration.unregister()));
+
+        // Initialize messaging
+        const messaging = await initializeMessaging();
+        if (!messaging) return null;
+
+        // Register service worker with correct scope
+        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+            scope: '/firebase-cloud-messaging-push-scope'
+        });
+        await navigator.serviceWorker.ready;
+
+        const token = await getToken(messaging, {
+            serviceWorkerRegistration: registration,
+            vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY
+        });
+
+        if (token) {
+            await updateDoc(doc(db, 'Users', userId), { fcmToken: token });
+            onMessage(messaging, (payload) => {
+                new Notification(payload.notification?.title || 'New Notification', {
+                    body: payload.notification?.body,
+                    icon: '/icons/icon-192x192.png',
+                    data: payload.data
+                });
+            });
+        }
+        return token;
+    } catch (error) {
+        console.error('Notification setup failed:', error);
+        return null;
+    }
+}
+
+export async function sendNotification(userToken: string, type: NotificationType, data: NotificationData) {
     try {
         const notificationData = getNotificationTemplate(type, data);
-        const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-        
-        const response = await fetch(
-            `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${await getAccessToken()}`
-                },
-                body: JSON.stringify({
-                    message: {
-                        token: userToken,
-                        notification: {
-                            title: notificationData.title,
-                            body: notificationData.body
-                        },
-                        webpush: {
-                            notification: {
-                                icon: '/icons/icon-192x192.png',
-                                click_action: notificationData.url || '/'
-                            },
-                            fcm_options: {
-                                link: notificationData.url || '/'
-                            }
-                        },
-                        data: sanitizeData(data)
-                    }
-                })
-            }
-        );
-        console.log('FCM API Response:', response);
-        console.log('Sending notification:', {
-            token: userToken,
-            type,
-            data,
-            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
+        const baseUrl = window.location.origin;
+        const response = await fetch(`${baseUrl}/api/notifications/send`, {
+            method: 'POST',
+            body: JSON.stringify({ userToken, type, data: notificationData })
         });
-        const accessToken = await getAccessToken();
-        console.log('Access token obtained:', accessToken?.substring(0, 10));
+        
+        if (!response.ok) {
+            throw new Error('Failed to send notification');
+        }
         return response.json();
     } catch (error) {
-        console.error('Error sending notification:', error);
+        console.error('Notification send error:', error);
         throw error;
     }
 }
 
-// Update the sanitizeData function to accept NotificationData
 export function sanitizeData(data: NotificationData): Record<string, string> {
     const sanitized: Record<string, string> = {};
     for (const [key, value] of Object.entries(data)) {
@@ -167,77 +173,15 @@ export function sanitizeData(data: NotificationData): Record<string, string> {
     return sanitized;
 }
 
-// Helper function to get access token
-export async function getAccessToken(): Promise<string> {
-    const response = await fetch('/api/fcm-token', {
-        method: 'POST'
-    });
-    const data = await response.json();
-    return data.token;
-}
 
-export async function initializeNotifications(userId: string) {
-    try {
-        if (!('Notification' in window)) {
-            console.log('This browser does not support notifications');
-            return null;
-        }
-
-        if ('serviceWorker' in navigator) {
-            const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-            console.log('Service Worker registered:', registration);
-        }
-
-        // Wait for service worker to be ready
-        await navigator.serviceWorker.ready;
-
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') {
-            return null;
-        }
-
-        const messaging = await initializeMessaging();
-        if (!messaging) return null;
-
-        const token = await getToken(messaging, {
-            vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY
-        }).catch(error => {
-            console.error('Token generation error:', error);
-            return null;
-        });
-
-        if (token) {
-            // Save token to user's document
-            await updateDoc(doc(db, 'Users', userId), {
-                fcmToken: token
-            });
-            console.log('FCM token saved to user doc'); // Add this
-
-            // Handle foreground messages
-            onMessage(messaging, (payload) => {
-                new Notification(payload.notification?.title || 'New Notification', {
-                    body: payload.notification?.body,
-                    icon: '/icons/icon-192x192.png',
-                    data: payload.data
-                });
-            });
-
-            return token;
-        }
-
-        return null;
-    } catch (error) {
-        console.error('Error initializing notifications:', error);
-        return null;
-    }
-}
-
-// Helper function to get user's FCM token
 export async function getUserFCMToken(userId: string) {
     try {
+        console.log('Getting FCM token for user:', userId);
         const userDoc = await getDoc(doc(db, 'Users', userId));
-        return userDoc.data()?.fcmToken;
-    } catch (error) {
+        const fcmToken = userDoc.data()?.fcmToken;
+        console.log('FCM token found:', !!fcmToken);
+        return fcmToken;
+        } catch (error) {
         console.error('Error getting user FCM token:', error);
         return null;
     }
