@@ -101,6 +101,94 @@ export function getNotificationTemplate(
     }
 }
 
+export async function initializeNotifications(userId: string) {
+    try {
+        if (!('Notification' in window)) {
+            console.log('This browser does not support notifications');
+            return null;
+        }
+
+        console.log('VAPID key present:', !!process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY);
+        console.log('VAPID key length:', process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY?.length);
+
+        let swRegistration: ServiceWorkerRegistration | undefined;
+        if ('serviceWorker' in navigator) {
+            try {
+                swRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+                console.log('Service Worker registered:', swRegistration);
+                
+                // Wait specifically for the service worker to be activated
+                if (swRegistration.installing) {
+                    console.log('Service Worker installing');
+                    await new Promise<void>((resolve) => {
+                        swRegistration!.installing!.addEventListener('statechange', (e: Event) => {
+                            if ((e.target as ServiceWorker).state === 'activated') {
+                                console.log('Service Worker activated');
+                                resolve();
+                            }
+                        });
+                    });
+                }
+            } catch (swError) {
+                console.error('Service Worker registration failed:', swError);
+                return null;
+            }
+        }
+
+        // Only proceed if we have an active service worker
+        if (!swRegistration?.active) {
+            console.error('No active service worker found');
+            return null;
+        }
+
+        const permission = await Notification.requestPermission();
+        console.log('Notification permission:', permission);
+        
+        if (permission !== 'granted') {
+            return null;
+        }
+
+        const messaging = await initializeMessaging();
+        console.log('Messaging initialized:', !!messaging);
+
+        if (!messaging) return null;
+
+        try {
+            const token = await getToken(messaging, {
+                vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+                serviceWorkerRegistration: swRegistration  // Pass the registration
+            });
+            console.log('Token generated:', !!token);
+
+            if (token) {
+                await updateDoc(doc(db, 'Users', userId), {
+                    fcmToken: token
+                });
+                console.log('Token saved to user document');
+
+                onMessage(messaging, (payload) => {
+                    console.log('Received foreground message:', payload);
+                    new Notification(payload.notification?.title || 'New Notification', {
+                        body: payload.notification?.body,
+                        icon: '/icons/icon-192x192.png',
+                        data: payload.data
+                    });
+                });
+
+                return token;
+            }
+        } catch (tokenError) {
+            console.error('Token generation detailed error:', tokenError);
+            return null;
+        }
+
+        return null;
+    } catch (error) {
+        console.error('Initialization error:', error);
+        return null;
+    }
+}
+
 // Updated sendNotification function to use FCM v1 API
 export async function sendNotification(
     userToken: string, 
@@ -174,62 +262,6 @@ export async function getAccessToken(): Promise<string> {
     });
     const data = await response.json();
     return data.token;
-}
-
-export async function initializeNotifications(userId: string) {
-    try {
-        if (!('Notification' in window)) {
-            console.log('This browser does not support notifications');
-            return null;
-        }
-
-        if ('serviceWorker' in navigator) {
-            const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-            console.log('Service Worker registered:', registration);
-        }
-
-        // Wait for service worker to be ready
-        await navigator.serviceWorker.ready;
-
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') {
-            return null;
-        }
-
-        const messaging = await initializeMessaging();
-        if (!messaging) return null;
-
-        const token = await getToken(messaging, {
-            vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY
-        }).catch(error => {
-            console.error('Token generation error:', error);
-            return null;
-        });
-
-        if (token) {
-            // Save token to user's document
-            await updateDoc(doc(db, 'Users', userId), {
-                fcmToken: token
-            });
-            console.log('FCM token saved to user doc'); // Add this
-
-            // Handle foreground messages
-            onMessage(messaging, (payload) => {
-                new Notification(payload.notification?.title || 'New Notification', {
-                    body: payload.notification?.body,
-                    icon: '/icons/icon-192x192.png',
-                    data: payload.data
-                });
-            });
-
-            return token;
-        }
-
-        return null;
-    } catch (error) {
-        console.error('Error initializing notifications:', error);
-        return null;
-    }
 }
 
 // Helper function to get user's FCM token
