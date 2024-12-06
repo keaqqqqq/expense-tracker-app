@@ -8,6 +8,11 @@ const serviceAccount = {
 
 if (!admin.apps.length) {
   try {
+    console.log('Admin initialization with:', {
+      projectId: serviceAccount.projectId,
+      hasEmail: !!serviceAccount.clientEmail,
+      hasKey: !!serviceAccount.privateKey
+    });
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount)
     });
