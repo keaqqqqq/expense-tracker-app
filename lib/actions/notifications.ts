@@ -26,32 +26,51 @@ export async function initializeNotifications(userId: string) {
             return null;
         }
 
-        const messaging = getMessaging(app);
-        const token = await getToken(messaging, {
-            vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY
-        });
-
-        if (!token) {
-            console.log('No token received');
+        // First register service worker
+        try {
+            const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+            console.log('Service Worker registered:', registration);
+            await navigator.serviceWorker.ready;
+        } catch (swError) {
+            console.error('Service Worker registration failed:', swError);
             return null;
         }
 
-        console.log('FCM Token:', token);
-
-        // Save token to database
-        await updateDoc(doc(db, 'Users', userId), { fcmToken: token });
-
-        // Handle foreground messages
-        onMessage(messaging, (payload) => {
-            console.log('Foreground message received:', payload);
-            new Notification(payload.notification?.title || 'New Notification', {
-                body: payload.notification?.body,
-                icon: '/icons/icon-192x192.png',
-                data: payload.data
+        const messaging = getMessaging(app);
+        
+        try {
+            const currentToken = await getToken(messaging, {
+                vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY
             });
-        });
 
-        return token;
+            if (!currentToken) {
+                console.log('No token received');
+                return null;
+            }
+
+            console.log('FCM Token received:', currentToken);
+
+            // Save token to database
+            await updateDoc(doc(db, 'Users', userId), { 
+                fcmToken: currentToken,
+                lastTokenUpdate: new Date().toISOString()
+            });
+
+            // Handle foreground messages
+            onMessage(messaging, (payload) => {
+                console.log('Foreground message received:', payload);
+                new Notification(payload.notification?.title || 'New Notification', {
+                    body: payload.notification?.body,
+                    icon: '/icons/icon-192x192.png',
+                    data: payload.data
+                });
+            });
+
+            return currentToken;
+        } catch (tokenError) {
+            console.error('Token retrieval failed:', tokenError);
+            return null;
+        }
     } catch (error) {
         console.error('Notification setup error:', error);
         return null;
