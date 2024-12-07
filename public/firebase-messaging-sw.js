@@ -52,8 +52,18 @@ self.addEventListener('push', function(event) {
     }
 });
 
+self.addEventListener('install', (event) => {
+    console.log('[Production SW] Installing...', event);
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+    console.log('[Production SW] Activating...', event);
+    event.waitUntil(clients.claim());
+});
+
 messaging.onBackgroundMessage((payload) => {
-    console.log('Background message received:', payload);
+    console.log('[Production SW] Background message received:', payload);
     
     const notificationOptions = {
         body: payload.notification.body,
@@ -61,25 +71,16 @@ messaging.onBackgroundMessage((payload) => {
         badge: '/icons/icon-72x72.png',
         data: payload.data,
         requireInteraction: true,
-        actions: payload.data?.type === 'FRIEND_REQUEST' ? [
-            {
-                action: 'accept',
-                title: 'Accept'
-            },
-            {
-                action: 'decline',
-                title: 'Decline'
-            }
-        ] : []
+        tag: payload.data?.type || 'default'
     };
 
     return self.registration.showNotification(
         payload.notification.title,
         notificationOptions
     ).then(() => {
-        console.log('Notification shown successfully');
+        console.log('[Production SW] Notification shown successfully');
     }).catch((error) => {
-        console.error('Error showing notification:', error);
+        console.error('[Production SW] Error showing notification:', error);
     });
 });
 
