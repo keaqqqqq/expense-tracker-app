@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import {getAuth, GoogleAuthProvider} from 'firebase/auth'
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from 'firebase/storage';
 import { getMessaging, isSupported, Messaging } from 'firebase/messaging';
@@ -12,11 +12,12 @@ const firebaseConfig = {
     messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
-export const app = initializeApp(firebaseConfig);
 
-export const auth = getAuth(app)
+const app = initializeApp(firebaseConfig);
+
+export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
-export const db = getFirestore(app)
+export const db = getFirestore(app);
 export const storage = getStorage(app);
 
 let messagingInstance: Messaging | null = null;
@@ -26,7 +27,9 @@ export const initializeMessaging = async () => {
         if (typeof window !== 'undefined') {
             const isSupportedBrowser = await isSupported();
             if (isSupportedBrowser) {
-                messagingInstance = getMessaging(app);
+                if (!messagingInstance) {
+                    messagingInstance = getMessaging(app);
+                }
                 return messagingInstance;
             }
         }
@@ -37,6 +40,4 @@ export const initializeMessaging = async () => {
     }
 };
 
-export const getMessagingInstance = () => {
-    return messagingInstance;
-};
+export { app };
