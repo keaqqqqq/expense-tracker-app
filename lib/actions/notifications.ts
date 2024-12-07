@@ -95,16 +95,18 @@ export async function getUserFCMToken(userId: string) {
 
 export async function sendNotification(userToken: string, type: NotificationType, data: any) {
     try {
-        // Get the base URL with proper type checking
         const baseUrl = typeof window !== 'undefined' 
-            ? window.location.port === '3001'
-                ? 'http://localhost:3001'
-                : window.location.origin
-            : process.env.NEXT_PUBLIC_BASE_URL 
-                ? `https://${process.env.NEXT_PUBLIC_BASE_URL}`
+            ? window.location.origin 
+            : process.env.NEXT_PUBLIC_VERCEL_URL 
+                ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
                 : 'http://localhost:3000';
 
-        console.log('Using base URL:', baseUrl);
+        console.log('Notification Send - Config:', {
+            baseUrl,
+            tokenPreview: userToken.substring(0, 10) + '...',
+            type,
+            environment: process.env.NODE_ENV
+        });
 
         const response = await fetch(`${baseUrl}/api/notifications/send`, {
             method: 'POST',
@@ -122,14 +124,17 @@ export async function sendNotification(userToken: string, type: NotificationType
             })
         });
 
+        const result = await response.json();
+        
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to send notification');
+            console.error('Notification Send - API Error:', result);
+            throw new Error(result.error || 'Failed to send notification');
         }
 
-        return response.json();
+        console.log('Notification Send - Success:', result);
+        return result;
     } catch (error) {
-        console.error('Send notification error:', error);
+        console.error('Notification Send - Error:', error);
         throw error;
     }
 }
