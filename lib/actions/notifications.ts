@@ -95,17 +95,12 @@ export async function getUserFCMToken(userId: string) {
 
 export async function sendNotification(userToken: string, type: NotificationType, data: any) {
     try {
-        const baseUrl = typeof window !== 'undefined' 
-            ? window.location.origin 
-            : process.env.NEXT_PUBLIC_VERCEL_URL 
-                ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
-                : 'http://localhost:3000';
+        const baseUrl = 'https://keaqqqqq.com';
 
         console.log('Notification Send - Config:', {
             baseUrl,
             tokenPreview: userToken.substring(0, 10) + '...',
-            type,
-            environment: process.env.NODE_ENV
+            type
         });
 
         const response = await fetch(`${baseUrl}/api/notifications/send`, {
