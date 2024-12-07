@@ -148,46 +148,22 @@ export const saveFriendship = async (requesterId: string, addresseeEmail: string
       // Send notification
       const addresseeToken = await getUserFCMToken(addresseeId);
 
+      // In saveFriendship
       if (addresseeToken) {
         try {
-          const notificationData = {
-            title: 'New Friend Request',
-            body: `${requesterName} sent you a friend request`,
-            url: '/friends',
-            type: 'FRIEND_REQUEST',
-            fromUser: requesterName,
-            requesterId: requesterId
-          };
-
-          // Get the base URL
-          const baseUrl = typeof window !== 'undefined' 
-          ? window.location.origin 
-          : process.env.NEXT_PUBLIC_VERCEL_URL 
-            ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
-            : process.env.NEXT_PUBLIC_BASE_URL 
-              ? process.env.NEXT_PUBLIC_BASE_URL
-              : 'http://localhost:3000';
-
-          const response = await fetch(`${baseUrl}/api/notifications/send`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              userToken: addresseeToken,
-              type: 'FRIEND_REQUEST',
-              data: notificationData
-            })
-          });
-
-          if (!response.ok) {
-            throw new Error(`Notification error: ${response.status}`);
-          }
-
-          const result = await response.json();
-          console.log('Notification sent:', result);
+            await sendNotification(
+                addresseeToken,
+                'FRIEND_REQUEST',
+                {
+                    title: 'New Friend Request',
+                    body: `${requesterName} sent you a friend request`,
+                    url: '/friends',
+                    fromUser: requesterName,
+                    requesterId: requesterId
+                }
+            );
         } catch (error) {
-          console.error('Failed to send notification:', error);
+            console.error('Failed to send notification:', error);
         }
       }
 
