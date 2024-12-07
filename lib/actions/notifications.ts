@@ -100,8 +100,8 @@ export async function sendNotification(userToken: string, type: NotificationType
             ? window.location.port === '3001'
                 ? 'http://localhost:3001'
                 : window.location.origin
-            : process.env.NEXT_PUBLIC_VERCEL_URL 
-                ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
+            : process.env.NEXT_PUBLIC_BASE_URL 
+                ? `https://${process.env.NEXT_PUBLIC_BASE_URL}`
                 : 'http://localhost:3000';
 
         console.log('Using base URL:', baseUrl);
