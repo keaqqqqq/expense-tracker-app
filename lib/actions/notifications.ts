@@ -15,14 +15,6 @@ export async function initializeNotifications(userId: string) {
     try {
         if (typeof window === 'undefined') return null;
         
-        // Check manifest
-        const manifestLink = document.querySelector('link[rel="manifest"]');
-        if (!manifestLink) {
-            console.error('Web app manifest not found');
-        } else {
-            console.log('Manifest found:', manifestLink.getAttribute('href'));
-        }
-
         if (!('Notification' in window)) {
             console.log('Notifications not supported');
             return null;
@@ -42,17 +34,9 @@ export async function initializeNotifications(userId: string) {
         // Then register service worker
         let registration;
         try {
-            console.log('Registering service worker...');
             registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
             await navigator.serviceWorker.ready;
             console.log('Service Worker registered:', registration.scope);
-            
-            // Check if service worker is active
-            if (registration.active) {
-                console.log('Service worker is active');
-            } else {
-                console.log('Service worker is not active');
-            }
         } catch (swError) {
             console.error('Service Worker registration failed:', swError);
             return null;
@@ -111,12 +95,17 @@ export async function getUserFCMToken(userId: string) {
 
 export async function sendNotification(userToken: string, type: NotificationType, data: any) {
     try {
-        const baseUrl = 'https://keaqqqqq.com';
+        const baseUrl = typeof window !== 'undefined' 
+            ? window.location.origin 
+            : process.env.NEXT_PUBLIC_VERCEL_URL 
+                ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
+                : 'http://localhost:3000';
 
         console.log('Notification Send - Config:', {
             baseUrl,
             tokenPreview: userToken.substring(0, 10) + '...',
-            type
+            type,
+            environment: process.env.NODE_ENV
         });
 
         const response = await fetch(`${baseUrl}/api/notifications/send`, {
