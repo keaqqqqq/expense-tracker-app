@@ -80,6 +80,7 @@ export const saveFriendship = async (requesterId: string, addresseeEmail: string
 
       const friendshipsRef = collection(db, 'Friendships');
       
+      // Check existing friendships
       const asRequesterQuery = query(
         friendshipsRef,
         where('requester_id', '==', requesterId),
@@ -99,6 +100,7 @@ export const saveFriendship = async (requesterId: string, addresseeEmail: string
         getDocs(asAddresseeQuery)
       ]);
 
+      // Check for existing requests/friendships
       if (!requesterSnapshot.empty) {
         const friendship = requesterSnapshot.docs[0].data();
         if (friendship.status === 'PENDING') {
@@ -129,52 +131,69 @@ export const saveFriendship = async (requesterId: string, addresseeEmail: string
         }
       }
 
+      // Create new friendship
       const friendshipData = {
         requester_id: requesterId,
         addressee_id: addresseeId,
         status: 'PENDING',
         created_at: serverTimestamp()
       };
-      console.log('Before adding friendship doc');
-      await addDoc(collection(db, 'Friendships'), friendshipData);
-      console.log('After adding friendship doc');
 
-      // Send notification only for existing users
+      await addDoc(collection(db, 'Friendships'), friendshipData);
+
+      // Get requester details for notification
       const requesterDoc = await getDoc(doc(db, 'Users', requesterId));
       const requesterName = requesterDoc.data()?.name || 'Someone';
-      console.log('Requester data:', { requesterName, requesterId });
 
+      // Send notification
       const addresseeToken = await getUserFCMToken(addresseeId);
-      console.log('Addressee token check:', { 
-        addresseeId, 
-        hasToken: !!addresseeToken,
-        tokenPreview: addresseeToken ? addresseeToken.substring(0, 10) : null 
-    });
-      console.log('Debug Friend Request:', {
-        requesterName,
-        addresseeId,
-        addresseeToken,
-        hasToken: !!addresseeToken
-    });
 
-    if (addresseeToken) {
-      try {
-          console.log('Attempting to send notification');
-          const notificationResult = await sendNotification(
-              addresseeToken,
-              'FRIEND_REQUEST',
-              {
-                  fromUser: requesterName,
-                  requesterId: requesterId
-              }
-          );
-          console.log('Notification result:', notificationResult);
-      } catch (notificationError) {
-          console.error('Notification send error:', notificationError);
+      if (addresseeToken) {
+        try {
+          const notificationData = {
+            title: 'New Friend Request',
+            body: `${requesterName} sent you a friend request`,
+            url: '/friends',
+            type: 'FRIEND_REQUEST',
+            fromUser: requesterName,
+            requesterId: requesterId
+          };
+
+          // Get the base URL
+          const baseUrl = typeof window !== 'undefined' 
+          ? window.location.origin 
+          : process.env.NEXT_PUBLIC_VERCEL_URL 
+            ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
+            : process.env.NEXT_PUBLIC_BASE_URL 
+              ? process.env.NEXT_PUBLIC_BASE_URL
+              : 'http://localhost:3000';
+
+          const response = await fetch(`${baseUrl}/api/notifications/send`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              userToken: addresseeToken,
+              type: 'FRIEND_REQUEST',
+              data: notificationData
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error(`Notification error: ${response.status}`);
+          }
+
+          const result = await response.json();
+          console.log('Notification sent:', result);
+        } catch (error) {
+          console.error('Failed to send notification:', error);
+        }
       }
-  }
+
       return { success: true, type: 'friendship_request' };
     } else {
+      // Handle invitation for non-existing users
       const invitationsRef = collection(db, 'Invitations');
       const existingInvitationQuery = query(
         invitationsRef,
@@ -199,8 +218,8 @@ export const saveFriendship = async (requesterId: string, addresseeEmail: string
         status: 'PENDING',
         invitation_token: invitationToken,
         created_at: serverTimestamp(),
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 
-        email_sent: false 
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        email_sent: false
       };
       
       await addDoc(collection(db, 'Invitations'), invitationData);

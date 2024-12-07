@@ -109,3 +109,7 @@ self.addEventListener('notificationclick', (event) => {
         })
     );
 });
+
+messaging.onBackgroundMessage((payload) => {
+    console.log('Background message received:', payload);
+});
