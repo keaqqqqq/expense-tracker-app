@@ -1,22 +1,13 @@
 import withPWA from 'next-pwa';
 
-const pwaConfig = withPWA({
-  dest: 'public',
-  register: true,
-  skipWaiting: true,
-  // eslint-disable-next-line
-  disable: process.env.NODE_ENV === 'development'
-});
-
 /** @type {import('next').NextConfig} */
-
 const nextConfig = {
   images: {
     remotePatterns: [{
       protocol: 'https',
       hostname: "firebasestorage.googleapis.com",
       pathname: '**',
-  }]
+    }]
   },
   experimental: {
     serverActions: true,
@@ -30,21 +21,29 @@ const nextConfig = {
   },
   async headers() {
     return [
-        {
-            source: '/firebase-messaging-sw.js',
-            headers: [
-                {
-                    key: 'Service-Worker-Allowed',
-                    value: '/'
-                },
-                {
-                    key: 'Cache-Control',
-                    value: 'no-cache, no-store, must-revalidate'
-                }
-            ]
-        }
+      {
+        source: '/firebase-messaging-sw.js',
+        headers: [
+          {
+            key: 'Service-Worker-Allowed',
+            value: '/'
+          },
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate'
+          }
+        ]
+      }
     ];
-}
+  }
 };
+
+const pwaConfig = withPWA({
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
+  disable: process.env.NODE_ENV === 'development',
+  publicExcludes: ['!firebase-messaging-sw.js']
+});
 
 export default pwaConfig(nextConfig);

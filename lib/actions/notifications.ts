@@ -15,6 +15,14 @@ export async function initializeNotifications(userId: string) {
     try {
         if (typeof window === 'undefined') return null;
         
+        // Check manifest
+        const manifestLink = document.querySelector('link[rel="manifest"]');
+        if (!manifestLink) {
+            console.error('Web app manifest not found');
+        } else {
+            console.log('Manifest found:', manifestLink.getAttribute('href'));
+        }
+
         if (!('Notification' in window)) {
             console.log('Notifications not supported');
             return null;
@@ -34,9 +42,17 @@ export async function initializeNotifications(userId: string) {
         // Then register service worker
         let registration;
         try {
+            console.log('Registering service worker...');
             registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
             await navigator.serviceWorker.ready;
             console.log('Service Worker registered:', registration.scope);
+            
+            // Check if service worker is active
+            if (registration.active) {
+                console.log('Service worker is active');
+            } else {
+                console.log('Service worker is not active');
+            }
         } catch (swError) {
             console.error('Service Worker registration failed:', swError);
             return null;

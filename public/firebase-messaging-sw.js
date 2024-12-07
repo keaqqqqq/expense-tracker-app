@@ -10,23 +10,21 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Add installation and activation logging
 self.addEventListener('install', (event) => {
-    console.log('Service Worker installing...');
+    console.log('[SW] Installing...', event);
     self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-    console.log('Service Worker activating...');
+    console.log('[SW] Activating...', event);
     event.waitUntil(clients.claim());
 });
 
-// Add explicit push event handler
 self.addEventListener('push', function(event) {
-    console.log('Push event received:', event);
+    console.log('[SW] Push event received:', event);
     if (event.data) {
         const data = event.data.json();
-        console.log('Push data:', data);
+        console.log('[SW] Push data:', data);
         
         const options = {
             body: data.notification.body,
@@ -34,16 +32,11 @@ self.addEventListener('push', function(event) {
             badge: '/icons/icon-72x72.png',
             data: data.data,
             requireInteraction: true,
-            actions: [
-                {
-                    action: 'accept',
-                    title: 'Accept'
-                },
-                {
-                    action: 'decline',
-                    title: 'Decline'
-                }
-            ]
+            tag: data.data?.type || 'default',
+            actions: data?.type === 'FRIEND_REQUEST' ? [
+                { action: 'accept', title: 'Accept' },
+                { action: 'decline', title: 'Decline' }
+            ] : []
         };
 
         event.waitUntil(
@@ -52,42 +45,12 @@ self.addEventListener('push', function(event) {
     }
 });
 
-self.addEventListener('install', (event) => {
-    console.log('[Production SW] Installing...', event);
-    self.skipWaiting();
-});
-
-self.addEventListener('activate', (event) => {
-    console.log('[Production SW] Activating...', event);
-    event.waitUntil(clients.claim());
-});
-
 messaging.onBackgroundMessage((payload) => {
-    console.log('[Production SW] Background message received:', payload);
-    
-    const notificationOptions = {
-        body: payload.notification.body,
-        icon: '/icons/icon-192x192.png',
-        badge: '/icons/icon-72x72.png',
-        data: payload.data,
-        requireInteraction: true,
-        tag: payload.data?.type || 'default'
-    };
-
-    return self.registration.showNotification(
-        payload.notification.title,
-        notificationOptions
-    ).then(() => {
-        console.log('[Production SW] Notification shown successfully');
-    }).catch((error) => {
-        console.error('[Production SW] Error showing notification:', error);
-    });
+    console.log('[SW] Background message received:', payload);
 });
 
-// Handle notification clicks
 self.addEventListener('notificationclick', function(event) {
-    console.log('Notification clicked:', event);
-
+    console.log('[SW] Notification clicked:', event);
     event.notification.close();
 
     const urlToOpen = event.notification.data?.url || '/';
