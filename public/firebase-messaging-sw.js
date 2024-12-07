@@ -1,6 +1,7 @@
 importScripts("https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js");
 
+// Minimal config needed for messaging
 const firebaseConfig = {
     apiKey: "AIzaSyC-PxivjoAqQr08vhPamjspoCy8ZqlEEsg",
     projectId: "expense-tracker-app-480d4",
@@ -10,6 +11,17 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
+
+// Log installation
+self.addEventListener('install', (event) => {
+    console.log('Service Worker installing...');
+    self.skipWaiting(); // Ensure new service worker activates immediately
+});
+
+// Log activation
+self.addEventListener('activate', (event) => {
+    console.log('Service Worker activated');
+});
 
 messaging.onBackgroundMessage(async (payload) => {
     console.log("Background message received:", payload);
@@ -23,8 +35,13 @@ messaging.onBackgroundMessage(async (payload) => {
         requireInteraction: true
     };
 
-    self.registration.showNotification(
-        payload.notification.title,
-        notificationOptions
-    );
+    try {
+        await self.registration.showNotification(
+            payload.notification.title,
+            notificationOptions
+        );
+        console.log('Notification shown successfully');
+    } catch (error) {
+        console.error('Error showing notification:', error);
+    }
 });
