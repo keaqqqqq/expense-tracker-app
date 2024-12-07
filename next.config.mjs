@@ -5,7 +5,7 @@ const pwaConfig = withPWA({
   register: true,
   skipWaiting: true,
   // eslint-disable-next-line
-  disable: typeof window === 'undefined' ? process.env.NODE_ENV === 'development' : false
+  disable: process.env.NODE_ENV === 'development'
 });
 
 /** @type {import('next').NextConfig} */
@@ -28,7 +28,7 @@ const nextConfig = {
     };
     return config;
   },
-  headers: async () => {
+  async headers() {
     return [
         {
             source: '/firebase-messaging-sw.js',
@@ -36,6 +36,10 @@ const nextConfig = {
                 {
                     key: 'Service-Worker-Allowed',
                     value: '/'
+                },
+                {
+                    key: 'Cache-Control',
+                    value: 'no-cache, no-store, must-revalidate'
                 }
             ]
         }

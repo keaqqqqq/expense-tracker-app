@@ -5,7 +5,7 @@ export async function POST(req: Request) {
     try {
         const { token, title, body, data } = await req.json();
         
-        console.log('Sending notification:', { token, title, body, data });
+        console.log('Preparing to send notification:', { token, title, body, data });
 
         const message = {
             token,
@@ -26,13 +26,19 @@ export async function POST(req: Request) {
                 notification: {
                     icon: '/icons/icon-192x192.png',
                     badge: '/icons/icon-72x72.png',
-                    requireInteraction: true
+                    requireInteraction: true,
+                    actions: data?.type === 'FRIEND_REQUEST' ? [
+                        { action: 'accept', title: 'Accept' },
+                        { action: 'decline', title: 'Decline' }
+                    ] : []
                 },
                 fcm_options: {
                     link: data?.url || '/'
                 }
             }
         };
+
+        console.log('Sending FCM message:', JSON.stringify(message, null, 2));
 
         const response = await admin.messaging().send(message);
         console.log('FCM Response:', response);
