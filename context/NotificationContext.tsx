@@ -23,17 +23,19 @@ export function NotificationProvider({
     const [notificationPermission, setNotificationPermission] = 
         useState<NotificationPermission>('default');
 
+    // Modify in NotificationProvider
     useEffect(() => {
-        if (userId) {
-            const initNotifications = async () => {
-                const permission = await Notification.requestPermission();
-                setNotificationPermission(permission);
-                if (permission === 'granted') {
+        if (userId && 'Notification' in window) {
+            const initNotifs = async () => {
+                try {
                     const token = await initializeNotifications(userId);
-                    if (token) setToken(token);
+                    console.log('Notification setup result:', !!token);
+                    setToken(token);
+                } catch (err) {
+                    console.error('Notification setup failed:', err);
                 }
             };
-            initNotifications();
+            initNotifs();
         }
     }, [userId]);
 
