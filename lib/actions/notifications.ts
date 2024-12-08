@@ -95,11 +95,13 @@ export async function getUserFCMToken(userId: string) {
 
 export async function sendNotification(userToken: string, type: NotificationType, data: any) {
     try {
-        const baseUrl = typeof window !== 'undefined' 
-            ? window.location.origin 
-            : process.env.NEXT_PUBLIC_VERCEL_URL 
-                ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
-                : 'http://localhost:3000';
+        // const baseUrl = typeof window !== 'undefined' 
+        //     ? window.location.origin 
+        //     : process.env.NEXT_PUBLIC_VERCEL_URL 
+        //         ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
+        //         : 'http://localhost:3000';
+
+        const baseUrl = 'https://keaqqqqq.com';
 
                 const requestBody = {
                     token: userToken,
