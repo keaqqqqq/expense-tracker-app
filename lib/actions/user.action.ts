@@ -15,6 +15,7 @@ import { FriendGroupBalance, Balance } from '@/types/Balance';
 import { cookies } from 'next/headers';
 import { GroupBalance } from '@/types/Balance';
 import { getUserFCMToken, sendNotification } from './notifications';
+import { NotificationType } from './notifications';
 export const updateUserProfile = async (
   currentUser: User | null,
   name: string,
@@ -141,26 +142,27 @@ export const saveFriendship = async (requesterId: string, addresseeEmail: string
 
       await addDoc(collection(db, 'Friendships'), friendshipData);
 
-      // Get requester details for notification
       const requesterDoc = await getDoc(doc(db, 'Users', requesterId));
       const requesterName = requesterDoc.data()?.name || 'Someone';
-
-      // Send notification
+      const requesterImage = requesterDoc.data()?.image;
       const addresseeToken = await getUserFCMToken(addresseeId);
 
-      // In saveFriendship
       if (addresseeToken) {
         try {
+          const notificationType = `FRIEND_REQUEST_${requesterId}` as NotificationType;
+
             await sendNotification(
                 addresseeToken,
-                'FRIEND_REQUEST',
+                notificationType,
                 {
                     title: 'New Friend Request',
                     body: `${requesterName} sent you a friend request`,
                     url: '/friends',
                     fromUser: requesterName,
                     requesterId: requesterId,
-                    type: "FRIEND_REQUEST"
+                    type: notificationType,
+                    image: requesterImage
+
                 }
             );
         } catch (error) {
@@ -366,6 +368,7 @@ export async function acceptFriendship(relationshipId: string) {
 
     const friendshipData = friendshipDoc.data();
     const currentUserUid = friendshipData.addressee_id; 
+    const requesterId = friendshipData.requester_id;
 
     if (friendshipData.related_group_id) {
       return acceptFriendshipAndAddToGroup(relationshipId, currentUserUid);
@@ -375,6 +378,35 @@ export async function acceptFriendship(relationshipId: string) {
       status: 'ACCEPTED',
       accepted_at: serverTimestamp()
     });
+
+    const [currentUserDoc] = await Promise.all([
+      getDoc(doc(db, 'Users', currentUserUid))
+    ]);
+
+    const currentUserData = currentUserDoc.data();
+    console.log('Current user data: ' + JSON.stringify(currentUserData));
+    const requesterToken = await getUserFCMToken(requesterId);
+    if (requesterToken) {
+      try {
+        const notificationType = `ACCEPT_FRIEND_REQUEST_${currentUserUid}` as NotificationType;
+
+        await sendNotification(
+          requesterToken,
+          notificationType,
+          {
+              title: 'Friend Request Accepted',
+              body: `${currentUserData?.name || 'Someone'} accepted your friend request`,
+              url: '/friends',
+              fromUser: currentUserData?.name,
+              type: notificationType,
+              image: currentUserData?.image
+          }
+      );
+        console.log('Friendship acceptance notification sent successfully');
+      } catch (error) {
+        console.error('Failed to send friendship acceptance notification:', error);
+      }
+    }
 
     return { 
       success: true,

@@ -9,7 +9,7 @@ export const NotificationTypes = {
     GROUP_INVITE: 'GROUP_INVITE'
 } as const;
 
-export type NotificationType = keyof typeof NotificationTypes;
+export type NotificationType = keyof typeof NotificationTypes | string;
 
 export async function initializeNotifications(userId: string) {
     try {
@@ -24,14 +24,12 @@ export async function initializeNotifications(userId: string) {
         console.log('Notification permission:', permission);
         if (permission !== 'granted') return null;
 
-        // First get the messaging instance
         const messaging = await initializeMessaging();
         if (!messaging) {
             console.error('Messaging not initialized');
             return null;
         }
 
-        // Then register service worker
         let registration;
         try {
             registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
@@ -42,7 +40,6 @@ export async function initializeNotifications(userId: string) {
             return null;
         }
 
-        // Get token with VAPID key
         try {
             console.log('VAPID Key:', process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY?.substring(0, 10) + '...');
             const token = await getToken(messaging, {
@@ -62,17 +59,9 @@ export async function initializeNotifications(userId: string) {
                 lastTokenUpdate: new Date().toISOString()
             });
 
-            // Setup message handler
-            onMessage(messaging, (payload) => {
-                console.log('Foreground message received:', payload);
-                new Notification(payload.notification?.title || 'New Notification', {
-                    body: payload.notification?.body,
-                    icon: '/icons/icon-192x192.png',
-                    data: payload.data
-                });
-            });
-
             return token;
+
+            
         } catch (tokenError) {
             console.error('Token retrieval error:', tokenError);
             return null;
@@ -109,11 +98,11 @@ export async function sendNotification(userToken: string, type: NotificationType
                     body: data.body,
                     data: {
                         ...data,
-                        type,  // Include type in data object
+                        type, 
+                        image: data.image
                     }
                 };
         
-                console.log('Notification request payload:', requestBody);
         
                 const response = await fetch(`${baseUrl}/api/notifications/send`, {
                     method: 'POST',
