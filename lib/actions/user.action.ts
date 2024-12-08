@@ -159,7 +159,8 @@ export const saveFriendship = async (requesterId: string, addresseeEmail: string
                     body: `${requesterName} sent you a friend request`,
                     url: '/friends',
                     fromUser: requesterName,
-                    requesterId: requesterId
+                    requesterId: requesterId,
+                    type: "FRIEND_REQUEST"
                 }
             );
         } catch (error) {
