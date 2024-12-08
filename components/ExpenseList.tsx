@@ -264,7 +264,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                 </span>
               </div>
               <span className="text-xs text-gray-600">RM {amount.toFixed(2)}</span>
-              <a className='text-gray-300 text-xs hover:text-indigo-500' onClick={()=>{console.log("settle expense id:", expense?.id,payer_id,receiver_id, amount);onSettle(payer_id, receiver_id, expense, amount);setIsTransactionModalOpen(true)}}>settle</a>
+              <a className='text-gray-300 text-xs hover:text-indigo-500' onClick={()=>{onSettle(payer_id, receiver_id, expense, amount);setIsTransactionModalOpen(true)}}>settle</a>
             </div>
           );
         })}

@@ -1379,6 +1379,7 @@ export async function settleBalance(
   targetId: string, 
   type: 'friend' | 'group'
 ) {
+  console.log('user id:', userId, 'target Id: ', targetId, 'type: ', type)
   try {
     if (type === 'friend') {
       await Promise.all([
