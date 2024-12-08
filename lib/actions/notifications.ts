@@ -101,30 +101,27 @@ export async function sendNotification(userToken: string, type: NotificationType
                 ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
                 : 'http://localhost:3000';
 
-        console.log('Notification Send - Config:', {
-            baseUrl,
-            tokenPreview: userToken.substring(0, 10) + '...',
-            type,
-            environment: process.env.NODE_ENV
-        });
-
-        const response = await fetch(`${baseUrl}/api/notifications/send`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                token: userToken,
-                title: data.title,
-                body: data.body,
-                data: {
-                    ...data,
-                    type
-                }
-            })
-        });
-
-        const result = await response.json();
+                const requestBody = {
+                    token: userToken,
+                    title: data.title,
+                    body: data.body,
+                    data: {
+                        ...data,
+                        type,  // Include type in data object
+                    }
+                };
+        
+                console.log('Notification request payload:', requestBody);
+        
+                const response = await fetch(`${baseUrl}/api/notifications/send`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+        
+                const result = await response.json();
         
         if (!response.ok) {
             console.error('Notification Send - API Error:', result);
