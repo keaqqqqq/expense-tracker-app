@@ -97,6 +97,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
             // Validate the expense object using Zod
             ExpenseSchema.parse(expense);
             setErrors({});  // Clear errors if validation passes
+            closeModal();
 
             // Proceed with creating the expense
             await addExpense(expense);
@@ -106,7 +107,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 message: 'Expense created successfully',
                 type: 'success'
             });
-            closeModal();
         } catch (err) {
             if (err instanceof z.ZodError) {
                 const formErrors: { [key: string]: string } = {};
@@ -128,6 +128,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
         try {
             ExpenseSchema.parse(expense);  // Validate before editing
             setErrors({});  // Clear errors if validation passes
+            closeModal();
             await editExpense(expense);
             await handleRefresh();
             setToast({
@@ -135,7 +136,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 message: 'Expense updated successfully',
                 type: 'success'
             });
-            closeModal();
         } catch (err) {
             if (err instanceof z.ZodError) {
                 const formErrors: { [key: string]: string } = {};
@@ -154,6 +154,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
     };
 
     const handleDelete = async () => {
+        closeModal();
         if (expense.id) {
             try {
                 await deleteExpense(expense.id);
@@ -173,11 +174,11 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 return;
             }
         }
-        closeModal();
     };
 
     const handleClose = () => {
         resetExpense();
+        setErrors({});
         closeModal();
     };
 

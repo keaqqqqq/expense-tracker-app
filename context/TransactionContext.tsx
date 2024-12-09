@@ -7,21 +7,21 @@ import { db } from '@/firebase/config';
 // Define the context type based on your provided interface
 interface TransactionContextType {
     transaction: Transaction | null;
-    deleteTransactionsByExpense:(expenseId: string) => void;
+    deleteTransactionsByExpense: (expenseId: string) => void;
     calculateTransaction: (
         response: Expense,
         refreshFunctions: {
-          refreshAllTransactions: (friendIds?: string[], groupIds?: string[]) => Promise<void>;
-          refreshGroupTransactions: (groupId: string) => Promise<void>;
+            refreshAllTransactions: (friendIds?: string[], groupIds?: string[]) => Promise<void>;
+            refreshGroupTransactions: (groupId: string) => Promise<void>;
         }
-      ) => Promise<{ 
-        amount: number; 
-        payer_id: string; 
-        receiver_id: string; 
-        created_at: string; 
-        type: string; 
-      }[]>;
-    setTransaction: (transaction: Transaction| null) => void;
+    ) => Promise<{
+        amount: number;
+        payer_id: string;
+        receiver_id: string;
+        created_at: string;
+        type: string;
+    }[]>;
+    setTransaction: (transaction: Transaction | null) => void;
     createTransaction: (transaction: Omit<Transaction, 'id'>) => void;
     editTransaction: (transaction: Transaction) => void;
 }
@@ -38,17 +38,17 @@ const TransactionContext = createContext<TransactionContextType | undefined>(und
 export const TransactionProvider: React.FC<TransactionProviderProps> = ({ children }) => {
     // State to store the current transaction, friend list, and group list
     const [transaction, setTransaction] = useState<Transaction | null>(null);
-    
+
     // Method to create a new transaction (you could integrate with a database or API here)
-    const createTransaction = async (newTransaction: Omit<Transaction,'id'>) =>{
+    const createTransaction = async (newTransaction: Omit<Transaction, 'id'>) => {
         // Perform the logic to create a transaction (e.g., add to Firebase, update state)
         console.log('Creating new transaction:', newTransaction);
 
-        await addDoc(collection(db, "Transactions"), newTransaction);
-        await updateUserBalance(newTransaction.payer_id, newTransaction.receiver_id, newTransaction.amount);
-        if(newTransaction.group_id){
+        await addDoc(collection(db, "Transactions"), { ...newTransaction, group_id: newTransaction.group_id || "" });
+        // await updateUserBalance(newTransaction.payer_id, newTransaction.receiver_id, newTransaction.amount);
+        if (newTransaction.group_id && newTransaction.group_id !== "") {
             await updateGroupBalance(newTransaction.payer_id, newTransaction.receiver_id, newTransaction.group_id, newTransaction.amount);
-        }else{
+        } else {
             await updateUserBalance(newTransaction.payer_id, newTransaction.receiver_id, newTransaction.amount);
         }
         setTransaction(null);
@@ -69,10 +69,10 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
                     where('addressee_id', '==', uid)
                 ))
             ]);
-    
+
             // Check if friendship exists
             const existingFriendship = requesterSnapshot.docs[0] || addresseeSnapshot.docs[0];
-    
+
             if (existingFriendship) {
                 // If friendship exists but not accepted, update it
                 const friendshipData = existingFriendship.data();
@@ -97,7 +97,7 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
                 // window.location.reload(); 
                 console.log('Created new ACCEPTED friendship');
             }
-    
+
         } catch (error) {
             console.error('Error in checkFriend:', error);
             throw error;
@@ -110,21 +110,22 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
             // Get payer and receiver user documents
             const payerRef = doc(db, "Users", payerId);
             const receiverRef = doc(db, "Users", receiverId);
-    
+
             // Update the payer's balance (subtract the amount they paid)
             const payerSnapshot = await getDoc(payerRef);
             if (payerSnapshot.exists()) {
-            console.log("updating payer balance")
+                console.log("updating payer balance")
 
                 const payerData = payerSnapshot.data();
-                const payerBalances: {id:string, balance:number}[] = payerData?.balances || []; // Ensure payerBalances is typed as Balance[]
+                const payerBalances: { id: string, balance: number }[] = payerData?.balances || []; // Ensure payerBalances is typed as Balance[]
                 if (payerBalances) {
                     // Check if the balances array exists and if the payer already has a balance entry
                     const payerBalanceIndex = payerBalances.findIndex(balance => balance.id === receiverId);
-                
+
                     if (payerBalanceIndex !== -1) {
                         // If payer balance exists, subtract the amount
                         payerBalances[payerBalanceIndex].balance += amount;
+                        console.log("updating balance")
                     } else {
                         // If payer balance does not exist, create a new balance entry
                         payerBalances.push({
@@ -132,7 +133,7 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
                             balance: amount  // Initialize the balance with the deducted amount
                         });
                     }
-                
+
                     // Now, update the document with the new balances array
                     await updateDoc(payerRef, { balances: payerBalances });
                     console.log(payerBalances);
@@ -143,58 +144,58 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
                         id: receiverId,  // The payer ID
                         balance: amount  // Initialize the balance with the deducted amount
                     }];
-                    
+
                     // Create a new balances array and update the document
                     await updateDoc(payerRef, { balances: newBalance });
                     console.log(newBalance);
                     console.log(`Payer's balance created for user ${payerId}`);
                 }
-                
+
             }
-    
+
             // Update the receiver's balance (add the amount they received)
             const receiverSnapshot = await getDoc(receiverRef);
             if (receiverSnapshot.exists()) {
                 console.log("updating receiver balance")
-    
-                    const receiverData = receiverSnapshot.data();
-                    const receiverBalances: {id:string, balance:number}[] = receiverData?.balances || []; // Ensure receiverBalances is typed as Balance[]
-                    if (receiverBalances) {
-                        // Check if the balances array exists and if the receiver already has a balance entry
-                        const receiverBalanceIndex = receiverBalances.findIndex(balance => balance.id === payerId);
-                    
-                        if (receiverBalanceIndex !== -1) {
-                            // If receiver balance exists, subtract the amount
-                            receiverBalances[receiverBalanceIndex].balance -= amount;
-                        } else {
-                            // If receiver balance does not exist, create a new balance entry
-                            receiverBalances.push({
-                                id: payerId,  // The receiver ID
-                                balance: -amount  // Initialize the balance with the deducted amount
-                            });
-                        }
-                    
-                        // Now, update the document with the new balances array
-                        await updateDoc(receiverRef, { balances: receiverBalances });
-                        console.log(receiverBalances)
-                        console.log(`receiver's balance updated for user ${receiverId}`);
+
+                const receiverData = receiverSnapshot.data();
+                const receiverBalances: { id: string, balance: number }[] = receiverData?.balances || []; // Ensure receiverBalances is typed as Balance[]
+                if (receiverBalances) {
+                    // Check if the balances array exists and if the receiver already has a balance entry
+                    const receiverBalanceIndex = receiverBalances.findIndex(balance => balance.id === payerId);
+
+                    if (receiverBalanceIndex !== -1) {
+                        // If receiver balance exists, subtract the amount
+                        receiverBalances[receiverBalanceIndex].balance -= amount;
                     } else {
-                        // If the receiverBalances array doesn't exist at all, create it
-                        const newBalance = [{
+                        // If receiver balance does not exist, create a new balance entry
+                        receiverBalances.push({
                             id: payerId,  // The receiver ID
                             balance: -amount  // Initialize the balance with the deducted amount
-                        }];
-                        
-                        // Create a new balances array and update the document
-                        await updateDoc(receiverRef, { balances: newBalance });
-                        console.log(newBalance);
-                        console.log(`receiver's balance created for user ${receiverId}`);
+                        });
                     }
-                    
+
+                    // Now, update the document with the new balances array
+                    await updateDoc(receiverRef, { balances: receiverBalances });
+                    console.log(receiverBalances)
+                    console.log(`receiver's balance updated for user ${receiverId}`);
+                } else {
+                    // If the receiverBalances array doesn't exist at all, create it
+                    const newBalance = [{
+                        id: payerId,  // The receiver ID
+                        balance: -amount  // Initialize the balance with the deducted amount
+                    }];
+
+                    // Create a new balances array and update the document
+                    await updateDoc(receiverRef, { balances: newBalance });
+                    console.log(newBalance);
+                    console.log(`receiver's balance created for user ${receiverId}`);
                 }
+
+            }
             console.log("done updating");
 
-    
+
         } catch (error) {
             console.error("Error updating user balances:", error);
         }
@@ -206,31 +207,31 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
             // Get group document reference
             const groupRef = doc(db, "Groups", groupId);
             const groupSnapshot = await getDoc(groupRef);
-    
+
             // If group doesn't exist, throw error
             if (!groupSnapshot.exists()) {
                 throw new Error(`Group ${groupId} does not exist`);
             }
-    
+
             const groupData = groupSnapshot.data();
-            const members:{id:string, balances:{id:string, balance:number}[]}[] = groupData?.members || [];
-    
+            const members: { id: string, balances: { id: string, balance: number }[] }[] = groupData?.members || [];
+
             // Find payer and receiver in group members
             const payerMember = members.find(member => member.id === payerId);
             const receiverMember = members.find(member => member.id === receiverId);
-    
+
             // If either payer or receiver is not in the group, update user balance instead
             if (!payerMember || !receiverMember) {
                 console.log("Either payer or receiver not in group, updating user balance instead");
                 await updateUserBalance(payerId, receiverId, amount);
                 return;
             }
-    
+
             // Update payer's balance in group
             if (!payerMember.balances) {
                 payerMember.balances = [];
             }
-    
+
             const payerBalanceIndex = payerMember.balances.findIndex(balance => balance.id === receiverId);
             if (payerBalanceIndex !== -1) {
                 // If balance exists, update it
@@ -242,12 +243,12 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
                     balance: amount
                 });
             }
-    
+
             // Update receiver's balance in group
             if (!receiverMember.balances) {
                 receiverMember.balances = [];
             }
-    
+
             const receiverBalanceIndex = receiverMember.balances.findIndex(balance => balance.id === payerId);
             if (receiverBalanceIndex !== -1) {
                 // If balance exists, update it
@@ -259,17 +260,17 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
                     balance: -amount
                 });
             }
-    
+
             // Update the group document with new member balances
             const updatedMembers = members.map(member => {
                 if (member.id === payerId) return payerMember;
                 if (member.id === receiverId) return receiverMember;
                 return member;
             });
-    
+
             await updateDoc(groupRef, { members: updatedMembers });
             console.log("Group balances updated successfully");
-    
+
         } catch (error) {
             console.error("Error updating group balances:", error);
             throw error;
@@ -310,17 +311,17 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
                 const amountOwed = u.split - u.pay;
                 if (amountOwed !== 0) {
                     return { id: u.id, amountOwed };
-                }else{
-                       addDoc(collection(db, "Transactions"), {
-                       amount:0,
-                       created_at:response.created_at,
-                       payer_id:u.id,
-                       receiver_id:u.id,
-                       type: 'expense',
-                       expense_id: response.id,  // Optional: If you want to store the response id
-                       group_id: response.group_id || '' , // Optional: If you want to store the group id
-                   });
-               }
+                } else {
+                    addDoc(collection(db, "Transactions"), {
+                        amount: 0,
+                        created_at: response.created_at,
+                        payer_id: u.id,
+                        receiver_id: u.id,
+                        type: 'expense',
+                        expense_id: response.id,  // Optional: If you want to store the response id
+                        group_id: response.group_id || '', // Optional: If you want to store the group id
+                    });
+                }
                 return null; // Return null when no amount is owed
             })
             .filter((item) => item !== null);  // Remove null values
@@ -415,16 +416,16 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
                 await addDoc(collection(db, "Transactions"), {
                     ...trans,
                     expense_id: response.id,  // Optional: If you want to store the response id
-                    group_id: response.group_id || '' , // Optional: If you want to store the group id
+                    group_id: response.group_id || '', // Optional: If you want to store the group id
                 });
-                if(response.group_id){
+                if (response.group_id) {
                     await updateGroupBalance(trans.payer_id, trans.receiver_id, response.group_id, trans.amount);
-                }else{
+                } else {
                     await updateUserBalance(trans.payer_id, trans.receiver_id, trans.amount);
                 }
 
                 await checkFriend(trans.payer_id, trans.receiver_id);
-                if(response.group_id) {
+                if (response.group_id) {
                     await refreshFunctions.refreshGroupTransactions(response.group_id);
                 }
                 await refreshFunctions.refreshAllTransactions(
@@ -445,48 +446,49 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
     const editTransaction = async (updatedTransaction: Transaction) => {
         // Update the transaction in Firestore
         console.log('Editing transaction:', updatedTransaction);
-        
+
         if (!updatedTransaction.id) {
             console.error('Transaction ID is required for editing');
             return;
         }
-    
+
         const transactionRef = doc(db, "Transactions", updatedTransaction.id);
         const transaction = (await getDoc(transactionRef)).data();
-        if(transaction)
-        if(transaction.group_id){
-            await updateGroupBalance(transaction.payer_id, transaction.receiver_id, transaction.group_id, -transaction.amount);
-        }else{
-            await updateUserBalance(transaction.payer_id, transaction.receiver_id, -transaction.amount);
-        }
-        
+        if (transaction)
+            if (transaction.group_id) {
+                await updateGroupBalance(transaction.payer_id, transaction.receiver_id, transaction.group_id, -transaction.amount);
+            } else {
+                await updateUserBalance(transaction.payer_id, transaction.receiver_id, -transaction.amount);
+            }
+
         try {
             // Update the document in Firestore
             await updateDoc(transactionRef, {
                 amount: updatedTransaction.amount,
                 created_at: updatedTransaction.created_at,
                 expense_id: updatedTransaction.expense_id,
-                group_id: updatedTransaction.group_id,
+                group_id: updatedTransaction.group_id || "",
                 payer_id: updatedTransaction.payer_id,
                 receiver_id: updatedTransaction.receiver_id,
                 type: updatedTransaction.type,
             });
-            
+
             // Update local state
             setTransaction(updatedTransaction);
-            
+
             // If the payer or amount changed, update user balances
             // This might require additional logic to handle the previous transaction's impact
-            if(updatedTransaction.group_id){
+            if (updatedTransaction.group_id) {
                 await updateGroupBalance(updatedTransaction.payer_id, updatedTransaction.receiver_id, updatedTransaction.group_id, updatedTransaction.amount);
-            }else{
+            } else {
                 await updateUserBalance(updatedTransaction.payer_id, updatedTransaction.receiver_id, updatedTransaction.amount);
             }
         } catch (error) {
             console.error('Error updating transaction:', error);
             // Optionally, handle the error (show toast, set error state, etc.)
+        } finally {
+            setTransaction(null);
         }
-        setTransaction(null);
     };
 
     const deleteTransactionsByExpense = async (expenseId: string) => {
@@ -512,9 +514,9 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
                 const amount = transactionData.amount;
 
                 // Update balances for both payer and receiver in the users collection
-                if(transactionData.group_id){
+                if (transactionData.group_id) {
                     await updateGroupBalance(payerId, receiverId, transactionData.group_id, -amount);
-                }else{
+                } else {
                     await updateUserBalance(payerId, receiverId, -amount);
                 }
                 await deleteDoc(docRef);  // Delete the document

@@ -9,6 +9,13 @@ export const NotificationTypes = {
     GROUP_INVITE: 'GROUP_INVITE'
 } as const;
 
+interface NotificationData {
+    title: string;
+    body: string;
+    image?: string;
+    [key: string]: unknown; 
+}
+
 export type NotificationType = keyof typeof NotificationTypes | string;
 
 export async function initializeNotifications(userId: string) {
@@ -82,7 +89,7 @@ export async function getUserFCMToken(userId: string) {
     }
 }
 
-export async function sendNotification(userToken: string, type: NotificationType, data: any) {
+export async function sendNotification(userToken: string, type: NotificationType, data: NotificationData) {
     try {
         // const baseUrl = 'http://localhost:3000'
         const baseUrl = 'https://keaqqqqq.com';

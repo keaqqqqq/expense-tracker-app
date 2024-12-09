@@ -67,7 +67,8 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal 
   }
 
   useEffect(() => {
-    if (transaction && transaction.id) {
+    console.log(transaction);
+    if (transaction) {
       const payerFriend = friendList.find(friend => friend.id === transaction.payer_id);
       const receiverFriend = friendList.find(friend => friend.id === transaction.receiver_id);
       setPayer(payerFriend);
@@ -89,6 +90,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal 
   }, [selectedExpense])
 
   const resetTransaction = () => {
+    // setTransaction(null);
     setPayer(undefined);
     setReceiver(undefined);
     setAmount(undefined);
@@ -251,12 +253,21 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal 
         return payerMatch && receiverMatch;
       });
     }
+    if(selectedExpense){
+      const expense = expenses.find(e=>e.id ===selectedExpense);
+      if(expense)
+      {
+        filteredGroups = filteredGroups.filter(group =>{
+          return group.id === expense.group_id || ''
+        })
+      }
+    }
 
     return filteredGroups.map(group => ({
       value: group.id,
       label: group.name
     }));
-  }, [groupList, payer, receiver]);
+  }, [groupList, payer, receiver, selectedExpense]);
 
   return (
     <Dialog open={isOpen} onClose={closeModal} className="relative z-[9999]">
