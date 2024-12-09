@@ -4,7 +4,10 @@ import { Expense } from "@/types/Expense";
 import { Transaction } from '@/types/Transaction';
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import { db } from '@/firebase/config';
-// Define the context type based on your provided interface
+import { getUserFCMToken } from '@/lib/actions/notifications';
+import { sendNotification } from '@/lib/actions/notifications';
+import { NotificationTypes } from '@/lib/actions/notifications';
+import { group } from 'console';
 interface TransactionContextType {
     transaction: Transaction | null;
     deleteTransactionsByExpense: (expenseId: string) => void;
@@ -418,6 +421,26 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
                     expense_id: response.id,  // Optional: If you want to store the response id
                     group_id: response.group_id || '', // Optional: If you want to store the group id
                 });
+
+                try {
+                    const receiverToken = await getUserFCMToken(trans.receiver_id);
+                    const payerDoc = await getDoc(doc(db, 'Users', trans.payer_id));
+                    const payerData = payerDoc.data();
+                
+                    if (receiverToken) {
+                        await sendNotification(receiverToken, `${NotificationTypes.NEW_EXPENSE}_${response.id}_${trans.payer_id}_${trans.receiver_id}`, {
+                            title: 'New Expense Added',
+                            body: `${payerData?.name || trans.payer_id} paid for your "${response.description}": ${trans.amount.toFixed(2)}`,
+                            expenseId: response.id,
+                            image: payerData?.photoURL || '',
+                            groupId: response.group_id || '',
+                            url: response.group_id ? `/groups/${response.group_id}` : `/friends/${trans.payer_id}`,
+                        });
+                    }
+                } catch (notifError) {
+                    console.error("Error sending notifications:", notifError);
+                }
+
                 if (response.group_id) {
                     await updateGroupBalance(trans.payer_id, trans.receiver_id, response.group_id, trans.amount);
                 } else {
