@@ -5,6 +5,9 @@ import ExpenseModal from './ManageExpense/ExpenseModal';
 import { useBalances } from '@/context/BalanceContext';
 import TransactionModal from './Transaction/TransactionModal';
 import Image from 'next/image';
+import { useExpense } from '@/context/ExpenseContext';
+import { useTransaction } from '@/context/TransactionContext';
+import { useAuth } from '@/context/AuthContext';
 
 interface ExpenseCardProps {
   name: string;
@@ -32,16 +35,46 @@ const ExpenseCard = ({
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const { calculateTotalBalance } = useBalances();
+  const {setGroup} = useExpense();
+  const {setTransaction} = useTransaction();
+  const {currentUser} =useAuth();
   const displayAmount = type === 'user' && friendId ? calculateTotalBalance(friendId) : initialAmount;
   const isPositive = displayAmount >= 0;
   const isSettled = displayAmount === 0;
   
   const displayImage = type === 'user' ? avatarUrl : imageUrl;
   
-  const openExpenseModal = () => setIsExpenseModalOpen(true);
+  const openExpenseModal = () => {
+    if(type==='group' && groupId)setGroup(groupId);
+    setIsExpenseModalOpen(true)
+  };
   const closeExpenseModal = () => setIsExpenseModalOpen(false);
   
-  const openTransactionModal = () => setIsTransactionModalOpen(true);
+  const openTransactionModal = () => {
+    if(type==='group' && groupId){
+      setTransaction({
+        payer_id: currentUser?.uid||'',
+        receiver_id: "",
+        expense_id:  null,
+        amount: 0,
+        created_at: '',
+        group_id: groupId,
+        id: '',
+      })
+    };
+    if(type==='user' && friendId){
+      setTransaction({
+        payer_id: currentUser?.uid||'',
+        receiver_id: friendId,
+        expense_id: null,
+        amount: 0,
+        created_at: '',
+        group_id:  null,
+        id: '',
+      })
+    }
+    setIsTransactionModalOpen(true)
+  };
   const closeTransactionModal = async () => {
     setIsTransactionModalOpen(false);
   };

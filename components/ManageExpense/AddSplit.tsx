@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { SplitFriend } from '@/types/SplitFriend';
 import { useExpense } from '@/context/ExpenseContext';
 import { Group } from '@/types/Group';
@@ -10,6 +10,12 @@ const AddSplit: React.FC = () => {
   const [groupFriend, setGroupFriend] = useState<{id:string, amount: number}[]>([]);
   
 
+  useEffect(()=>{
+    if(expense.group_id){
+      setSelectedGroup(groupList.find(gl=>gl.id==expense.group_id)|| null);
+      handleSelectGroup(groupList.find(gl=>gl.id==expense.group_id))
+    }
+  },[])
   // Handle when a user selects a friend to add to the split
   const handleSelectFriend = (friend: Omit<SplitFriend, 'amount'>) => {
     if (!expense.splitter.some(f => f.id === friend.id)) {
