@@ -215,7 +215,7 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
                                 {
                                     title: 'New Expense Added',
                                     body: `${creatorData?.name || 'Someone'} added a new expense that includes you: ${newExpense.description}  (RM${(splitter.amount)})`,
-                                    url: `/friends/${creatorData?.uid}`,
+                                    url: newExpense.group_id ? `/groups/${newExpense.group_id}` : `/friends/${creatorData?.uid}`,
                                     fromUser: creatorData?.name,
                                     type: notificationType,
                                     image: creatorData?.image,
