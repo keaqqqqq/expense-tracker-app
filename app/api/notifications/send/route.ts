@@ -12,7 +12,6 @@ export async function POST(req: Request) {
             notification: {
                 title,
                 body,
-                imageUrl: data.image
             },
             data: {
                 ...(data ? 
