@@ -170,6 +170,13 @@ export default function Balances({
   //   return balances;
   // };
 
+  async function getExpenseDescription(expenseId: string): Promise<string> {
+    if (!expenseId || expenseId === "direct-transfer") return "(direct-payment)";
+    
+    const expenseDoc = await getDoc(doc(db, 'Expenses', expenseId));
+    return expenseDoc.exists() ? expenseDoc.data().description : "(direct-payment)";
+}
+
   const handleSettleBalance = async (
     userId: string,
     friendId: string,
@@ -238,9 +245,6 @@ export default function Balances({
   });
 
 
-  const payerDoc = await getDoc(doc(db, 'Users', userId));
-  const payerData = payerDoc.data();
-
   for (const b of balances) {
       await createTransactionApi({
           payer_id: b.payer,
@@ -253,39 +257,37 @@ export default function Balances({
       });
 
       try {
-          const receiverToken = await getUserFCMToken(b.receiver);
-          if (receiverToken) {
-              const notificationType = `EXPENSE_SETTLED_${b.expense_id}_${Date.now()}` as NotificationType;
-
-              // Get expense description if expense_id exists
-              let expenseDescription = "(direct-payment)";
-              if (b.expense_id && b.expense_id !== "direct-transfer") {
-                  const expenseDoc = await getDoc(doc(db, 'Expenses', b.expense_id));
-                  if (expenseDoc.exists()) {
-                      expenseDescription = expenseDoc.data().description;
-                  }
-              }
-
-              await sendNotification(
-                  receiverToken,
-                  notificationType,
-                  {
-                      title: 'Payment Settled',
-                      body: `${payerData?.name || 'Someone'} settled a payment${expenseDescription ? ` for ${expenseDescription}` : ''}: RM${b.amount}`,
-                      url: group ? `/groups/${group}` : `/friends/${userId}`,
-                      fromUser: payerData?.name,
-                      type: notificationType,
-                      image: payerData?.image,
-                      expenseId: b.expense_id,
-                      amount: b.amount.toString(),
-                      groupId: group || "",
-                      payerId: userId
-                  }
-              );
-          }
-      } catch (error) {
-          console.error(`Failed to send settlement notification to receiver ${b.receiver}:`, error);
-      }
+        const payerDoc = await getDoc(doc(db, 'Users', userId));
+        const payerData = payerDoc.data();
+        console.log('Payer data:', payerData);
+        
+        const receiverToken = await getUserFCMToken(friendId);
+        console.log('Receiver token:', receiverToken);
+        
+        if (receiverToken) {
+            const notificationType = `EXPENSE_SETTLED_${b.payer}_${b.receiver}_${Math.floor(Date.now() / 1000)}`;
+            console.log('Notification type:', notificationType);
+    
+            const expenseDescription = await getExpenseDescription(b.expense_id);
+            console.log('Expense description:', expenseDescription);
+    
+            const notificationData = {
+                title: 'Payment Settled',
+                body: `${payerData?.name || 'Someone'} settled a payment${expenseDescription ? ` for ${expenseDescription}` : ''}: RM${b.amount}`,
+                url: group ? `/groups/${group}` : `/friends/${userId}`,
+                type: notificationType,
+                image: payerData?.image || ''
+            };
+            console.log('Sending notification:', notificationData);
+    
+            await sendNotification(receiverToken, notificationType, notificationData);
+            console.log('Notification sent successfully');
+        } else {
+            console.log('No receiver token found for:', friendId);
+        }
+    } catch (error) {
+        console.error('Settlement notification error:', error);
+    }
   }
   
   return balances;
