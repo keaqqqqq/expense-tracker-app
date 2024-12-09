@@ -45,19 +45,6 @@ export const handleImageChange = (
   }
 };
 
-export const saveMemberList = async (
-  currentUser: User | null,
-  memberList?: Array<{ email: string }> 
-) => {
-  if (!currentUser) throw new Error("User not authenticated");
-
-  const userData = {
-    memberList,
-  };
-
-  await setDoc(doc(db, 'Users', currentUser.uid), userData, { merge: true }); 
-};
-
 export const fetchUserData = async (uid: string) => {
   const userDoc = doc(db, 'Users', uid);
   const userSnapshot = await getDoc(userDoc);
@@ -566,7 +553,44 @@ export const saveGroup = async (groupData: Omit<Group, 'id'>, requesterId: strin
       }
     });
 
-    await Promise.all(friendshipUpdates);
+     const creatorDoc = await getDoc(doc(db, 'Users', requesterId));
+     const creatorData = creatorDoc.data();
+ 
+     const notificationPromises = activeMembers
+       .filter(member => member.id && member.id !== requesterId) 
+       .map(async (member) => {
+         try {
+          if(!member.id){
+            return null;
+          }
+           const memberToken = await getUserFCMToken(member.id);
+           if (memberToken) {
+             const notificationType = `GROUP_INVITE_${groupRef.id}` as NotificationType;
+             
+             await sendNotification(
+               memberToken,
+               notificationType,
+               {
+                 title: 'New Group Added',
+                 body: `${creatorData?.name || 'Someone'} added you to ${groupData.name}`,
+                 url: `/groups/${groupRef.id}`,
+                 fromUser: creatorData?.name,
+                 type: notificationType,
+                 image: creatorData?.image, 
+                 groupId: groupRef.id,
+                 groupName: groupData.name
+               }
+             );
+           }
+         } catch (error) {
+           console.error(`Failed to send notification to member ${member.id}:`, error);
+         }
+       });
+ 
+     await Promise.all([
+       ...friendshipUpdates,
+       ...notificationPromises
+     ]);
 
     const result = {
       success: true,

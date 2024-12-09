@@ -1,6 +1,6 @@
-import { getMessaging, getToken, onMessage } from "firebase/messaging";
+import { getToken } from "firebase/messaging";
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
-import { db, app } from '@/firebase/config';
+import { db } from '@/firebase/config';
 import { initializeMessaging } from "@/firebase/config";
 export const NotificationTypes = {
     NEW_EXPENSE: 'NEW_EXPENSE',
@@ -84,12 +84,7 @@ export async function getUserFCMToken(userId: string) {
 
 export async function sendNotification(userToken: string, type: NotificationType, data: any) {
     try {
-        // const baseUrl = typeof window !== 'undefined' 
-        //     ? window.location.origin 
-        //     : process.env.NEXT_PUBLIC_VERCEL_URL 
-        //         ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
-        //         : 'http://localhost:3000';
-
+        // const baseUrl = 'http://localhost:3000'
         const baseUrl = 'https://keaqqqqq.com';
 
                 const requestBody = {
