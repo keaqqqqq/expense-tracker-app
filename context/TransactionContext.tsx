@@ -432,7 +432,7 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
                             title: 'New Expense Added',
                             body: `${payerData?.name || trans.payer_id} paid for your "${response.description}": ${trans.amount.toFixed(2)}`,
                             expenseId: response.id,
-                            image: payerData?.photoURL || '',
+                            image: payerData?.image,
                             groupId: response.group_id || '',
                             url: response.group_id ? `/groups/${response.group_id}` : `/friends/${trans.payer_id}`,
                         });
