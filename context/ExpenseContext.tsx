@@ -8,7 +8,11 @@ import { fetchUserData, getGroups, loadFriends } from '@/lib/actions/user.action
 import { Group } from '@/types/Group';
 import { useTransaction } from './TransactionContext';
 import { useExpenseList } from './ExpenseListContext';
-
+import { getDoc, doc} from 'firebase/firestore';
+import { db } from '@/firebase/config';
+import { getUserFCMToken } from '@/lib/actions/notifications';
+import { sendNotification } from '@/lib/actions/notifications';
+import { NotificationType } from '@/lib/actions/notifications';
 // Define the context state type
 interface ExpenseContextType {
     expense: Expense;
@@ -135,15 +139,51 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
             fetchExpenses(currentUser.uid);
         }
     }
-    // Add an expense
+    // // Add an expense
+    // const addExpense = async (newExpense: Omit<Expense, 'id'>) => {
+    //     if (!currentUser?.uid) {
+    //         setError('User is not authenticated');
+    //         return;
+    //     }
+
+    //     console.log('new expense: ' + JSON.stringify(newExpense))
+
+    //     try {
+    //         const response = await createExpenseAPI({
+    //             ...newExpense,
+    //             payer: newExpense.payer?.length > 0 ? newExpense.payer : [{
+    //                 id: currentUser.uid,
+    //                 amount: newExpense.amount
+    //             }],
+    //             splitter: newExpense.splitter?.length > 0 ? newExpense.splitter : [{
+    //                 id: currentUser.uid,
+    //                 amount: newExpense.amount
+    //             }],
+    //             created_by: currentUser.uid, // Add the user UID to the created_by field
+    //         });
+
+    //         await calculateTransaction(response, {
+    //             refreshAllTransactions,
+    //             refreshGroupTransactions
+    //         });           
+    //         fetchExpenses(currentUser.uid);
+
+    //     } catch (err) {
+    //         console.log('Error addExpenses: ' + err)
+    //         setError('Failed to create expense');
+    //     } finally {
+    //         setLoading(false);
+    //         // Reset expense form to default values
+    //         resetExpense();
+    //     }
+    // };
+
     const addExpense = async (newExpense: Omit<Expense, 'id'>) => {
         if (!currentUser?.uid) {
             setError('User is not authenticated');
             return;
         }
-
-        console.log('new expense: ' + JSON.stringify(newExpense))
-
+    
         try {
             const response = await createExpenseAPI({
                 ...newExpense,
@@ -155,21 +195,56 @@ export const ExpenseProvider: React.FC<ExpenseProviderProps> = ({ children }) =>
                     id: currentUser.uid,
                     amount: newExpense.amount
                 }],
-                created_by: currentUser.uid, // Add the user UID to the created_by field
+                created_by: currentUser.uid,
             });
-
+    
+            const creatorDoc = await getDoc(doc(db, 'Users', currentUser.uid));
+            const creatorData = creatorDoc.data();
+    
+            const notificationPromises = newExpense.splitter
+                ?.filter(splitter => splitter.id !== currentUser.uid)
+                .map(async (splitter) => {
+                    try {
+                        const splitterToken = await getUserFCMToken(splitter.id);
+                        if (splitterToken) {
+                            const notificationType = `NEW_EXPENSE_${expense.id}` as NotificationType;
+                            
+                            await sendNotification(
+                                splitterToken,
+                                notificationType,
+                                {
+                                    title: 'New Expense Added',
+                                    body: `${creatorData?.name || 'Someone'} added a new expense that includes you: ${newExpense.description}  (RM${(splitter.amount)})`,
+                                    url: `/friends/${creatorData?.uid}`,
+                                    fromUser: creatorData?.name,
+                                    type: notificationType,
+                                    image: creatorData?.image,
+                                    expenseId: expense.id,
+                                    expenseName: newExpense.description,
+                                    amount: splitter.amount.toString(),
+                                    totalAmount: newExpense.amount.toString(),
+                                    groupId: newExpense.group_id || ""
+                                }
+                            );
+                        }
+                    } catch (error) {
+                        console.error(`Failed to send notification to splitter ${splitter.id}:`, error);
+                    }
+                }) || [];
+    
+            await Promise.all(notificationPromises);
+    
             await calculateTransaction(response, {
                 refreshAllTransactions,
                 refreshGroupTransactions
             });           
             fetchExpenses(currentUser.uid);
-
+    
         } catch (err) {
             console.log('Error addExpenses: ' + err)
             setError('Failed to create expense');
         } finally {
             setLoading(false);
-            // Reset expense form to default values
             resetExpense();
         }
     };
