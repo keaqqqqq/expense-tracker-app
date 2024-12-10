@@ -294,8 +294,13 @@ export default function Balances({
 };
   
   
-  const hasFriendBalancesToShow = friendBalance?.netBalance !==0 || friendBalance.settledBalance !==0 || friendBalance.unsettledBalance !==0;
-  return (
+const hasFriendBalancesToShow = 
+Number(friendBalance?.netBalance || 0) !== 0 || 
+Number(friendBalance?.settledBalance || 0) !== 0 || 
+Number(friendBalance?.unsettledBalance || 0) !== 0 ||
+Number(friendBalance?.directPaymentBalance || 0) !== 0;  
+
+return (
     <div className="space-y-4 xl:ml-10">
       {hasFriendBalancesToShow && (
         <h2 className="text-sm mb-4">
@@ -310,6 +315,7 @@ export default function Balances({
             title="1:1 w/Friend"
             settledBalance={friendBalance.settledBalance || 0}
             unsettledBalance={friendBalance.unsettledBalance || 0}
+            directPaymentBalance={friendBalance.directPaymentBalance || 0}
             netBalance={friendBalance.netBalance || 0} 
             name={friendData.name}
             image={friendData.image}
@@ -330,6 +336,7 @@ export default function Balances({
                     title={groupBalance.groupName}
                     settledBalance={groupBalance.settledBalance}
                     unsettledBalance={groupBalance.unsettledBalance}
+                    directPaymentBalance={groupBalance.directPaymentBalance || 0}
                     netBalance={groupBalance.netBalance || 0} 
                     name={groupBalance.memberName}
                     image={groupBalance.groupImage}
@@ -352,6 +359,7 @@ export default function Balances({
               title=""
               settledBalance={member.settledBalance}
               unsettledBalance={member.unsettledBalance}
+              directPaymentBalance={member.directPaymentBalance || 0}
               netBalance={member.netBalance || 0} // Add netBalan
               name={member.memberName}
               image={member.memberImage}

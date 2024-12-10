@@ -1046,24 +1046,19 @@ export const fetchGroupTransactions = async (groupId: string): Promise<GroupedTr
 
     const groupTransactionsSnapshot = await getDocs(groupTransactionsQ);
     const transactions = groupTransactionsSnapshot.docs
-      .map(doc => {
-        const data = doc.data();
-        if (data.created_at instanceof Timestamp) {
-          data.created_at = data.created_at.toDate();
-        }
-        return serializeFirebaseData(data) as Transaction;
-      })
-      .filter((transaction, index, self) =>
-        index === self.findIndex(t =>
-          t.created_at === transaction.created_at &&
-          t.payer_id === transaction.payer_id &&
-          t.receiver_id === transaction.receiver_id
-        )
-      );
+      .map(doc => ({
+        ...serializeFirebaseData(doc.data()) as Transaction,
+        id: doc.id  // Make sure to include the document ID
+      }));
 
     const groupedTransactions: { [key: string]: Transaction[] } = {};
+    
     for (const transaction of transactions) {
-      const key = transaction.expense_id || 'direct-payment';
+      // Use the same key generation logic as fetchAllTransactions
+      const key = !transaction.expense_id || transaction.expense_id === 'direct-payment'
+        ? `direct-payment-${transaction.id}`  // Each direct payment gets its own unique key
+        : transaction.expense_id;
+      
       if (!groupedTransactions[key]) {
         groupedTransactions[key] = [];
       }
@@ -1073,7 +1068,7 @@ export const fetchGroupTransactions = async (groupId: string): Promise<GroupedTr
     const result: GroupedTransactions[] = await Promise.all(
       Object.entries(groupedTransactions).map(async ([key, transactions]) => {
         let expense: Expense | undefined;
-        if (key !== 'direct-payment') {
+        if (!key.startsWith('direct-payment')) {
           expense = await fetchExpenseData(key);
         }
         return {
@@ -1087,7 +1082,13 @@ export const fetchGroupTransactions = async (groupId: string): Promise<GroupedTr
       })
     );
 
-    return result;
+    // Sort by date descending
+    return result.sort((a, b) => {
+      const dateA = new Date(a.transactions[0].created_at).getTime();
+      const dateB = new Date(b.transactions[0].created_at).getTime();
+      return dateB - dateA;
+    });
+
   } catch (error) {
     console.error('Error fetching group transactions:', error);
     return [];
@@ -1225,7 +1226,7 @@ export async function fetchUserBalances(userId: string) {
         const friendDoc = await getDoc(doc(db, 'Users', balance.id));
         const friendData = friendDoc.data();
 
-        const { settledBalance, unsettledBalance } = await calculateBalancesFromTransactions(
+        const { settledBalance, unsettledBalance, directPaymentBalance } = await calculateBalancesFromTransactions(
           transactions,
           userId,
           balance.id
@@ -1238,7 +1239,8 @@ export async function fetchUserBalances(userId: string) {
           image: friendData?.image || '/default-avatar.jpg',
           netBalance: balance.balance, // Using the balance from your original logic
           settledBalance,
-          unsettledBalance
+          unsettledBalance,
+          directPaymentBalance
         };
       })
     );
@@ -1254,18 +1256,30 @@ async function calculateBalancesFromTransactions(
   transactions: Transaction[], 
   userId: string, 
   targetId: string
-): Promise<{ settledBalance: number; unsettledBalance: number }> {
+): Promise<{ settledBalance: number; unsettledBalance: number,  directPaymentBalance: number; }> {
   const relevantTransactions = transactions.filter(t =>
     (t.payer_id === userId && t.receiver_id === targetId) ||
     (t.payer_id === targetId && t.receiver_id === userId)
   );
+
+  const directPaymentTransactions = relevantTransactions.filter(t => 
+    (!t.type || t.type === '') && t.group_id === ''
+  );
+
+  // Calculate direct payment balance
+  const directPaymentBalance = directPaymentTransactions.reduce((sum, t) => {
+    // If current user is the payer, it's a positive amount (lending)
+    // If current user is the receiver, it's a negative amount (borrowing)
+    const amount = t.payer_id === userId ? t.amount : -t.amount;
+    return sum + amount;
+  }, 0);
 
   const settleTransactions = relevantTransactions.filter(t => 
     t.type?.toLowerCase() === 'settle' && t.group_id === ''
   );
 
   const expenseTransactions = relevantTransactions.filter(t => 
-    (!t.type || t.type.toLowerCase() === 'expense') && t.group_id === ''
+    t.type?.toLowerCase() === 'expense' && t.group_id === '' 
   );
 
   const settledAmount = settleTransactions.reduce((sum, t) => sum + t.amount, 0);
@@ -1276,7 +1290,9 @@ async function calculateBalancesFromTransactions(
 
   return {
     settledBalance: settledAmount,
-    unsettledBalance: unsettledAmount
+    unsettledBalance: unsettledAmount,
+    directPaymentBalance
+
   };
 }
 
@@ -1313,7 +1329,7 @@ export async function fetchGroupBalances(userId: string, groupId: string): Promi
         const memberData = await fetchUserData(balance.id);
         
         // Calculate settled/unsettled balances from transactions
-        const { settledBalance, unsettledBalance } = await calculateBalancesFromGroupTransactions(
+        const { settledBalance, unsettledBalance, directPaymentBalance } = await calculateBalancesFromGroupTransactions(
           transactions,
           userId,
           balance.id
@@ -1330,11 +1346,12 @@ export async function fetchGroupBalances(userId: string, groupId: string): Promi
           memberEmail: memberData.email || member?.email || '',
           netBalance: balance.balance || 0, 
           settledBalance,
-          unsettledBalance
+          unsettledBalance,
+          directPaymentBalance
         };
       } catch (error) {
         console.error(`Error fetching member data for ${balance.id}:`, error);
-        const { settledBalance, unsettledBalance } = await calculateBalancesFromGroupTransactions(
+        const { settledBalance, unsettledBalance, directPaymentBalance  } = await calculateBalancesFromGroupTransactions(
           transactions,
           userId,
           balance.id
@@ -1351,7 +1368,8 @@ export async function fetchGroupBalances(userId: string, groupId: string): Promi
           memberEmail: member?.email || '',
           netBalance: balance.balance || 0, 
           settledBalance,
-          unsettledBalance
+          unsettledBalance,
+          directPaymentBalance 
         };
       }
     }));
@@ -1366,18 +1384,31 @@ async function calculateBalancesFromGroupTransactions(
   transactions: Transaction[], 
   userId: string, 
   targetId: string
-): Promise<{ settledBalance: number; unsettledBalance: number }> {
+): Promise<{ settledBalance: number; unsettledBalance: number, directPaymentBalance: number; }> {
   const relevantTransactions = transactions.filter(t =>
     (t.payer_id === userId && t.receiver_id === targetId) ||
     (t.payer_id === targetId && t.receiver_id === userId)
   );
+
+    // Direct payment transactions (type is undefined or empty string)
+    const directPaymentTransactions = relevantTransactions.filter(t => 
+      (!t.type || t.type === '') && t.group_id !== '' && t.expense_id === 'direct-payment'
+    );
+  
+    // Calculate direct payment balance
+    const directPaymentBalance = directPaymentTransactions.reduce((sum, t) => {
+      // If current user is the payer, it's a positive amount (lending)
+      // If current user is the receiver, it's a negative amount (borrowing)
+      const amount = t.payer_id === userId ? t.amount : -t.amount;
+      return sum + amount;
+    }, 0);
 
   const settleTransactions = relevantTransactions.filter(t => 
     t.type?.toLowerCase() === 'settle' && t.group_id !== ''
   );
 
   const expenseTransactions = relevantTransactions.filter(t => 
-    (!t.type || t.type.toLowerCase() === 'expense') && t.group_id !== ''
+    t.type?.toLowerCase() === 'expense' && t.group_id !== '' 
   );
 
 
@@ -1389,7 +1420,8 @@ async function calculateBalancesFromGroupTransactions(
 
   return {
     settledBalance: settledAmount,
-    unsettledBalance: unsettledAmount
+    unsettledBalance: unsettledAmount,
+    directPaymentBalance
   };
 }
 
@@ -1894,7 +1926,7 @@ export async function fetchFriendGroupBalances(userId: string, friendId: string)
             const groupTransactions = transactions.filter(t => t.group_id === groupDoc.id);
             
             // Calculate settled/unsettled balances
-            const { settledBalance, unsettledBalance } = await calculateBalancesFromGroupTransactions(
+            const { settledBalance, unsettledBalance, directPaymentBalance } = await calculateBalancesFromGroupTransactions(
               groupTransactions,
               userId,
               friendId
@@ -1915,7 +1947,8 @@ export async function fetchFriendGroupBalances(userId: string, friendId: string)
                 memberEmail: friendData.email || friendMember.email || '',
                 netBalance: balanceWithFriend.balance || 0,
                 settledBalance,
-                unsettledBalance
+                unsettledBalance,
+                directPaymentBalance
               });
             } catch (error) {
               console.error(`Error fetching friend data for ${friendId}:`, error);
@@ -1932,7 +1965,8 @@ export async function fetchFriendGroupBalances(userId: string, friendId: string)
                 memberEmail: friendMember.email || '',
                 netBalance: balanceWithFriend.balance || 0,
                 settledBalance,
-                unsettledBalance
+                unsettledBalance,
+                directPaymentBalance
               });
             }
           }

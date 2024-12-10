@@ -8,6 +8,7 @@ interface BalanceCardProps {
   title: string;
   settledBalance: number;
   unsettledBalance: number;
+  directPaymentBalance: number;
   netBalance: number;
   image?: string;
   name: string;
@@ -19,14 +20,20 @@ export function BalanceCard({
   title,
   settledBalance,
   unsettledBalance,
+  directPaymentBalance,
   netBalance,
   image,
   name,
   type,
   onSettle
 }: BalanceCardProps) {
-  if (unsettledBalance === 0 && settledBalance === 0) return null;
+    const hasNoBalances = 
+    Number(unsettledBalance || 0) === 0 && 
+    Number(settledBalance || 0) === 0 && 
+    Number(directPaymentBalance || 0) === 0 &&
+    Number(netBalance || 0) === 0;
 
+  if (hasNoBalances) return null;
   return (
       <Card className="bg-white p-4">
           <div className="flex justify-between items-center mb-4">
@@ -54,18 +61,18 @@ export function BalanceCard({
                 <div className="flex justify-between items-center">
                     <span className="text-xs font-medium">Total Amount Due:</span>
                     <div className={`text-xs px-2 py-1 rounded-full 
-                        ${netBalance > 0 
-                            ? 'text-green-700 bg-green-50' 
-                            : netBalance < 0 
-                                ? 'text-red-700 bg-red-50'
-                                : 'text-gray-600 bg-gray-50'
+                        ${Number(netBalance || 0) >= 1 
+                            ? 'text-green-700 bg-green-50'     // Owes you (green)
+                            : Number(netBalance || 0) <= -1 
+                                ? 'text-red-700 bg-red-50'     // You owe (red)
+                                : 'text-green-700 bg-green-50'  // Settled up (green)
                         }`}
                     >
-                        {netBalance > 0 
-                            ? `Owes you RM ${Math.abs(netBalance).toFixed(2)}` 
-                            : netBalance < 0 
-                                ? `You owe RM ${Math.abs(netBalance).toFixed(2)}`
-                                : 'No pending amount'
+                        {Number(netBalance || 0) >= 1 
+                            ? `Owes you RM ${Math.abs(Number(netBalance || 0)).toFixed(2)}` 
+                            : Number(netBalance || 0) <= -1
+                                ? `You owe RM ${Math.abs(Number(netBalance || 0)).toFixed(2)}`
+                                : 'Settled up'
                         }
                     </div>
                 </div>
@@ -76,14 +83,25 @@ export function BalanceCard({
               <div className="text-xs text-gray-500 space-y-2">
                   {unsettledBalance > 0 && (
                       <div className="flex justify-between">
-                          <span>Total unsettled:</span>
+                          <span>Unsettled:</span>
                           <span>RM {unsettledBalance.toFixed(2)}</span>
                       </div>
                   )}
                   {settledBalance > 0 && (
                       <div className="flex justify-between">
-                          <span>Total settled:</span>
+                          <span>Settled:</span>
                           <span>RM {settledBalance.toFixed(2)}</span>
+                      </div>
+                  )}
+                {Number(directPaymentBalance) !== 0 && (
+                      <div className="flex justify-between">
+                          <span>Direct payment:</span>
+                          <span>
+                              {directPaymentBalance > 0 
+                                  ? `RM ${Math.abs(directPaymentBalance).toFixed(2)}` 
+                                  : `RM ${Math.abs(directPaymentBalance).toFixed(2)}`
+                              }
+                          </span>
                       </div>
                   )}
               </div>

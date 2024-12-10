@@ -4,6 +4,7 @@ export interface Balance {
     settledBalance?: number;
     unsettledBalance?: number;
     netBalance?: number;
+    directPaymentBalance?: number;
   }
 
 export  interface BalanceDetails {
@@ -23,6 +24,7 @@ export  interface BalanceDetails {
     settledBalance: number;
     unsettledBalance: number;
     netBalance: number;
+    directPaymentBalance?: number;
 }
 
 export interface FriendGroupBalance {
@@ -39,6 +41,7 @@ export interface FriendGroupBalance {
     settledBalance: number;
     unsettledBalance: number;
     netBalance: number;
+    directPaymentBalance?: number;
 }
 
 export interface FriendBalance {

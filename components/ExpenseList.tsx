@@ -244,7 +244,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
 
     // Display balances
     if (!balances.length) return null;
-
+    if(isDirectPayment) return null;
     return (
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2 text-xs text-gray-400">
@@ -415,7 +415,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
             </div>
           </div>
 
-          {allExpense && expense?.group_id && (
+          {allExpense && (expense?.group_id || (isDirectPayment && transactions[0]?.group_id)) && (
             <div className="flex items-center gap-1 text-xs text-gray-500 mt-3">
               <Users className="w-3 h-3" />
               <span className='text-xs'>{groupName}</span>
@@ -665,54 +665,58 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
                 })}
                 {getBalancesDisplay(transactions)}
 
-                <div className="flex items-center gap-2 text-xs text-gray-400">
-                  <span>Split Summary</span>
-                  <div className="flex-1 border-b border-dashed border-gray-200">
-                  </div>
-                </div>
-                <div className="grid grid-cols-4 gap-2 text-sm">
-                  <div className="col-span-1 text-xs text-gray-400">Users</div>
-                  <div className="text-right text-xs text-gray-400">Paid</div>
-                  <div className="text-right text-xs text-gray-400">Owed</div>
-                  <div className="text-right text-xs text-gray-400">Balance</div>
-
-                  {summary.participants.map(participant => (
-                    <React.Fragment key={participant.id}>
-                      <div className="flex items-center gap-1">
-                        <div className="w-5 h-5 rounded-full overflow-hidden bg-gray-200 relative">
-                          {getUserData(participant.id)?.image ? (
-                            <Image
-                              src={getUserData(participant.id)?.image || '/default-avatar.jpg'} // Add fallback image
-                              alt={participant.name}
-                              className="w-full h-full object-cover"
-                              unoptimized
-                              width={100}
-                              height={100}
-                            />
-                          ) : (
-                            <User className="w-3 h-3 text-gray-500" />
-                          )}
-                        </div>
-                        <span className="hidden sm:block text-gray-600 sm:text-xs">{participant.name}</span>
+                {!isDirectPayment && (
+                  <>
+                    <div className="flex items-center gap-2 text-xs text-gray-400">
+                      <span>Split Summary</span>
+                      <div className="flex-1 border-b border-dashed border-gray-200">
                       </div>
-                      <span className="text-xs text-gray-600 text-right">
-                        RM {participant.paid}
-                      </span>
-                      <span className="text-xs text-gray-600 text-right">
-                        RM {participant.owed}
-                      </span>
-                      <span className={`text-xs text-gray-600 text-right ${participant.balance > 0
-                          ? 'text-green-600'
-                          : participant.balance < 0
-                            ? 'text-red-600'
-                            : 'text-gray-900'
-                        }`}>
-                        {participant.balance > 0 ? '+' : ''}
-                        RM {participant.balance.toFixed(2)}
-                      </span>
-                    </React.Fragment>
-                  ))}
-                </div>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2 text-sm">
+                      <div className="col-span-1 text-xs text-gray-400">Users</div>
+                      <div className="text-right text-xs text-gray-400">Paid</div>
+                      <div className="text-right text-xs text-gray-400">Owed</div>
+                      <div className="text-right text-xs text-gray-400">Balance</div>
+
+                      {summary.participants.map(participant => (
+                        <React.Fragment key={participant.id}>
+                          <div className="flex items-center gap-1">
+                            <div className="w-5 h-5 rounded-full overflow-hidden bg-gray-200 relative">
+                              {getUserData(participant.id)?.image ? (
+                                <Image
+                                  src={getUserData(participant.id)?.image || '/default-avatar.jpg'}
+                                  alt={participant.name}
+                                  className="w-full h-full object-cover"
+                                  unoptimized
+                                  width={100}
+                                  height={100}
+                                />
+                              ) : (
+                                <User className="w-3 h-3 text-gray-500" />
+                              )}
+                            </div>
+                            <span className="hidden sm:block text-gray-600 sm:text-xs">{participant.name}</span>
+                          </div>
+                          <span className="text-xs text-gray-600 text-right">
+                            RM {participant.paid}
+                          </span>
+                          <span className="text-xs text-gray-600 text-right">
+                            RM {participant.owed}
+                          </span>
+                          <span className={`text-xs text-gray-600 text-right ${participant.balance > 0
+                            ? 'text-green-600'
+                            : participant.balance < 0
+                              ? 'text-red-600'
+                              : 'text-gray-900'
+                          }`}>
+                            {participant.balance > 0 ? '+' : ''}
+                            RM {participant.balance.toFixed(2)}
+                          </span>
+                        </React.Fragment>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
 
 
@@ -790,8 +794,11 @@ const ExpenseList: React.FC<{ currentUserId: string; showAll?: boolean; allExpen
             currentUserId={currentUserId}
             onEdit={() => handleEditExpense(group.expense?.id || "")}
             allExpense={allExpense}
-            groupName={group.expense?.group_id && groupDetails ? groupDetails[group.expense.group_id] : undefined}
-          />
+            groupName={
+              (group.expense?.group_id && groupDetails && groupDetails[group.expense.group_id]) || 
+              (!group.expense && group.transactions[0]?.group_id && groupDetails && groupDetails[group.transactions[0].group_id]) ||
+              undefined
+            }          />
         ))}
       </div>
     </div>
