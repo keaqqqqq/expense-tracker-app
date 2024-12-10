@@ -12,6 +12,10 @@ import { useExpense } from '@/context/ExpenseContext';
 import ExpenseModal from './ManageExpense/ExpenseModal';
 import TransactionModal from './Transaction/TransactionModal';
 import { useTransaction } from '@/context/TransactionContext';
+import { getUserFCMToken } from '@/lib/actions/notifications';
+import { getDoc, doc} from 'firebase/firestore';
+import { db } from '@/firebase/config';
+import { sendNotification } from '@/lib/actions/notifications';
 interface ExpenseItemProps {
   groupedTransactions: GroupedTransactions;
   onEdit: (id: string) => void;
@@ -28,7 +32,15 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
   const { usersData } = useExpenseList();
   const isPersonalExpense = expense?.payer[0].id == expense?.splitter[0].id && expense?.amount == expense?.splitter[0].amount && expense?.payer.length == 1
   const {setTransaction} = useTransaction();
-  const onSettle = (receiverId: string, payerId:string, expense: Expense|undefined, amount: number) => {
+
+  async function getExpenseDescription(expenseId: string): Promise<string> {
+    if (!expenseId || expenseId === "direct-transfer") return "(direct-payment)";
+    
+    const expenseDoc = await getDoc(doc(db, 'Expenses', expenseId));
+    return expenseDoc.exists() ? expenseDoc.data().description : "(direct-payment)";
+}
+
+  const onSettle = async (receiverId: string, payerId:string, expense: Expense|undefined, amount: number) => {
     setTransaction({
       payer_id: payerId,
       receiver_id: receiverId,
@@ -38,6 +50,31 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
       group_id: expense?.group_id || null,
       id: '',
     })
+    const receiverToken = await getUserFCMToken(receiverId);
+    const payerDoc = await getDoc(doc(db, 'Users', payerId));
+    const payerData = payerDoc.data();
+    if (receiverToken) {
+      const notificationType = `EXPENSE_SETTLED_${payerId}_${receiverId}_${Math.floor(Date.now() / 1000)}`;
+      if(!expense?.id){
+        return null;
+      }
+      console.log('Notification type: ' + notificationType)
+      const expenseDescription = await getExpenseDescription(expense?.id);
+
+      const notificationData = {
+          title: 'Payment Settled',
+          body: `${payerData?.name || 'Someone'} settled a payment${expenseDescription ? ` for ${expenseDescription}` : ''}: RM${amount}`,
+          url: expense.group_id ? `/groups/${expense.group_id}` : `/friends/${payerId}`,
+          type: notificationType,
+          image: payerData?.image || ''
+      };
+      console.log('Sending notification:', notificationData);
+
+      await sendNotification(receiverToken, notificationType, notificationData);
+      console.log('Notification sent successfully');
+    } else {
+        console.log('No receiver token found for:', payerId);
+    }
   }
 
   const getUserData = (userId: string) => {
