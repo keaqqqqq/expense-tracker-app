@@ -430,7 +430,7 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
                     if (receiverToken) {
                         await sendNotification(receiverToken, `${NotificationTypes.NEW_EXPENSE}_${response.id}_${trans.payer_id}_${trans.receiver_id}`, {
                             title: 'New Expense Added',
-                            body: `${payerData?.name || trans.payer_id} paid for your "${response.description}": ${trans.amount.toFixed(2)}`,
+                            body: `${payerData?.name || trans.payer_id} paid for ${response.description}: RM${trans.amount.toFixed(2)}`,
                             expenseId: response.id,
                             image: payerData?.image,
                             groupId: response.group_id || '',
