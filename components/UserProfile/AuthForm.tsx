@@ -1,6 +1,6 @@
 'use client';
 import { Fugaz_One } from 'next/font/google';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation'; 
 import Cookies from 'js-cookie'; 
@@ -95,7 +95,7 @@ const InvitationHeader: React.FC<{
     </div>
 );
 
-export default function AuthForm() {
+const AuthFormContent = () => {
     const searchParams = useSearchParams();
     const [email, setEmail] = useState('');
     const [requesterId, setRequesterId] = useState('');
@@ -463,5 +463,17 @@ export default function AuthForm() {
                 </p>
             </div>
         </div>
+    );
+}
+
+export default function AuthForm() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-500"></div>
+            </div>
+        }>
+            <AuthFormContent />
+        </Suspense>
     );
 }
