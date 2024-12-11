@@ -317,7 +317,7 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
                 } else {
                     addDoc(collection(db, "Transactions"), {
                         amount: 0,
-                        created_at: response.created_at,
+                        created_at: response.date,
                         payer_id: u.id,
                         receiver_id: u.id,
                         type: 'expense',
@@ -346,7 +346,7 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
                             amount: -usersNet[i].amountOwed,
                             payer_id: usersNet[i].id,
                             receiver_id: usersNet[j].id,
-                            created_at: response.created_at,  // Firestore's timestamp
+                            created_at: response.date,  // Firestore's timestamp
                             type: 'expense', // Add a type if needed
                         });
                         usersNet[j].amountOwed = total;
@@ -356,7 +356,7 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
                             amount: usersNet[j].amountOwed,
                             payer_id: usersNet[i].id,
                             receiver_id: usersNet[j].id,
-                            created_at: response.created_at,
+                            created_at: response.date,
                             type: 'expense',
                         });
                         usersNet[i].amountOwed = total;
@@ -366,7 +366,7 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
                             amount: usersNet[j].amountOwed,
                             payer_id: usersNet[i].id,
                             receiver_id: usersNet[j].id,
-                            created_at: response.created_at,
+                            created_at: response.date,
                             type: 'expense',
                         });
                         usersNet[i].amountOwed = 0;
@@ -381,7 +381,7 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
                             amount: -usersNet[j].amountOwed,
                             payer_id: usersNet[j].id,
                             receiver_id: usersNet[i].id,
-                            created_at: response.created_at,
+                            created_at: response.date,
                             type: 'expense',
                         });
                         usersNet[i].amountOwed = total;
@@ -391,7 +391,7 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
                             amount: usersNet[i].amountOwed,
                             payer_id: usersNet[j].id,
                             receiver_id: usersNet[i].id,
-                            created_at: response.created_at,
+                            created_at: response.date,
                             type: 'expense',
                         });
                         usersNet[j].amountOwed = total;
@@ -401,7 +401,7 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
                             amount: usersNet[i].amountOwed,
                             payer_id: usersNet[j].id,
                             receiver_id: usersNet[i].id,
-                            created_at: response.created_at,
+                            created_at: response.date,
                             type: 'expense',
                         });
                         usersNet[i].amountOwed = 0;

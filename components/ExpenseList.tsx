@@ -32,7 +32,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
   const { usersData } = useExpenseList();
   const isPersonalExpense = expense?.payer[0].id == expense?.splitter[0].id && expense?.amount == expense?.splitter[0].amount && expense?.payer.length == 1
   const {setTransaction} = useTransaction();
-
+  console.log('Expense:' , expense)
   async function getExpenseDescription(expenseId: string): Promise<string> {
     if (!expenseId || expenseId === "direct-transfer") return "(direct-payment)";
     
@@ -342,9 +342,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
       />
       <div className="text-sm text-gray-500 mb-1 px-3 flex justify-between items-center">
         <span>
-          {expense?.date
-            ? new Date(expense.date).toLocaleDateString('en-GB')
-            : new Date(transactions[0].created_at).toLocaleDateString('en-GB')}
+        {(expense?.date || transactions[0]?.created_at)?.split('-').reverse().join('/')}
         </span>
         {!isDirectPayment && !isPersonalExpense && (
           <div className="flex items-center gap-2">

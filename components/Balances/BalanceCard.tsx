@@ -57,15 +57,14 @@ export function BalanceCard({
           </div>
 
           <div className="space-y-3">
-                {/* Net Balance - Using "Total Amount Due" to indicate pending status */}
                 <div className="flex justify-between items-center">
                     <span className="text-xs font-medium">Total Amount Due:</span>
                     <div className={`text-xs px-2 py-1 rounded-full 
                         ${Number(netBalance || 0) >= 1 
-                            ? 'text-green-700 bg-green-50'     // Owes you (green)
+                            ? 'text-green-700 bg-green-50'   
                             : Number(netBalance || 0) <= -1 
-                                ? 'text-red-700 bg-red-50'     // You owe (red)
-                                : 'text-green-700 bg-green-50'  // Settled up (green)
+                                ? 'text-red-700 bg-red-50'     
+                                : 'text-green-700 bg-green-50' 
                         }`}
                     >
                         {Number(netBalance || 0) >= 1 
@@ -79,7 +78,6 @@ export function BalanceCard({
 
               <Separator />
 
-              {/* Additional Details - Collapsed by default */}
               <div className="text-xs text-gray-500 space-y-2">
                   {unsettledBalance > 0 && (
                       <div className="flex justify-between">
@@ -106,7 +104,6 @@ export function BalanceCard({
                   )}
               </div>
 
-              {/* Settle Button */}
               {onSettle && unsettledBalance > 0 && (
                   <Button 
                       variant="outline" 

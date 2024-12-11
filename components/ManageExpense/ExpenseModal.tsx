@@ -97,10 +97,10 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
             // Validate the expense object using Zod
             ExpenseSchema.parse(expense);
             setErrors({});  // Clear errors if validation passes
-            closeModal();
 
             // Proceed with creating the expense
             await addExpense(expense);
+            closeModal();
             await handleRefresh();
             setToast({
                 show: true,

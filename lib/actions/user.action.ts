@@ -882,16 +882,7 @@ export const fetchExpenseData = async (expenseId: string): Promise<Expense | und
     if (!expenseSnapshot.exists()) return undefined;
 
     const rawData = expenseSnapshot.data();
-
-    if (rawData.date instanceof Timestamp) {
-      rawData.date = rawData.date.toDate();
-    }
-    if (rawData.created_at instanceof Timestamp) {
-      rawData.created_at = rawData.created_at.toDate();
-    }
-
-    const serializedData = serializeFirebaseData(rawData);
-    return {...serializedData, id: expenseId} as Expense;
+    return {...rawData, id: expenseId} as Expense;
   } catch (error) {
     console.error('Error fetching expense:', error);
     return undefined;

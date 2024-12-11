@@ -170,11 +170,19 @@ const Sidebar: React.FC<SideBarProps> = ({
 
                     <div className="h-full flex flex-col overflow-y-auto pt-16 md:pt-0">
                         <div className="flex-1">
-                            <Link href="/" onClick={() => isMobile && onClose()}>
-                                <h2 className="text-base sm:text-xl font-semibold text-black px-4 py-4 mb-1 cursor-pointer hover:text-indigo-600">
-                                    ExpenseTracker
-                                </h2>
-                            </Link>
+                        <Link href="/" onClick={() => isMobile && onClose()} className="flex items-center ml-5">
+                            <Image 
+                                src="/icons/icon-72x72.png" 
+                                alt="ExpenseHive Logo" 
+                                width={33} 
+                                height={33}
+                                priority
+                                className='border border-2 rounded-lg border-transparent'
+                            />                                
+                            <h2 className="text-base sm:text-lg font-semibold text-black py-4 cursor-pointer hover:text-indigo-600">
+                                ExpenseHive
+                            </h2>
+                        </Link>
 
                             <nav>
                                 <ul>

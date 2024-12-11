@@ -145,12 +145,12 @@ export default function ClientWrapper({
                 }}
                 initialFriends={friends}
                 initialGroups={groups}
-                className="w-56"
+                className={`${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 transition-transform duration-300 fixed md:relative z-50 w-56`}
                 isOpen={isSidebarOpen}
                 onClose={handleCloseSidebar}
             />
-            <div className="flex flex-col flex-1 md:ml-56">
-                <TopBar 
+            <div className="flex flex-col flex-1">
+            <TopBar 
                     name={userData?.name || null} 
                     image={userData?.image || null}
                     onMenuClick={handleToggleSidebar}

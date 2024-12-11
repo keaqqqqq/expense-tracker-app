@@ -250,10 +250,10 @@ export default function Balances({
           payer_id: b.payer,
           receiver_id: b.receiver,
           group_id: group || "",
-          expense_id: b.expense_id || "direct-transfer",
+          expense_id: b.expense_id || "direct-payment",
           created_at: getFormattedDate(),
           amount: b.amount,
-          type: "settle",
+          type: (b.expense_id && b.expense_id!=="direct-payment") ? "settle": "",
       });
 
       try {
@@ -320,15 +320,20 @@ return (
             name={friendData.name}
             image={friendData.image}
             type="friend"
-            onSettle={() => handleSettleBalance(currentUserId, friendBalance.id, 'friend')}
+            onSettle={() => {if(window.confirm("Settle all expenses?"))handleSettleBalance(currentUserId, friendBalance.id, 'friend')}}
           />
           
-          {/* Friend's group balances */}
           {friendGroupBalances && friendGroupBalances.length > 0 && (
             <>
-              { hasGroupBalancesToShow &&               
-              <h3 className="text-sm mb-3 mt-4 ml-2">Shared Group Balances</h3>
-              }
+              {friendGroupBalances.some(groupBalance => 
+                groupBalance.netBalance !== 0 || 
+                groupBalance.settledBalance !== 0 || 
+                groupBalance.unsettledBalance !== 0 || 
+                groupBalance.directPaymentBalance !== 0
+              ) && hasGroupBalancesToShow && (
+                <h3 className="text-sm mb-3 mt-4 ml-2">Shared Group Balances</h3>
+              )}
+              
               <div className="space-y-3">
                 {friendGroupBalances.map((groupBalance) => (
                   <BalanceCard
@@ -341,7 +346,7 @@ return (
                     name={groupBalance.memberName}
                     image={groupBalance.groupImage}
                     type="group"
-                    onSettle={() => handleSettleBalance(currentUserId, groupBalance.memberId, 'group', groupBalance.groupId)}
+                    onSettle={() => {if(window.confirm("Settle all expenses?"))handleSettleBalance(currentUserId, groupBalance.memberId, 'group', groupBalance.groupId)}}
                   />
                 ))}
               </div>
@@ -352,6 +357,15 @@ return (
 
       {/* Group members balances */}
       {canShowGroupBalance && groupMembers.length > 0 && (
+        <>
+                {groupMembers.some(member => 
+                member.netBalance !== 0 || 
+                member.settledBalance !== 0 || 
+                member.unsettledBalance !== 0 || 
+                member.directPaymentBalance !== 0
+              )  && (
+                <h3 className="text-sm mb-3 mt-4 ml-2">Group Members Balance</h3>
+              )}
         <div className="space-y-3">
           {groupMembers.map((member) => (
             <BalanceCard
@@ -364,10 +378,11 @@ return (
               name={member.memberName}
               image={member.memberImage}
               type="group"
-              onSettle={() => handleSettleBalance(currentUserId, member.memberId, 'group')}
+              onSettle={() => {if(window.confirm("Settle all expenses?"))handleSettleBalance(currentUserId, member.memberId, 'group')}}
             />
           ))}
         </div>
+        </>
       )}
     </div>
   );

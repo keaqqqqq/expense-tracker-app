@@ -1,6 +1,6 @@
 {
-    "name": "Expense Tracker",
-    "short_name": "Expenses",
+    "name": "ExpenseHive",
+    "short_name": "ExpenseHive",
     "description": "Track and split expenses with friends",
     "start_url": "/",
     "display": "standalone",

@@ -38,10 +38,13 @@ const ExpenseCard = ({
   const {setGroup} = useExpense();
   const {setTransaction} = useTransaction();
   const {currentUser} =useAuth();
-  const displayAmount = type === 'user' && friendId ? calculateTotalBalance(friendId) : initialAmount;
-  const isPositive = displayAmount >= 0;
-  const isSettled = displayAmount === 0;
   
+  const rawDisplayAmount = type === 'user' && friendId ? calculateTotalBalance(friendId) : initialAmount;
+  const ZERO_THRESHOLD = 1e-10;
+  const displayAmount = Math.abs(rawDisplayAmount) < ZERO_THRESHOLD ? 0 : rawDisplayAmount;
+  const isPositive = displayAmount >=1;
+  const isSettled = displayAmount === 0;
+  console.log(displayAmount)
   const displayImage = type === 'user' ? avatarUrl : imageUrl;
   
   const openExpenseModal = () => {
@@ -151,7 +154,7 @@ const ExpenseCard = ({
           </div>
 
           {/* Right side - Buttons */}
-          <div className="flex gap-2 sm:gap-3 ml-auto sm:ml-0 mt-2 sm:mt-0">
+          <div className="flex gap-2 sm:gap-3 ml-auto sm:ml-0 mt-2 sm:mt-0 flex-wrap">
             <button 
               onClick={openExpenseModal}
               className="flex items-center justify-center gap-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 text-xs sm:text-sm flex-1 sm:flex-none whitespace-nowrap"

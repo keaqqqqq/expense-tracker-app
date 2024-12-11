@@ -8,6 +8,7 @@ import { ArrowRightLeft, MoveRight } from 'lucide-react';
 import SearchableSelect from '../SearchableSelect';
 import { useTransaction } from '@/context/TransactionContext';
 import Image from 'next/image';
+import { useExpenseList } from '@/context/ExpenseListContext';
 interface TransactionModalProps {
   isOpen: boolean;
   closeModal: () => void;
@@ -23,12 +24,53 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal 
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [expenseGroup, setExpenseGroup] = useState<string | null>(null);
-
+  const { 
+    refreshTransactions, 
+    refreshGroupTransactions, 
+    refreshAllTransactions 
+} = useExpenseList();
   const handleExchangeUsers = () => {
     const tempReceiver = receiver;
     setReceiver(payer);
     setPayer(tempReceiver);
   };
+
+  const handleRefresh = async () => {
+    if (selectedExpense) {
+      const expense = expenses.find(e => e.id === selectedExpense);
+      if (expense) {
+        const participantIds = Array.from(new Set(
+          expense.splitter.map(s => s.id)
+            .concat(expense.payer.map(p => p.id))
+        )).filter(id => id !== expense.created_by);
+
+        if (expenseGroup || selectedGroup) {
+          const groupId = expenseGroup || selectedGroup;
+          await refreshGroupTransactions(groupId!);
+        }
+
+        if (participantIds.length === 1) {
+          await refreshTransactions(participantIds[0]);
+        } else if (participantIds.length > 1) {
+          await refreshAllTransactions(participantIds);
+        }
+      }
+    } else {
+      // For direct payments
+      const participants = [payer?.id, receiver?.id].filter((id): id is string => id !== undefined);
+      
+      if (selectedGroup) {
+        await refreshGroupTransactions(selectedGroup);
+      }
+
+      if (participants.length === 1) {
+        await refreshTransactions(participants[0]);
+      } else if (participants.length > 1) {
+        await refreshAllTransactions(participants);
+      }
+    }
+  };
+
 
   const handleCreateTransaction = async () => {
     const group_id = (expenseGroup ? expenseGroup : (selectedGroup ? selectedGroup : null))
@@ -44,6 +86,8 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal 
         group_id, // Optional
         expense_id,
       });
+      await handleRefresh();
+
     resetTransaction();
     closeModal();
   }
@@ -62,6 +106,8 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal 
         group_id, // Optional
         expense_id,
       });
+      await handleRefresh();
+
     resetTransaction();
     closeModal();
   }
