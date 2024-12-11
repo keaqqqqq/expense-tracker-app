@@ -54,7 +54,9 @@ const Sidebar: React.FC<SideBarProps> = ({
     const renderFriendsList = () => (
         <div className="mt-6">
             <div className="flex items-center justify-between px-4 mb-2">
-                <h3 className="text-sm font-semibold text-gray-500">Your Friends</h3>
+                {initialFriends.length> 0  && (
+                    <h3 className="text-sm font-semibold text-gray-500">Your Friends</h3>
+                )}
             </div>
             <ul className="space-y-1">
                 {initialFriends.slice(0, 5).map((friend) => (
@@ -96,7 +98,9 @@ const Sidebar: React.FC<SideBarProps> = ({
     const renderGroupsList = () => (
         <div className="mt-6">
             <div className="flex items-center justify-between px-4 mb-2">
-                <h3 className="text-sm font-semibold text-gray-500">Your Groups</h3>
+                {initialGroups.length> 0  && (
+                    <h3 className="text-sm font-semibold text-gray-500">Your Groups</h3>
+                )}
             </div>
             <ul className="space-y-1">
                 {initialGroups.slice(0, 5).map((group) => (
@@ -170,7 +174,7 @@ const Sidebar: React.FC<SideBarProps> = ({
 
                     <div className="h-full flex flex-col overflow-y-auto pt-16 md:pt-0">
                         <div className="flex-1">
-                        <Link href="/" onClick={() => isMobile && onClose()} className="flex items-center ml-5">
+                        <Link href="/home" onClick={() => isMobile && onClose()} className="flex items-center ml-5 mb-3">
                             <Image 
                                 src="/icons/icon-72x72.png" 
                                 alt="ExpenseHive Logo" 
@@ -188,7 +192,7 @@ const Sidebar: React.FC<SideBarProps> = ({
                                 <ul>
                                     <li>
                                         <Link
-                                            href="/"
+                                            href="/home"
                                             className={`block py-2 px-4 font-semibold text-gray-800 text-sm sm:text-md mb-2 ${pathname === '/' ? 'bg-gray-100 text-indigo-600' : ''}`}
                                             onClick={() => isMobile && onClose()}
                                         >

@@ -3,11 +3,12 @@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useState, useRef, useEffect } from 'react';
-import { Search, UserCircle, Plane, Home, Heart, PartyPopper, Briefcase, MoreHorizontal } from 'lucide-react';
+import { Search, UserCircle, Plane, Home, Heart, PartyPopper, Briefcase, MoreHorizontal, Copy, Check } from 'lucide-react';
 import { Group, GroupMember, GroupType } from '@/types/Group';
 import { Friend } from '@/types/Friend';
-import { saveGroup, updateGroup } from '@/lib/actions/user.action';
+import { saveGroup, updateGroup, getOrCreateGroupInviteLink } from '@/lib/actions/user.action';
 import Image from 'next/image';
+import Toast from '../Toast';
 interface TypeOption {
   value: GroupType;
   label: string;
@@ -122,7 +123,11 @@ export default function AddGroup({
       image: currentUserImage || ''
     }]
   });
-
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [inviteLink, setInviteLink] = useState<string>('');
+  const [toastMessage, setToastMessage] = useState('');
+  const [showInviteLinkToast, setShowInviteLinkToast] = useState(false);
+  
   useEffect(() => {
     if (isEditing && editData) {
       const [creator, ...otherMembers] = editData.members;
@@ -318,39 +323,129 @@ export default function AddGroup({
         ]
       };
   
+      let newGroupId: string;
+  
       if (isEditing && groupId) {
         await updateGroup(groupId, updatedFormData, currentUserId);
-      } else {
-        await saveGroup(updatedFormData, currentUserId);
-      }
-  
-      if (onSuccess) {
-        onSuccess();
-      } else {
+        setToastMessage('Group updated successfully!');
+        setShowSuccessToast(true);
+        await new Promise(resolve => setTimeout(resolve, 3000));
         closeModal();
+        
+        // Reset form
+        setFormData({
+          type: 'trip',
+          name: '',
+          image: '',
+          members: [{
+            id: currentUserId,
+            email: email || '',
+            name: name || '',
+            balances: {}
+          }]
+        });
+        setMembers([]);
+        setSelectedFriends([]);
+        setInvitedEmails([]);
+        setPreviewImage('');
+  
+        if (onSuccess) {
+          onSuccess();
+        }
+        return; // Exit early for edit case
       }
   
-      setFormData({
-        type: 'trip',
-        name: '',
-        image: '',
-        members: [{
-          id: currentUserId,
-          email: email || '',
-          name: name || '',
-          balances: {}
-        }]
-      });
-      setMembers([]);
-      setSelectedFriends([]);
-      setInvitedEmails([]);
-      setPreviewImage('');
+      // Continue with create group flow
+      const result = await saveGroup(updatedFormData, currentUserId);
+      newGroupId = result.group_id;
+  
+      const token = await getOrCreateGroupInviteLink(newGroupId, currentUserId);
+      if (token) {
+        const generatedInviteLink = `https://keaqqqqq.com/invite?token=${token}`;
+        setInviteLink(generatedInviteLink);
+        setToastMessage('Group created successfully!');
+        setShowSuccessToast(true);
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        closeModal();
+  
+        // Show copy link UI only for new group creation
+        const inviteLinkDiv = document.createElement('div');
+        inviteLinkDiv.className = 'fixed bottom-20 right-4 z-[999999] animate-slide-up';
+        inviteLinkDiv.innerHTML = `
+          <div class="bg-white border border-gray-200 px-4 py-3 rounded-lg shadow-lg min-w-[300px]">
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-sm font-medium text-gray-700">Share group</span>
+              <button id="closeInviteBtn" class="text-gray-400 hover:text-gray-600">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <button id="copyInviteBtn" class="w-full px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md flex items-center justify-center gap-2 transition-colors">
+              <span class="copy-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+              </span>
+              Copy Invite Link
+            </button>
+          </div>
+        `;
+  
+        document.body.appendChild(inviteLinkDiv);
+  
+        // Add event listeners
+        const copyBtn = document.getElementById('copyInviteBtn');
+        const closeBtn = document.getElementById('closeInviteBtn');
+        
+        if (copyBtn) {
+          copyBtn.onclick = async () => {
+            try {
+              await navigator.clipboard.writeText(generatedInviteLink);
+              inviteLinkDiv.remove();
+              setToastMessage('Invite link copied to clipboard!');
+              setShowInviteLinkToast(true);
+            } catch (error) {
+              console.error('Failed to copy invite link:', error);
+              setToastMessage('Failed to copy invite link');
+              setShowInviteLinkToast(true);
+            }
+          };
+        }
+  
+        if (closeBtn) {
+          closeBtn.onclick = () => {
+            inviteLinkDiv.remove();
+          };
+        }
+  
+        // Reset form
+        setFormData({
+          type: 'trip',
+          name: '',
+          image: '',
+          members: [{
+            id: currentUserId,
+            email: email || '',
+            name: name || '',
+            balances: {}
+          }]
+        });
+        setMembers([]);
+        setSelectedFriends([]);
+        setInvitedEmails([]);
+        setPreviewImage('');
+  
+        if (onSuccess) {
+          onSuccess();
+        }
+      }
     } catch (error) {
       console.error('Error saving/updating group:', error);
     }
   };
-
-  if (!isOpen) return null;
 
   const filteredFriends = friends.filter(friend => 
     friend.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
@@ -358,6 +453,24 @@ export default function AddGroup({
     !formData.members.some(member => member.id === friend.id) &&
     friend.id !== currentUserId
   );
+
+  if (!isOpen) {
+    return (
+      <div className="z-[999999]"> {/* Increased z-index */}
+        {(showSuccessToast || showInviteLinkToast) && (
+          <Toast
+            message={toastMessage}
+            type="success"
+            duration={showSuccessToast ? 3000 : 2000}
+            onClose={() => {
+              if (showSuccessToast) setShowSuccessToast(false);
+              if (showInviteLinkToast) setShowInviteLinkToast(false);
+            }}
+          />
+        )}
+      </div>
+    );
+  } 
 
     return (
       <>
@@ -618,6 +731,25 @@ export default function AddGroup({
           </div>
         </div>
         </div>
+        <div className="z-[999999]">
+        {showSuccessToast && (
+          <Toast
+            message={toastMessage}
+            type="success"
+            duration={3000}
+            onClose={() => setShowSuccessToast(false)}
+          />
+        )}
+
+        {showInviteLinkToast && (
+          <Toast
+            message={toastMessage}
+            type="success"
+            duration={2000}
+            onClose={() => setShowInviteLinkToast(false)}
+          />
+        )}
+      </div>
         </>
     );
   }

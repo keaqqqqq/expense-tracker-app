@@ -47,7 +47,7 @@ const TopBar: React.FC<TopBarProps> = ({ name: initialName, image: initialImage,
       await logout();
       Cookies.remove('loggedin');
       Cookies.remove('currentUserUid', { path: '/' });
-      window.location.href = '/auth';
+      window.location.href = '/';
     } catch (error) {
       console.error('Error logging out:', error);
     }

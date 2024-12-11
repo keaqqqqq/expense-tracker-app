@@ -12,6 +12,8 @@ import { fetchUserData } from '@/lib/actions/user.action';
 import Button from '../ButtonProps';
 import Image from 'next/image';
 import { GroupMember } from '@/types/Group';
+import { useSearchParams } from 'next/navigation';
+
 const fugaz = Fugaz_One({ subsets: ['latin'], weight: ['400'] });
 
 interface InvitationData {
@@ -94,16 +96,17 @@ const InvitationHeader: React.FC<{
 );
 
 export default function AuthForm() {
+    const searchParams = useSearchParams();
     const [email, setEmail] = useState('');
     const [requesterId, setRequesterId] = useState('');
     const [password, setPassword] = useState('');
-    const [isRegister, setIsRegister] = useState(false);
     const [authenticating, setAuthenticating] = useState(false);
     const [invitationData, setInvitationData] = useState<InvitationData | null>(null);
     const [invitationDetails, setInvitationDetails] = useState<InvitationDetails | null>(null);
     const { signup, login, signInWithGoogle} = useAuth();
     const [googleLoading, setGoogleLoading] = useState(false);
     const router = useRouter();
+    const [isRegister, setIsRegister] = useState(() => searchParams.get('mode') === 'signup');
 
     useEffect(() => {
         async function fetchInvitationDetails() {
@@ -294,7 +297,7 @@ export default function AuthForm() {
                         localStorage.removeItem('invitationData');
                         router.push(`/groups/${invitationData.groupId}`);
                     } else {
-                        router.push('/');
+                        router.push('/home');
                     }
                 }
             }
@@ -328,7 +331,7 @@ export default function AuthForm() {
                 if (invitationData?.type === 'GROUP_INVITE') {
                     router.push(`/groups/${invitationData.groupId}`);
                 } else {
-                    router.push('/');
+                    router.push('/home');
                 }
             }
         } catch (error) {
