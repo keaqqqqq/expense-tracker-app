@@ -378,7 +378,7 @@ return (
               name={member.memberName}
               image={member.memberImage}
               type="group"
-              onSettle={() => {if(window.confirm("Settle all expenses?"))handleSettleBalance(currentUserId, member.memberId, 'group')}}
+              onSettle={() => {if(window.confirm("Settle all expenses?"))handleSettleBalance(currentUserId, member.memberId, 'group',groupData.id)}}
             />
           ))}
         </div>
