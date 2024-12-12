@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { UserMinus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { removeFriend } from '@/lib/actions/user.action';
 import Toast from '../Toast';

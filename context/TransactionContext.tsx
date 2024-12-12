@@ -7,7 +7,6 @@ import { db } from '@/firebase/config';
 import { getUserFCMToken } from '@/lib/actions/notifications';
 import { sendNotification } from '@/lib/actions/notifications';
 import { NotificationTypes } from '@/lib/actions/notifications';
-import { group } from 'console';
 interface TransactionContextType {
     transaction: Transaction | null;
     deleteTransactionsByExpense: (expenseId: string) => void;

@@ -14,8 +14,8 @@ interface TransactionModalProps {
   isOpen: boolean;
   closeModal: () => void;
   fromPage?: 'expense' | 'friend' | 'group';  // Add this to identify the source
-  friendId?: string;  // Add this for friend page
-  groupId?: string;   // Add this for group page
+  friendId?: string;
+  groupId?: string;   
 }
 
 const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal, fromPage, friendId, groupId }) => {

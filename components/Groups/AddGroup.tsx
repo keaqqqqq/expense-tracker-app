@@ -3,7 +3,7 @@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useState, useRef, useEffect } from 'react';
-import { Search, UserCircle, Plane, Home, Heart, PartyPopper, Briefcase, MoreHorizontal, Copy, Check } from 'lucide-react';
+import { Search, UserCircle, Plane, Home, Heart, PartyPopper, Briefcase, MoreHorizontal } from 'lucide-react';
 import { Group, GroupMember, GroupType } from '@/types/Group';
 import { Friend } from '@/types/Friend';
 import { saveGroup, updateGroup, getOrCreateGroupInviteLink } from '@/lib/actions/user.action';

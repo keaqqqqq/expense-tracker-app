@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Copy, Settings2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Toast from '../Toast';
 import { getOrCreateGroupInviteLink } from '@/lib/actions/user.action';

@@ -11,7 +11,6 @@ import { getDoc, doc} from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { getUserFCMToken } from '@/lib/actions/notifications';
 import { sendNotification } from '@/lib/actions/notifications';
-import { NotificationType } from '@/lib/actions/notifications';
 interface BalancesProps {
   type: 'friend' | 'group';
   groupData?: Group;

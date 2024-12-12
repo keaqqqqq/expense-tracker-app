@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Sparkles, PieChart, Bell, Users, Wallet, Menu, Router } from 'lucide-react';
+import { Sparkles, Menu} from 'lucide-react';
 import { useRouter } from 'next/navigation'; 
 
 const ExpenseLanding = () => {

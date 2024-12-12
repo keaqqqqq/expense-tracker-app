@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useMemo } from 'react';
-import { ChevronDown, Edit2, DollarSign, User, Receipt, Users, Filter} from 'lucide-react';
+import { ChevronDown, Edit2, DollarSign, User, Receipt, Users} from 'lucide-react';
 import type { GroupedTransactions } from '@/types/ExpenseList';
 import { useExpenseList } from '@/context/ExpenseListContext';
 import { Expense } from '@/types/Expense';
