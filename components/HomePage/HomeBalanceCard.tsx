@@ -10,12 +10,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useAuth } from '@/context/AuthContext';
 import { createTransactionApi, fetchTransactions } from '@/api/transaction';
 import { Transaction } from '@/types/Transaction';
-import { doc } from 'firebase/firestore';
-import { db } from '@/firebase/config';
-import { getUserFCMToken } from '@/lib/actions/notifications';
 import Cookies from 'js-cookie';
 
 interface GroupBalance {
@@ -62,11 +58,11 @@ export function HomeBalanceCard({
   };
 
   const handleSettleFriend = async (
-    type: string,
+    friendId: string,
 ) => {
   
   const userId = Cookies.get('currentUserUid')||'';
-  let transactions = await fetchTransactions(userId, friendId);
+  const transactions = await fetchTransactions(userId, friendId);
   
   const transactionsByExpense: { [expenseId: string]: Transaction[] } = {};
   transactions.forEach((t) => {
