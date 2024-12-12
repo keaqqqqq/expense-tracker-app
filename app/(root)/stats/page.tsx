@@ -42,14 +42,16 @@ const StatsPage = async () => {
                <AreaChart chartData ={allData.chartData}/>
             </div>
             
+               {allData.categoryDonut.chartSeries.length>0 && 
             <div className="grid grid-cols-2 gap-4">
-                <div className="border rounded p-3 h-[400px]">
+               <div className="border rounded p-3 h-[400px]">
                     <DonutChart donutData={allData.categoryDonut}/>
                 </div>
                 <div className="border rounded p-3 h-[400px]">
                     <DonutChart donutData={allData.groupDonut}/>
                 </div>
             </div>
+                }
         </div>
     )
 }
