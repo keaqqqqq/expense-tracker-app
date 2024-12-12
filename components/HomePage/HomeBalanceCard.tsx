@@ -10,6 +10,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useAuth } from '@/context/AuthContext';
+import { createTransactionApi, fetchTransactions } from '@/api/transaction';
+import { Transaction } from '@/types/Transaction';
+import { doc } from 'firebase/firestore';
+import { db } from '@/firebase/config';
+import { getUserFCMToken } from '@/lib/actions/notifications';
+import Cookies from 'js-cookie';
 
 interface GroupBalance {
   name: string;
@@ -48,6 +55,88 @@ export function HomeBalanceCard({
     e.preventDefault();
     e.stopPropagation();
   };
+
+  const getFormattedDate = (): string => {
+    const date = new Date();
+    return date.toISOString().slice(0, 10);
+  };
+
+  const handleSettleFriend = async (
+    type: string,
+) => {
+  
+  const userId = Cookies.get('currentUserUid')||'';
+  let transactions = await fetchTransactions(userId, friendId);
+  
+  const transactionsByExpense: { [expenseId: string]: Transaction[] } = {};
+  transactions.forEach((t) => {
+    if(!t.expense_id)t.expense_id= "direct-transfer"
+    if (!transactionsByExpense[t.expense_id]) {
+      transactionsByExpense[t.expense_id] = [];
+    }
+    transactionsByExpense[t.expense_id].push(t);
+  });
+
+  const balances: { expense_id: string; payer: string; receiver: string; amount: number; group_id: string }[] =
+    [];
+
+  // Calculate balances for each expense_id
+  Object.keys(transactionsByExpense).forEach((expenseId) => {
+    const expenseTransactions = transactionsByExpense[expenseId];
+    const balanceMap: { [key: string]: number } = {};
+
+    // Sum up balances for this expense
+    expenseTransactions.forEach((t) => {
+      const { payer_id, receiver_id, amount } = t;
+
+      // Add to payer's balance (negative because they paid)
+      balanceMap[payer_id] = (balanceMap[payer_id] || 0) - amount;
+
+      // Add to receiver's balance (positive because they received)
+      balanceMap[receiver_id] = (balanceMap[receiver_id] || 0) + amount;
+    });
+
+    // Resolve balances and push them to the output array
+    Object.keys(balanceMap).forEach((person) => {
+      const balance = balanceMap[person];
+      if (balance > 0) {
+        // Positive balance means this person is owed money
+        Object.keys(balanceMap).forEach((otherPerson) => {
+          if (balanceMap[otherPerson] < 0) {
+            const payment = Math.min(balance, -balanceMap[otherPerson]);
+            if (payment > 0 && expenseId!=="direct-payment") {
+              balances.push({
+                expense_id: expenseId,
+                receiver: otherPerson,
+                payer: person,
+                amount: payment,
+                group_id: transactions.find(t => t.expense_id === expenseId)?.group_id||"",
+              });
+
+              balanceMap[person] -= payment;
+              balanceMap[otherPerson] += payment;
+            }
+          }
+        });
+      }
+    });
+  });
+
+
+  for (const b of balances) {
+      await createTransactionApi({
+          payer_id: b.payer,
+          receiver_id: b.receiver,
+          group_id: b.group_id,
+          expense_id: b.expense_id || "direct-payment",
+          created_at: getFormattedDate(),
+          amount: b.amount,
+          type: (b.expense_id && b.expense_id!=="direct-payment") ? "settle": "",
+      });
+  }
+  
+  return balances;
+};
 
   return (
     <Link href={`/friends/${friendId}`}>
@@ -120,7 +209,7 @@ export function HomeBalanceCard({
         {/* Footer Section - Now with Dialog */}
         <Dialog>
           <DialogTrigger asChild onClick={handleCardClick}>
-            <div className="p-4 h-16 cursor-pointer hover:bg-gray-100 rounded-b-lg">
+            <div className="p-4 h-16 cursor-pointer hover:bg-gray-100 rounded-b-lg" onClick={()=>{if(window.confirm("Settle all the transation with this friend?"))handleSettleFriend(friendId)}}>
               <div className="flex">
                 <button className="px-2.5 py-1.5 text-xs sm:text-sm">
                   Settle up
