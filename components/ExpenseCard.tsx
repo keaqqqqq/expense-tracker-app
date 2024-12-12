@@ -183,6 +183,9 @@ const ExpenseCard = ({
       <TransactionModal
         isOpen={isTransactionModalOpen}
         closeModal={closeTransactionModal}
+        fromPage={type === 'user' ? 'friend' : 'group'}
+        friendId={friendId}
+        groupId={groupId}
       />
     </>
   );

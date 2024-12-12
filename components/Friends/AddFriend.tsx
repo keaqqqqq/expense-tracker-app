@@ -11,26 +11,58 @@ interface AddFriendModalProps {
     onFriendAdded: () => void;
 }
 
+interface EmailError {
+    hasError: boolean;
+    message: string;
+}
+
 const AddFriend: React.FC<AddFriendModalProps> = ({ isOpen, closeModal, onFriendAdded }) => {
     const { currentUser } = useAuth(); 
     const [friendEmails, setFriendEmails] = useState<string[]>(['']);
+    const [emailErrors, setEmailErrors] = useState<EmailError[]>([{ hasError: false, message: '' }]);
     const [showToast, setShowToast] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
-    const [toastType, setToastType] = useState<'success' | 'error'>('success'); // Add this state
+    const [toastType, setToastType] = useState<'success' | 'error'>('success'); 
+
+    const validateEmail = (email: string): EmailError => {
+        if (!email) return { hasError: false, message: '' };
+        
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return { hasError: true, message: 'Please enter a valid email address' };
+        }
+
+        return { hasError: false, message: '' };
+    };
 
     const handleEmailChange = (index: number, value: string) => {
         const newEmails = [...friendEmails];
         newEmails[index] = value;
         setFriendEmails(newEmails);
+
+        const newErrors = [...emailErrors];
+        newErrors[index] = validateEmail(value);
+        setEmailErrors(newErrors);
     };
 
     const handleAddFriend = () => {
         setFriendEmails([...friendEmails, '']); 
+        setEmailErrors([...emailErrors, { hasError: false, message: '' }]);
     };
 
     const handleInviteFriends = async () => {
-        const validEmails = friendEmails.filter(email => email);
+        const nonEmptyEmails = friendEmails.filter(email => email.trim());
+        const emailValidations = nonEmptyEmails.map(email => validateEmail(email));
+
+        // Check if there are any format errors
+        if (emailValidations.some(error => error.hasError)) {
+            setToastType('error');
+            setToastMessage('Please fix the invalid email addresses');
+            setShowToast(true);
+            return;
+        }
+
         setIsLoading(true);
     
         if (!currentUser) {
@@ -41,7 +73,7 @@ const AddFriend: React.FC<AddFriendModalProps> = ({ isOpen, closeModal, onFriend
         try {
           let hasError = false;
           
-          for (const email of validEmails) {
+          for (const email of nonEmptyEmails) {
             const result = await saveFriendship(
               currentUser.uid, 
               email,
@@ -59,9 +91,9 @@ const AddFriend: React.FC<AddFriendModalProps> = ({ isOpen, closeModal, onFriend
           if (!hasError) {
             setToastType('success');
             setToastMessage(
-              validEmails.length === 1 
+              nonEmptyEmails.length === 1 
                 ? 'Friend request sent successfully!' 
-                : `Successfully sent ${validEmails.length} friend requests!`
+                : `Successfully sent ${nonEmptyEmails.length} friend requests!`
             );
             setShowToast(true);
     
@@ -70,6 +102,7 @@ const AddFriend: React.FC<AddFriendModalProps> = ({ isOpen, closeModal, onFriend
             setTimeout(() => {
               closeModal();
               setFriendEmails(['']);
+              setEmailErrors([{ hasError: false, message: '' }]);
             }, 2000);
           }
         } catch (error) {

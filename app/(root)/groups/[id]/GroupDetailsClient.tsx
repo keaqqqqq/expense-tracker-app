@@ -95,7 +95,7 @@ export default function GroupDetailsClient({
             
             {/* 4. Expense List */}
             <Suspense fallback={<div className="text-center">Loading expenses...</div>}>
-              <ExpenseList currentUserId={uid}/>
+              <ExpenseList currentUserId={uid} fromPage="group"/>
             </Suspense>
           </div>
 
@@ -114,7 +114,7 @@ export default function GroupDetailsClient({
                 />
                
                 <Suspense fallback={<div className="text-center">Loading expenses...</div>}>
-                  <ExpenseList currentUserId={uid} />
+                  <ExpenseList currentUserId={uid} fromPage="group"/>
                 </Suspense>
               </div>
             </div>

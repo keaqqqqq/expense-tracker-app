@@ -934,15 +934,15 @@ export const fetchTransactions = async (currentUserId: string, friendId: string)
     ]);
 
     const allTransactions = [
-      ...currentUserPayerSnapshot.docs, 
+      ...currentUserPayerSnapshot.docs,
       ...friendPayerSnapshot.docs,
       ...currentUserSelfSnapshot.docs,
       ...friendSelfSnapshot.docs
     ]
       .map(doc => ({
-        ...serializeFirebaseData(doc.data()) as Transaction,
-        id: doc.id 
-      }));
+        ...doc.data(),
+        id: doc.id
+      })) as Transaction[];
 
     const validTransactions = await Promise.all(
       allTransactions.map(async (transaction) => {
@@ -1037,10 +1037,10 @@ export const fetchGroupTransactions = async (groupId: string): Promise<GroupedTr
 
     const groupTransactionsSnapshot = await getDocs(groupTransactionsQ);
     const transactions = groupTransactionsSnapshot.docs
-      .map(doc => ({
-        ...serializeFirebaseData(doc.data()) as Transaction,
-        id: doc.id  // Make sure to include the document ID
-      }));
+    .map(doc => ({
+      ...doc.data(),
+      id: doc.id
+    })) as Transaction[];
 
     const groupedTransactions: { [key: string]: Transaction[] } = {};
     
@@ -1773,7 +1773,7 @@ export const fetchAllTransactions = async (
     const allTransactions = snapshots
       .flatMap(snapshot => 
         snapshot.docs.map(doc => ({
-          ...serializeFirebaseData(doc.data()) as Transaction,
+          ...(doc.data() as Transaction),
           id: doc.id
         }))
       )
@@ -1824,7 +1824,7 @@ export const fetchAllTransactions = async (
               const selfTransactionsSnapshot = await getDocs(selfTransactionsQ);
               const selfTransactions = selfTransactionsSnapshot.docs
                 .map(doc => ({
-                  ...serializeFirebaseData(doc.data()) as Transaction,
+                  ...(doc.data() as Transaction),
                   id: doc.id
                 }))
                 .filter(t => t.payer_id === t.receiver_id);

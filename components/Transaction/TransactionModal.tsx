@@ -9,12 +9,16 @@ import SearchableSelect from '../SearchableSelect';
 import { useTransaction } from '@/context/TransactionContext';
 import Image from 'next/image';
 import { useExpenseList } from '@/context/ExpenseListContext';
+import { useAuth } from '@/context/AuthContext';
 interface TransactionModalProps {
   isOpen: boolean;
   closeModal: () => void;
+  fromPage?: 'expense' | 'friend' | 'group';  // Add this to identify the source
+  friendId?: string;  // Add this for friend page
+  groupId?: string;   // Add this for group page
 }
 
-const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal }) => {
+const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal, fromPage, friendId, groupId }) => {
   const { createTransaction, transaction, editTransaction } = useTransaction();
   const { friendList, expenses, groupList } = useExpense();
   const [payer, setPayer] = useState<Omit<SplitFriend, 'amount'> | undefined>();
@@ -34,48 +38,12 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal 
     setReceiver(payer);
     setPayer(tempReceiver);
   };
-
-  const handleRefresh = async () => {
-    if (selectedExpense) {
-      const expense = expenses.find(e => e.id === selectedExpense);
-      if (expense) {
-        const participantIds = Array.from(new Set(
-          expense.splitter.map(s => s.id)
-            .concat(expense.payer.map(p => p.id))
-        )).filter(id => id !== expense.created_by);
-
-        if (expenseGroup || selectedGroup) {
-          const groupId = expenseGroup || selectedGroup;
-          await refreshGroupTransactions(groupId!);
-        }
-
-        if (participantIds.length === 1) {
-          await refreshTransactions(participantIds[0]);
-        } else if (participantIds.length > 1) {
-          await refreshAllTransactions(participantIds);
-        }
-      }
-    } else {
-      // For direct payments
-      const participants = [payer?.id, receiver?.id].filter((id): id is string => id !== undefined);
-      
-      if (selectedGroup) {
-        await refreshGroupTransactions(selectedGroup);
-      }
-
-      if (participants.length === 1) {
-        await refreshTransactions(participants[0]);
-      } else if (participants.length > 1) {
-        await refreshAllTransactions(participants);
-      }
-    }
-  };
-
-
+  const {currentUser} = useAuth();
   const handleCreateTransaction = async () => {
     const group_id = (expenseGroup ? expenseGroup : (selectedGroup ? selectedGroup : null))
     const expense_id = (selectedExpense ? selectedExpense : 'direct-payment')
     const type = (selectedExpense ? 'settle' : '');
+
     if (amount && selectedDate && payer && receiver)
       await createTransaction({
         amount,
@@ -86,8 +54,25 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal 
         group_id, // Optional
         expense_id,
       });
-      await handleRefresh();
 
+      switch (fromPage) {
+        case 'expense':
+          await refreshAllTransactions();
+          break;
+        case 'friend':
+          if (payer && receiver) {
+            const friendId = payer.id === currentUser?.uid ? receiver.id : payer.id;
+            await refreshTransactions(friendId);
+          }
+          break;
+        case 'group':
+          if (group_id) {
+            await refreshGroupTransactions(group_id);
+          }
+          break;
+      }
+    
+      
     resetTransaction();
     closeModal();
   }
@@ -106,7 +91,23 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal 
         group_id, // Optional
         expense_id,
       });
-      await handleRefresh();
+      switch (fromPage) {
+        case 'expense':
+          await refreshAllTransactions();
+          break;
+        case 'friend':
+          if (payer && receiver) {
+            const friendId = payer.id === currentUser?.uid ? receiver.id : payer.id;
+            await refreshTransactions(friendId);
+          }
+          break;
+        case 'group':
+          if (group_id) {
+            await refreshGroupTransactions(group_id);
+          }
+          break;
+      }
+    
 
     resetTransaction();
     closeModal();

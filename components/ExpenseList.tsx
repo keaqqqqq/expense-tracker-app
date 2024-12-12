@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useMemo } from 'react';
-import { ChevronDown, Edit2, DollarSign, User, Receipt, Users } from 'lucide-react';
+import { ChevronDown, Edit2, DollarSign, User, Receipt, Users, Filter} from 'lucide-react';
 import type { GroupedTransactions } from '@/types/ExpenseList';
 import { useExpenseList } from '@/context/ExpenseListContext';
 import { Expense } from '@/types/Expense';
@@ -22,9 +22,10 @@ interface ExpenseItemProps {
   currentUserId: string;
   allExpense?: boolean;
   groupName?: string;
+  fromPage: 'expense' | 'friend' | 'group';
 }
 
-const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, currentUserId, allExpense, groupName }) => {
+const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, currentUserId, allExpense, groupName, fromPage  }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isTransactionModalOpen, setIsTransactionModalOpen]= useState(false);
   const { expense, transactions } = groupedTransactions;
@@ -32,7 +33,6 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
   const { usersData } = useExpenseList();
   const isPersonalExpense = expense?.payer[0].id == expense?.splitter[0].id && expense?.amount == expense?.splitter[0].amount && expense?.payer.length == 1
   const {setTransaction} = useTransaction();
-  console.log('Expense:' , expense)
   async function getExpenseDescription(expenseId: string): Promise<string> {
     if (!expenseId || expenseId === "direct-transfer") return "(direct-payment)";
     
@@ -144,15 +144,20 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
 
 
   const sortedTransactions = [...transactions].sort((a, b) => {
-    const getPriority = (type: string) => {
-      if (type === 'expense') return 0;
-      if (type === 'settle') return 2;
-      return 1;
+    const getPriority = (transaction: Transaction) => {
+      // If it's a direct payment (can be identified by expense_id)
+      if (transaction.expense_id === 'direct-payment') return 2;
+      // For settlement transactions
+      if (transaction.type === 'settle') return 1;
+      // For expense transactions (highest priority)
+      if (transaction.type === 'expense') return 0;
+      // Default case
+      return 3;
     };
-
-    const priorityA = getPriority(a.type || '');
-    const priorityB = getPriority(b.type || '');
-
+  
+    const priorityA = getPriority(a);
+    const priorityB = getPriority(b);
+  
     return priorityA - priorityB;
   });
 
@@ -339,6 +344,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
        <TransactionModal 
       isOpen={isTransactionModalOpen}
       closeModal={()=> setIsTransactionModalOpen(false)}
+      fromPage={fromPage}
       />
       <div className="text-sm text-gray-500 mb-1 px-3 flex justify-between items-center">
         <span>
@@ -726,32 +732,146 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
   );
 };
 
-const ExpenseList: React.FC<{ currentUserId: string; showAll?: boolean; allExpense?: boolean; }> = ({ currentUserId, showAll = false, allExpense = false }) => {
+const ExpenseList: React.FC<{ currentUserId: string; showAll?: boolean; allExpense?: boolean;  fromPage: 'expense' | 'friend' | 'group'; }> = ({ currentUserId, showAll = false, allExpense = false, fromPage }) => {
   const { groupTransactions, groupedTransactions, groupDetails } = useExpenseList();
   const { setExpenseById } = useExpense();
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [filterType, setFilterType] = useState<'all' | 'settled' | 'unsettled' | 'direct-payment'>('all');
+
   const handleEditExpense = (id: string) => {
-    console.log('this is id', id)
     setExpenseById(id);
     setIsExpenseModalOpen(true);
-  }
-  const transactions = useMemo(() => {
-    if (!showAll) {
-      return groupTransactions?.length > 0 ? groupTransactions : groupedTransactions;
+  };
+
+  const isExpenseSettled = (group: GroupedTransactions) => {
+    
+    const expense = group.expense;
+    if (!expense?.payer || !expense?.splitter) return false;
+    
+    // Check if it's a personal expense
+    if (expense.payer.length === 1 && 
+        expense.payer[0].id === expense.splitter[0].id && 
+        expense.amount === expense.splitter[0].amount) {
+      return true;
     }
 
-    return [...(groupedTransactions || []), ...(groupTransactions || [])]
-      .filter(Boolean)
-      .sort((a, b) => {
-        const dateA = new Date(a.expense?.created_at || a.transactions[0]?.created_at).getTime();
-        const dateB = new Date(b.expense?.created_at || b.transactions[0]?.created_at).getTime();
-        return dateB - dateA;
-      });
-  }, [showAll, groupTransactions, groupedTransactions]);
+    const expenseTransactions = group.transactions.filter(t => t.type === 'expense');
+    const settleTransactions = group.transactions.filter(t => t.type === 'settle');
+    
+    const borrowers = new Set(expenseTransactions.map(t => t.receiver_id));
+    
+    return Array.from(borrowers).every(borrowerId => {
+      const borrowedAmount = expenseTransactions
+        .filter(t => t.receiver_id === borrowerId)
+        .reduce((sum, t) => sum + t.amount, 0);
+      
+      const paidAmount = settleTransactions
+        .filter(t => t.payer_id === borrowerId)
+        .reduce((sum, t) => sum + t.amount, 0);
+      
+      return Math.abs(paidAmount - borrowedAmount) < 0.01;
+    });
+  };
 
-  if (!transactions || transactions.length === 0) {
+  const filteredTransactions = useMemo(() => {
+    let transactions = showAll
+      ? [...(groupedTransactions || []), ...(groupTransactions || [])]
+      : groupTransactions?.length > 0 
+        ? groupTransactions 
+        : groupedTransactions;
+  
+    if (!transactions) return [];
+  
+    transactions = transactions.filter(Boolean).sort((a, b) => {
+      // First sort by transaction type priority
+      const getPriority = (group: GroupedTransactions) => {
+        // Checking if it's a direct payment
+        if (group.transactions[0]?.expense_id === 'direct-payment') return 1;
+        
+        // For regular expenses, check if settled
+        const isSettled = (() => {
+          const expense = group.expense;
+          if (!expense?.payer || !expense?.splitter) return true;
+          
+          // Check if it's a personal expense
+          if (expense.payer.length === 1 && 
+              expense.payer[0].id === expense.splitter[0].id && 
+              expense.amount === expense.splitter[0].amount) {
+            return true;
+          }
+  
+          const expenseTransactions = group.transactions.filter(t => t.type === 'expense');
+          const settleTransactions = group.transactions.filter(t => t.type === 'settle');
+          const borrowers = new Set(expenseTransactions.map(t => t.receiver_id));
+          
+          return Array.from(borrowers).every(borrowerId => {
+            const borrowedAmount = expenseTransactions
+              .filter(t => t.receiver_id === borrowerId)
+              .reduce((sum, t) => sum + t.amount, 0);
+            
+            const paidAmount = settleTransactions
+              .filter(t => t.payer_id === borrowerId)
+              .reduce((sum, t) => sum + t.amount, 0);
+            
+            return Math.abs(paidAmount - borrowedAmount) < 0.01;
+          });
+        })();
+  
+        // Unsettled expenses get highest priority (0)
+        if (!isSettled) return 0;
+        // Settled expenses get lowest priority (2)
+        return 2;
+      };
+  
+      const priorityA = getPriority(a);
+      const priorityB = getPriority(b);
+  
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+  
+      // If same priority, sort by date (newest first)
+      const dateA = new Date(a.expense?.created_at || a.transactions[0]?.created_at).getTime();
+      const dateB = new Date(b.expense?.created_at || b.transactions[0]?.created_at).getTime();
+      return dateB - dateA;
+    });
+  
+    // Apply filters after sorting
+    switch (filterType) {
+      case 'settled':
+        return transactions.filter(group => {
+          const isDirectPayment = group.transactions[0]?.expense_id === 'direct-payment';
+          return !isDirectPayment && isExpenseSettled(group);
+        });
+      case 'unsettled':
+        return transactions.filter(group => {
+          const isDirectPayment = group.transactions[0]?.expense_id === 'direct-payment';
+          return !isDirectPayment && !isExpenseSettled(group);
+        });
+      case 'direct-payment':
+        return transactions.filter(group => group.transactions[0]?.expense_id === 'direct-payment');
+      default:
+        return transactions;
+    }
+  }, [showAll, groupTransactions, groupedTransactions, filterType]);
+
+  if (!filteredTransactions || filteredTransactions.length === 0) {
     return (
       <div className="mt-4 mb-5">
+        <div className="flex justify-end mb-4">
+          <div className="inline-flex items-center rounded-lg border border-gray-200 bg-white p-2 shadow-sm">
+            <select 
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value as typeof filterType)}
+              className="text-sm border-none bg-transparent focus:outline-none text-gray-600"
+            >
+              <option value="all">All Expenses</option>
+              <option value="settled">Settled</option>
+              <option value="unsettled">Unsettled</option>
+              <option value="direct-payment">Direct Payment</option>
+            </select>
+          </div>
+        </div>
         <div className="space-y-4 mb-50">
           <div className="bg-white rounded-lg shadow w-full max-w-7xl">
             <div className="flex flex-col items-center justify-center p-8 text-center">
@@ -759,15 +879,10 @@ const ExpenseList: React.FC<{ currentUserId: string; showAll?: boolean; allExpen
                 <Receipt className="w-6 h-6 text-blue-500" />
               </div>
               <h3 className="text-sm font-medium text-gray-900 mb-2">
-                No Transactions Yet
+                No Transactions Found
               </h3>
               <p className="text-xs text-gray-500 max-w-sm">
-                {showAll
-                  ? "You don't have any expenses yet. Create a new expense to start tracking your spending!"
-                  : groupTransactions?.length >= 0
-                    ? "This group doesn't have any expenses yet. Create a new expense to start tracking group spending!"
-                    : "You haven't shared any expenses yet. Create a new expense to start tracking your spending!"
-                }
+                No expenses match your current filter criteria. Try changing the filter or create new expenses.
               </p>
             </div>
           </div>
@@ -778,25 +893,40 @@ const ExpenseList: React.FC<{ currentUserId: string; showAll?: boolean; allExpen
 
   return (
     <div className="mt-4">
+      <div className="flex justify-end mb-4">
+        <div className="inline-flex items-center rounded-lg border border-gray-200 bg-white p-2 shadow-sm">
+          <select 
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value as typeof filterType)}
+            className="text-xs border-none bg-transparent focus:outline-none text-gray-600"
+          >
+            <option value="all">All Expenses</option>
+            <option value="settled">Settled</option>
+            <option value="unsettled">Unsettled</option>
+            <option value="direct-payment">Direct Payment</option>
+          </select>
+        </div>
+      </div>
       <ExpenseModal
         isOpen={isExpenseModalOpen}
         closeModal={() => setIsExpenseModalOpen(false)}
         refreshAll={false}
       />
-     
       <div className="space-y-4">
-        {transactions.map((group: GroupedTransactions, index: number) => (
+        {filteredTransactions.map((group: GroupedTransactions, index: number) => (
           <ExpenseItem
             key={group.expense?.id || `payment-${index}`}
             groupedTransactions={group}
             currentUserId={currentUserId}
             onEdit={() => handleEditExpense(group.expense?.id || "")}
             allExpense={allExpense}
+            fromPage={fromPage}
             groupName={
               (group.expense?.group_id && groupDetails && groupDetails[group.expense.group_id]) || 
               (!group.expense && group.transactions[0]?.group_id && groupDetails && groupDetails[group.transactions[0].group_id]) ||
               undefined
-            }          />
+            }
+          />
         ))}
       </div>
     </div>

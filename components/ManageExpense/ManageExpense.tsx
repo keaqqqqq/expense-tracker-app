@@ -65,6 +65,7 @@ const ManageExpense: React.FC<ManageExpenseProps> = ({
                 currentUserId={uid} 
                 showAll={true} 
                 allExpense={true}
+                fromPage="expense"  
             />
             
             <ExpenseModal 
@@ -78,6 +79,7 @@ const ManageExpense: React.FC<ManageExpenseProps> = ({
             <TransactionModal 
                 isOpen={transIsOpen} 
                 closeModal={() => setTransIsOpen(false)}
+                fromPage="expense"
             />
         </div>
     );
