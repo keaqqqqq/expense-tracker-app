@@ -13,7 +13,10 @@ import {
 import { createTransactionApi, fetchTransactions } from '@/api/transaction';
 import { Transaction } from '@/types/Transaction';
 import Cookies from 'js-cookie';
-
+import { getUserFCMToken } from '@/lib/actions/notifications';
+import { sendNotification } from '@/lib/actions/notifications';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/firebase/config';
 interface GroupBalance {
   name: string;
   balance: number;
@@ -47,7 +50,6 @@ export function HomeBalanceCard({
   }
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // Stop event propagation to prevent the Link from triggering
     e.preventDefault();
     e.stopPropagation();
   };
@@ -56,6 +58,13 @@ export function HomeBalanceCard({
     const date = new Date();
     return date.toISOString().slice(0, 10);
   };
+
+  async function getExpenseDescription(expenseId: string): Promise<string> {
+    if (!expenseId || expenseId === "direct-transfer") return "(direct-payment)";
+    
+    const expenseDoc = await getDoc(doc(db, 'Expenses', expenseId));
+    return expenseDoc.exists() ? expenseDoc.data().description : "(direct-payment)";
+}
 
   const handleSettleFriend = async (
     friendId: string,
@@ -129,9 +138,54 @@ export function HomeBalanceCard({
           amount: b.amount,
           type: (b.expense_id && b.expense_id!=="direct-payment") ? "settle": "",
       });
+
+      try {
+        const payerDoc = await getDoc(doc(db, 'Users', b.payer));
+        const payerData = payerDoc.data();
+        console.log('Payer data:', payerData);
+        
+        const receiverToken = await getUserFCMToken(friendId);
+        console.log('Receiver token:', receiverToken);
+        
+        if (receiverToken) {
+            const notificationType = `EXPENSE_SETTLED_${b.payer}_${b.receiver}_${Math.floor(Date.now() / 1000)}`;
+    
+            const expenseDescription = await getExpenseDescription(b.expense_id);
+    
+            const notificationData = {
+                title: 'Payment Settled',
+                body: `${payerData?.name || 'Someone'} settled a payment${expenseDescription ? ` for ${expenseDescription}` : ''}: RM${b.amount}`,
+                url: '/home',
+                type: notificationType,
+                image: payerData?.image || ''
+            };
+    
+            await sendNotification(receiverToken, notificationType, notificationData);
+        } else {
+            console.log('No receiver token found for:', friendId);
+        }
+    } catch (error) {
+        console.error('Settlement notification error:', error);
+    }
   }
   
   return balances;
+};
+
+const handleSettle = async (e: React.MouseEvent) => {
+  e.preventDefault();
+  e.stopPropagation(); 
+  
+  if (window.confirm("Settle all the transactions with this friend?")) {
+    try {
+      await handleSettleFriend(friendId);
+      alert("Successfully settled all transactions!");
+      window.location.reload();
+    } catch (error) {
+      console.error("Settlement failed:", error);
+      alert("Failed to settle transactions. Please try again.");
+    }
+  }
 };
 
   return (
@@ -205,7 +259,7 @@ export function HomeBalanceCard({
         {/* Footer Section - Now with Dialog */}
         <Dialog>
           <DialogTrigger asChild onClick={handleCardClick}>
-            <div className="p-4 h-16 cursor-pointer hover:bg-gray-100 rounded-b-lg" onClick={()=>{if(window.confirm("Settle all the transation with this friend?"))handleSettleFriend(friendId)}}>
+            <div className="p-4 h-16 cursor-pointer hover:bg-gray-100 rounded-b-lg" onClick={handleSettle}>
               <div className="flex">
                 <button className="px-2.5 py-1.5 text-xs sm:text-sm">
                   Settle up

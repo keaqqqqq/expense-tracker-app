@@ -102,10 +102,11 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal,
 };
 
   const handleEditTransaction = async () => {
+    try {
     const group_id = (expenseGroup ? expenseGroup : selectedGroup ? selectedGroup : null)
     const expense_id = (selectedExpense ? selectedExpense : 'direct-payment')
     const type = (selectedExpense ? 'settle' : '');
-    if (amount && selectedDate && payer && receiver && transaction?.id)
+    if (amount && selectedDate && payer && receiver && transaction?.id){
       await editTransaction({
         id: transaction.id,
         amount,
@@ -134,9 +135,13 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal,
       }
     
 
-    resetTransaction();
-    closeModal();
+      showSuccessToast('Transaction edited successfully!');
+      resetTransaction();
+      closeModal();
+  }} catch (error) {
+    showErrorToast('Failed to create transaction. Please try again.');
   }
+  };
 
   useEffect(() => {
     console.log(transaction);
