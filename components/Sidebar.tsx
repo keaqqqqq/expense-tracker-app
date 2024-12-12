@@ -180,7 +180,7 @@ const Sidebar: React.FC<SideBarProps> = ({
                                 className='border border-2 rounded-lg border-transparent'
                             />                                
                             <h2 className="text-base sm:text-lg font-semibold text-black py-4 cursor-pointer hover:text-indigo-600">
-                                ExpenseHive
+                                Expense<span className='text-indigo-600'>Hive</span>
                             </h2>
                         </Link>
 
