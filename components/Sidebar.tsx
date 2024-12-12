@@ -86,7 +86,7 @@ const Sidebar: React.FC<SideBarProps> = ({
             {initialFriends.length > 5 && (
             <Link 
                 href="/friends"
-                className="block px-4 py-2 text-sm text-indigo-600 hover:bg-gray-50 font-medium"
+                className="block px-4 py-2 text-sm text-gray-500 hover:bg-gray-50"
                 onClick={() => isMobile && onClose()}
             >
                 See all friends →
@@ -135,7 +135,7 @@ const Sidebar: React.FC<SideBarProps> = ({
             {initialGroups.length > 5 && (
             <Link 
                 href="/groups"
-                className="block px-4 py-2 text-sm text-indigo-600 hover:bg-gray-50 font-medium"
+                className="block px-4 py-2 text-sm text-gray-500 hover:bg-gray-50"
                 onClick={() => isMobile && onClose()}
             >
                 See all groups →
@@ -184,7 +184,7 @@ const Sidebar: React.FC<SideBarProps> = ({
                                 className='border border-2 rounded-lg border-transparent'
                             />                                
                             <h2 className="text-base sm:text-lg font-semibold text-black py-4 cursor-pointer hover:text-indigo-600">
-                                ExpenseHive
+                                Expense<span className='text-indigo-600'>Hive</span>
                             </h2>
                         </Link>
 

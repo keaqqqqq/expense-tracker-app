@@ -5,12 +5,6 @@ import { Group } from '@/types/Group';
 import { Friend } from '@/types/Friend';
 import { useBalances } from '@/context/BalanceContext';
 import { GroupBalance } from '@/types/Balance';
-import { createTransactionApi, fetchTransactions } from '@/api/transaction';
-import { Transaction } from '@/types/Transaction';
-import { getDoc, doc} from 'firebase/firestore';
-import { db } from '@/firebase/config';
-import { getUserFCMToken } from '@/lib/actions/notifications';
-import { sendNotification } from '@/lib/actions/notifications';
 interface BalancesProps {
   type: 'friend' | 'group';
   groupData?: Group;
@@ -32,7 +26,7 @@ export default function Balances({
     balances,
     groupBalances,
     friendGroupBalances,
-    // handleSettleBalance,
+    handleSettleBalance,
     refreshBalances,
   } = useBalances();
 
@@ -79,225 +73,24 @@ export default function Balances({
     return date.toISOString().slice(0, 10);
   };
   
- 
-  // const handleSettleBalance = async (
-  //   userId: string,
-  //   friendId: string,
-  //   type: string,
-  //   group?: string
-  // ) => {
-  //   console.log("handling balance");
-  //   console.log("user id:", userId);
-  //   console.log("friend Id:", friendId);
-  //   console.log("group Id:  ", group);
-  
-  //   let transactions = await fetchTransactions(userId, friendId);
-  
-    
-  //   transactions = transactions.filter((t) => t.group_id === (group?group:""));
-    
-    
-  
-  //   // Group transactions by expense_id
-  //   const transactionsByExpense: { [expenseId: string]: Transaction[] } = {};
-  //   transactions.forEach((t) => {
-  //     if(!t.expense_id)t.expense_id= "direct-transfer"
-  //     if (!transactionsByExpense[t.expense_id]) {
-  //       transactionsByExpense[t.expense_id] = [];
-  //     }
-  //     transactionsByExpense[t.expense_id].push(t);
-  //   });
-  
-  //   const balances: { expense_id: string; payer: string; receiver: string; amount: number }[] =
-  //     [];
-  
-  //   // Calculate balances for each expense_id
-  //   Object.keys(transactionsByExpense).forEach((expenseId) => {
-  //     const expenseTransactions = transactionsByExpense[expenseId];
-  //     const balanceMap: { [key: string]: number } = {};
-  
-  //     // Sum up balances for this expense
-  //     expenseTransactions.forEach((t) => {
-  //       const { payer_id, receiver_id, amount } = t;
-  
-  //       // Add to payer's balance (negative because they paid)
-  //       balanceMap[payer_id] = (balanceMap[payer_id] || 0) - amount;
-  
-  //       // Add to receiver's balance (positive because they received)
-  //       balanceMap[receiver_id] = (balanceMap[receiver_id] || 0) + amount;
-  //     });
-  
-  //     // Resolve balances and push them to the output array
-  //     Object.keys(balanceMap).forEach((person) => {
-  //       const balance = balanceMap[person];
-  //       if (balance > 0) {
-  //         // Positive balance means this person is owed money
-  //         Object.keys(balanceMap).forEach((otherPerson) => {
-  //           if (balanceMap[otherPerson] < 0) {
-  //             const payment = Math.min(balance, -balanceMap[otherPerson]);
-  //             if (payment > 0) {
-  //               balances.push({
-  //                 expense_id: expenseId,
-  //                 receiver: otherPerson,
-  //                 payer: person,
-  //                 amount: payment,
-  //               });
-  
-  //               balanceMap[person] -= payment;
-  //               balanceMap[otherPerson] += payment;
-  //             }
-  //           }
-  //         });
-  //       }
-  //     });
-  //   });
-  
-  //   console.log("Final Balances: ", balances);
-  //   for (const b of balances) {
-  //     await createTransactionApi({
-  //       payer_id: b.payer,
-  //       receiver_id: b.receiver,
-  //       group_id: group || "",
-  //       expense_id: b.expense_id || "direct-transfer",
-  //       created_at: getFormattedDate(),
-  //       amount: b.amount,
-  //       type: "settle",
-  //     });
-  //   }
-    
-  //   // Return as an array of objects
-  //   return balances;
-  // };
-
-  async function getExpenseDescription(expenseId: string): Promise<string> {
-    if (!expenseId || expenseId === "direct-transfer") return "(direct-payment)";
-    
-    const expenseDoc = await getDoc(doc(db, 'Expenses', expenseId));
-    return expenseDoc.exists() ? expenseDoc.data().description : "(direct-payment)";
-}
-
-  const handleSettleBalance = async (
-    userId: string,
-    friendId: string,
-    type: string,
-    group?: string
-) => {
-  let transactions = await fetchTransactions(userId, friendId);
-  
-    
-  transactions = transactions.filter((t) => t.group_id === (group?group:""));
-  
-  
-
-  // Group transactions by expense_id
-  const transactionsByExpense: { [expenseId: string]: Transaction[] } = {};
-  transactions.forEach((t) => {
-    if(!t.expense_id)t.expense_id= "direct-transfer"
-    if (!transactionsByExpense[t.expense_id]) {
-      transactionsByExpense[t.expense_id] = [];
-    }
-    transactionsByExpense[t.expense_id].push(t);
-  });
-
-  const balances: { expense_id: string; payer: string; receiver: string; amount: number }[] =
-    [];
-
-  // Calculate balances for each expense_id
-  Object.keys(transactionsByExpense).forEach((expenseId) => {
-    const expenseTransactions = transactionsByExpense[expenseId];
-    const balanceMap: { [key: string]: number } = {};
-
-    // Sum up balances for this expense
-    expenseTransactions.forEach((t) => {
-      const { payer_id, receiver_id, amount } = t;
-
-      // Add to payer's balance (negative because they paid)
-      balanceMap[payer_id] = (balanceMap[payer_id] || 0) - amount;
-
-      // Add to receiver's balance (positive because they received)
-      balanceMap[receiver_id] = (balanceMap[receiver_id] || 0) + amount;
-    });
-
-    // Resolve balances and push them to the output array
-    Object.keys(balanceMap).forEach((person) => {
-      const balance = balanceMap[person];
-      if (balance > 0) {
-        // Positive balance means this person is owed money
-        Object.keys(balanceMap).forEach((otherPerson) => {
-          if (balanceMap[otherPerson] < 0) {
-            const payment = Math.min(balance, -balanceMap[otherPerson]);
-            if (payment > 0) {
-              balances.push({
-                expense_id: expenseId,
-                receiver: otherPerson,
-                payer: person,
-                amount: payment,
-              });
-
-              balanceMap[person] -= payment;
-              balanceMap[otherPerson] += payment;
-            }
-          }
-        });
-      }
-    });
-  });
-
-
-  for (const b of balances) {
-      await createTransactionApi({
-          payer_id: b.payer,
-          receiver_id: b.receiver,
-          group_id: group || "",
-          expense_id: b.expense_id || "direct-payment",
-          created_at: getFormattedDate(),
-          amount: b.amount,
-          type: (b.expense_id && b.expense_id!=="direct-payment") ? "settle": "",
-      });
-
-      try {
-        const payerDoc = await getDoc(doc(db, 'Users', userId));
-        const payerData = payerDoc.data();
-        console.log('Payer data:', payerData);
-        
-        const receiverToken = await getUserFCMToken(friendId);
-        console.log('Receiver token:', receiverToken);
-        
-        if (receiverToken) {
-            const notificationType = `EXPENSE_SETTLED_${b.payer}_${b.receiver}_${Math.floor(Date.now() / 1000)}`;
-            console.log('Notification type:', notificationType);
-    
-            const expenseDescription = await getExpenseDescription(b.expense_id);
-            console.log('Expense description:', expenseDescription);
-    
-            const notificationData = {
-                title: 'Payment Settled',
-                body: `${payerData?.name || 'Someone'} settled a payment${expenseDescription ? ` for ${expenseDescription}` : ''}: RM${b.amount}`,
-                url: group ? `/groups/${group}` : `/friends/${userId}`,
-                type: notificationType,
-                image: payerData?.image || ''
-            };
-            console.log('Sending notification:', notificationData);
-    
-            await sendNotification(receiverToken, notificationType, notificationData);
-            console.log('Notification sent successfully');
-        } else {
-            console.log('No receiver token found for:', friendId);
-        }
-    } catch (error) {
-        console.error('Settlement notification error:', error);
-    }
-  }
-  
-  return balances;
-};
-  
-  
 const hasFriendBalancesToShow = 
 Number(friendBalance?.netBalance || 0) !== 0 || 
 Number(friendBalance?.settledBalance || 0) !== 0 || 
 Number(friendBalance?.unsettledBalance || 0) !== 0 ||
 Number(friendBalance?.directPaymentBalance || 0) !== 0;  
+
+const handleSettleClick = async (userId: string, memberId: string, type: 'friend' | 'group' , groupId?: string, fromPage?: 'friend' | 'group') => {
+  if (!window.confirm("Settle all expenses?")) {
+    return;
+  }
+
+  try {
+    const result = await handleSettleBalance(userId, memberId, type, groupId, fromPage);
+  } catch (error) {
+    console.error('Settlement failed:', error);
+  } finally {
+  }
+};
 
 return (
     <div className="space-y-4 xl:ml-10">
@@ -319,8 +112,8 @@ return (
             name={friendData.name}
             image={friendData.image}
             type="friend"
-            onSettle={() => {if(window.confirm("Settle all expenses?"))handleSettleBalance(currentUserId, friendBalance.id, 'friend')}}
-          />
+            onSettle={() => handleSettleClick(currentUserId, friendBalance.id, 'friend', undefined, 'friend')}
+            />
           
           {friendGroupBalances && friendGroupBalances.length > 0 && (
             <>
@@ -345,7 +138,7 @@ return (
                     name={groupBalance.memberName}
                     image={groupBalance.groupImage}
                     type="group"
-                    onSettle={() => {if(window.confirm("Settle all expenses?"))handleSettleBalance(currentUserId, groupBalance.memberId, 'group', groupBalance.groupId)}}
+                    onSettle={() => handleSettleClick(currentUserId, groupBalance.memberId, 'group', groupBalance.groupId, 'friend')}
                   />
                 ))}
               </div>
@@ -377,7 +170,7 @@ return (
               name={member.memberName}
               image={member.memberImage}
               type="group"
-              onSettle={() => {if(window.confirm("Settle all expenses?"))handleSettleBalance(currentUserId, member.memberId, 'group')}}
+              onSettle={() => handleSettleClick(currentUserId, member.memberId, 'group', groupId, 'group')}
             />
           ))}
         </div>

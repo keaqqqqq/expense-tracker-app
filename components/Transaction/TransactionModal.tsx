@@ -10,10 +10,11 @@ import { useTransaction } from '@/context/TransactionContext';
 import Image from 'next/image';
 import { useExpenseList } from '@/context/ExpenseListContext';
 import { useAuth } from '@/context/AuthContext';
+import Toast from '../Toast';
 interface TransactionModalProps {
   isOpen: boolean;
   closeModal: () => void;
-  fromPage?: 'expense' | 'friend' | 'group';  // Add this to identify the source
+  fromPage?: 'expense' | 'friend' | 'group';  
   friendId?: string;
   groupId?: string;   
 }
@@ -28,30 +29,49 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal,
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [expenseGroup, setExpenseGroup] = useState<string | null>(null);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const { 
     refreshTransactions, 
     refreshGroupTransactions, 
     refreshAllTransactions 
 } = useExpenseList();
+
   const handleExchangeUsers = () => {
     const tempReceiver = receiver;
     setReceiver(payer);
     setPayer(tempReceiver);
   };
+
+  const showSuccessToast = (message: string) => {
+    setToastMessage(message);
+    setToastType('success');
+    setShowToast(true);
+  };
+
+  const showErrorToast = (message: string) => {
+    setToastMessage(message);
+    setToastType('error');
+    setShowToast(true);
+  };
+
   const {currentUser} = useAuth();
+
   const handleCreateTransaction = async () => {
+    try {
     const group_id = (expenseGroup ? expenseGroup : (selectedGroup ? selectedGroup : null))
     const expense_id = (selectedExpense ? selectedExpense : 'direct-payment')
     const type = (selectedExpense ? 'settle' : '');
 
-    if (amount && selectedDate && payer && receiver)
+    if (amount && selectedDate && payer && receiver){
       await createTransaction({
         amount,
         type,
-        created_at: selectedDate,// Timestamp or date string
+        created_at: selectedDate,
         payer_id: payer.id,
         receiver_id: receiver.id,
-        group_id, // Optional
+        group_id, 
         expense_id,
       });
 
@@ -72,10 +92,15 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal,
           break;
       }
     
-      
-    resetTransaction();
-    closeModal();
+      showSuccessToast('Transaction created successfully!');
+      resetTransaction();
+      closeModal();
   }
+} catch (error) {
+  showErrorToast('Failed to create transaction. Please try again.');
+}
+};
+
   const handleEditTransaction = async () => {
     const group_id = (expenseGroup ? expenseGroup : selectedGroup ? selectedGroup : null)
     const expense_id = (selectedExpense ? selectedExpense : 'direct-payment')
@@ -317,6 +342,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal,
   }, [groupList, payer, receiver, selectedExpense]);
 
   return (
+    <>
     <Dialog open={isOpen} onClose={closeModal} className="relative z-[9999]">
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
       <div className="fixed inset-0 overflow-y-auto">
@@ -479,6 +505,15 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal,
         </div>
       </div>
     </Dialog>
+      {showToast && (
+        <Toast
+          message={toastMessage}
+          type={toastType}
+          duration={3000}
+          onClose={() => setShowToast(false)}
+        />
+      )}
+      </>
   );
 };
 

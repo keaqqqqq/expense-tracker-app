@@ -783,17 +783,13 @@ const ExpenseList: React.FC<{ currentUserId: string; showAll?: boolean; allExpen
     if (!transactions) return [];
   
     transactions = transactions.filter(Boolean).sort((a, b) => {
-      // First sort by transaction type priority
       const getPriority = (group: GroupedTransactions) => {
-        // Checking if it's a direct payment
         if (group.transactions[0]?.expense_id === 'direct-payment') return 1;
         
-        // For regular expenses, check if settled
         const isSettled = (() => {
           const expense = group.expense;
           if (!expense?.payer || !expense?.splitter) return true;
           
-          // Check if it's a personal expense
           if (expense.payer.length === 1 && 
               expense.payer[0].id === expense.splitter[0].id && 
               expense.amount === expense.splitter[0].amount) {
@@ -817,9 +813,7 @@ const ExpenseList: React.FC<{ currentUserId: string; showAll?: boolean; allExpen
           });
         })();
   
-        // Unsettled expenses get highest priority (0)
         if (!isSettled) return 0;
-        // Settled expenses get lowest priority (2)
         return 2;
       };
   
@@ -830,13 +824,11 @@ const ExpenseList: React.FC<{ currentUserId: string; showAll?: boolean; allExpen
         return priorityA - priorityB;
       }
   
-      // If same priority, sort by date (newest first)
-      const dateA = new Date(a.expense?.created_at || a.transactions[0]?.created_at).getTime();
-      const dateB = new Date(b.expense?.created_at || b.transactions[0]?.created_at).getTime();
+      const dateA = new Date(a.expense?.date || a.transactions[0]?.created_at).getTime();
+      const dateB = new Date(b.expense?.date || b.transactions[0]?.created_at).getTime();
       return dateB - dateA;
     });
   
-    // Apply filters after sorting
     switch (filterType) {
       case 'settled':
         return transactions.filter(group => {
@@ -872,7 +864,7 @@ const ExpenseList: React.FC<{ currentUserId: string; showAll?: boolean; allExpen
             </select>
           </div>
         </div>
-        <div className="space-y-4 mb-50">
+        <div className="space-y-4">
           <div className="bg-white rounded-lg shadow w-full max-w-7xl">
             <div className="flex flex-col items-center justify-center p-8 text-center">
               <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mb-4">
