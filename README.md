@@ -59,7 +59,7 @@ expense-tracker-app/
 │   ├── Transaction/         
 │   └── UserProfile/
 ├── lib/                     
-│   └── actions/                # Business logic and API calls
+│   └── actions/                   # Business logic and API calls
 │       ├── email.ts            
 │       ├── file.action.ts     
 │       ├── notification.ts     
