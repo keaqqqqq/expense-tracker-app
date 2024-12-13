@@ -46,8 +46,8 @@ expense-tracker-app/
 │       └── notification/     # Notification endpoints
 │           └── send/        
 │               └── route.ts
-├── components/                 # React components
-│   ├── ui/                    # Reusable UI components from shadcn
+├── components/                         # React components
+│   ├── ui/                            # Reusable UI components from shadcn
 │   ├── Balances/            
 │   ├── Friends/             
 │   ├── Groups/            
