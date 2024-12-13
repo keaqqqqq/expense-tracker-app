@@ -54,7 +54,10 @@ expense-tracker-app/
 │   ├── HomePage/            
 │   ├── ManageExpense/       
 │   ├── Pay/                
-│   ├── Split/              
+│   ├── Split/
+        └── _tests_/
+            └── EqualSplit.test.tsx
+        └── EqualSplit.tsx                
 │   ├── Stats/             
 │   ├── Transaction/         
 │   └── UserProfile/
