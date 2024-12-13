@@ -94,21 +94,21 @@ expense-tracker-app/
 │   ├── Transaction.ts        
 │   └── User.ts                     
 ├── .github/
-│   └── ci-cd.yml                 # GitHub Actions workflow for CI/CD
-├── Dockerfile                    # Container configuration for Docker
-├── public/                      # Static files
-│   ├── icons/                  # App icons for PWA
-│   ├── firebase-messaging-sw.js # Service worker for push notifications
-│   └── manifest.json           # PWA configuration
-├── functions/                   # Firebase Cloud Functions for invitation email
+│   └── ci-cd.yml                    # GitHub Actions workflow for CI/CD
+├── Dockerfile                       # Container configuration for Docker
+├── public/                         # Static files
+│   ├── icons/                     # App icons for PWA
+│   ├── firebase-messaging-sw.js    # Service worker for push notifications
+│   └── manifest.json              # PWA configuration
+├── functions/                      # Firebase Cloud Functions for invitation email
 │   └── src/
 │       └── index.ts           
 ├── firebase/
-│   └── config.ts               # Firebase configuration and initialization
-├── validation/               # Form and data validation
+│   └── config.ts                  # Firebase configuration and initialization
+├── validation/                  # Form and data validation
 │   └── expense-form.ts    
-├── eslint.config.ts         # ESLint configuration
-└── jest.config.ts           # Jest testing configuration
+├── eslint.config.ts            # ESLint configuration
+   └── jest.config.ts           # Jest testing configuration
 ```
 
 ## 3. Setup and Installation
