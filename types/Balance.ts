@@ -53,3 +53,11 @@ export interface FriendBalance {
     totalBalance: number;
     groups: FriendGroupBalance[];
   }
+
+export interface SettlementBalance {
+  expense_id: string;
+  payer: string;
+  receiver: string;
+  amount: number;
+  group_id: string;
+}
