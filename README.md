@@ -30,65 +30,6 @@ An expense tracker application that allows users to track expenses, split bills,
 ### Project Structure
 ```
 expense-tracker-app/
-├── .github/
-│   └── ci-cd.yml                 # GitHub Actions workflow for CI/CD
-├── Dockerfile                    # Container configuration for Docker
-├── types/                        # TypeScript type definitions
-│   ├── Balance.ts              
-│   ├── ChartData.ts           
-│   ├── Expense.ts              
-│   ├── ExpenseCategories.ts   
-│   ├── ExpenseList.ts         
-│   ├── ExpenseSplit.ts        
-│   ├── Friend.ts             
-│   ├── Group.ts              
-│   ├── SplitFriend.ts       
-│   ├── SplitInterface.ts    
-│   ├── Toast.ts               
-│   ├── Transaction.ts        
-│   └── User.ts              
-├── public/                      # Static files
-│   ├── icons/                  # App icons for PWA
-│   ├── firebase-messaging-sw.js # Service worker for push notifications
-│   └── manifest.json           # PWA configuration
-├── functions/                   # Firebase Cloud Functions for invitation email
-│   └── src/
-│       └── index.ts           
-├── lib/                     
-│   └── actions/                # Business logic and API calls
-│       ├── email.ts            
-│       ├── file.action.ts     
-│       ├── notification.ts     
-│       ├── statistic.action.ts
-│       ├── user.action.ts    
-│       ├── friend.action.ts   
-│       ├── group.action.ts   
-│       ├── expense.action.ts  
-│       ├── transaction.action.ts
-│       └── balance.action.ts   
-├── firebase/
-│   └── config.ts               # Firebase configuration and initialization
-├── context/                    # React Context providers for state management
-│   ├── AuthContext.tsx        
-│   ├── BalanceContext.tsx     
-│   ├── ExpenseContext.tsx     
-│   ├── ExpenseListContext.tsx 
-│   ├── FriendsContext.tsx     
-│   ├── HomeBalanceContext.tsx 
-│   ├── NotificationContext.tsx 
-│   └── TransactionContext.tsx 
-├── components/                 # React components
-│   ├── ui/                    # Reusable UI components from shadcn
-│   ├── Balances/            
-│   ├── Friends/             
-│   ├── Groups/            
-│   ├── HomePage/            
-│   ├── ManageExpense/       
-│   ├── Pay/                
-│   ├── Split/              
-│   ├── Stats/             
-│   ├── Transaction/         
-│   └── UserProfile/         
 ├── app/                       # App Router
 │   ├── page.tsx              # Root page
 │   ├── layout.tsx            # Root layout
@@ -104,7 +45,66 @@ expense-tracker-app/
 │   └── api/                 
 │       └── notification/     # Notification endpoints
 │           └── send/        
-│               └── route.ts 
+│               └── route.ts
+├── components/                 # React components
+│   ├── ui/                    # Reusable UI components from shadcn
+│   ├── Balances/            
+│   ├── Friends/             
+│   ├── Groups/            
+│   ├── HomePage/            
+│   ├── ManageExpense/       
+│   ├── Pay/                
+│   ├── Split/              
+│   ├── Stats/             
+│   ├── Transaction/         
+│   └── UserProfile/
+├── lib/                     
+│   └── actions/                # Business logic and API calls
+│       ├── email.ts            
+│       ├── file.action.ts     
+│       ├── notification.ts     
+│       ├── statistic.action.ts
+│       ├── user.action.ts    
+│       ├── friend.action.ts   
+│       ├── group.action.ts   
+│       ├── expense.action.ts  
+│       ├── transaction.action.ts
+│       └── balance.action.ts
+├── context/                    # React Context providers for state management
+│   ├── AuthContext.tsx        
+│   ├── BalanceContext.tsx     
+│   ├── ExpenseContext.tsx     
+│   ├── ExpenseListContext.tsx 
+│   ├── FriendsContext.tsx     
+│   ├── HomeBalanceContext.tsx 
+│   ├── NotificationContext.tsx 
+│   └── TransactionContext.tsx 
+├── types/                        # TypeScript type definitions
+│   ├── Balance.ts              
+│   ├── ChartData.ts           
+│   ├── Expense.ts              
+│   ├── ExpenseCategories.ts   
+│   ├── ExpenseList.ts         
+│   ├── ExpenseSplit.ts        
+│   ├── Friend.ts             
+│   ├── Group.ts              
+│   ├── SplitFriend.ts       
+│   ├── SplitInterface.ts    
+│   ├── Toast.ts               
+│   ├── Transaction.ts        
+│   └── User.ts                     
+├── .github/
+│   └── ci-cd.yml                 # GitHub Actions workflow for CI/CD
+├── Dockerfile                    # Container configuration for Docker
+├── public/                      # Static files
+│   ├── icons/                  # App icons for PWA
+│   ├── firebase-messaging-sw.js # Service worker for push notifications
+│   └── manifest.json           # PWA configuration
+├── functions/                   # Firebase Cloud Functions for invitation email
+│   └── src/
+│       └── index.ts           
+├── firebase/
+│   └── config.ts               # Firebase configuration and initialization
 ├── validation/               # Form and data validation
 │   └── expense-form.ts    
 ├── eslint.config.ts         # ESLint configuration
