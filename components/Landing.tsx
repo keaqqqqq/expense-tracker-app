@@ -28,22 +28,22 @@ const ExpenseLanding = () => {
 
   const features = [
     {
-      icon: <Receipt className="w-6 h-6" />,
+      icon: <Receipt className="w-8 h-8" />,
       title: "Smart Bill Splitting",
       description: "Automatically split expenses equally or customize amounts for each person in your group."
     },
     {
-      icon: <Bell className="w-6 h-6" />,
+      icon: <Bell className="w-8 h-8" />,
       title: "Real-time Notifications",
       description: "Get instant updates when someone adds an expense or settles a payment."
     },
     {
-      icon: <Users className="w-6 h-6" />,
+      icon: <Users className="w-8 h-8" />,
       title: "Group Management",
       description: "Create multiple groups for different occasions - roommates, trips, events, and more."
     },
     {
-      icon: <CreditCard className="w-6 h-6" />,
+      icon: <CreditCard className="w-8 h-8" />,
       title: "Easy Settlements",
       description: "Simplify debt resolution with clear settlement suggestions and payment tracking."
     }
@@ -123,7 +123,7 @@ const ExpenseLanding = () => {
                 </h1>
                 
                 <p className="text-base sm:text-lg text-gray-600 leading-relaxed">
-                  Split bills with friends, get real-time notifications, and manage your finances on the go with our Progressive Web App. Stay on top of your expenses and never miss a payment!
+                  Say goodbye to awkward money conversations and complex spreadsheets. Our smart platform transforms group expenses into a seamless social experience, making financial harmony the new normal in your relationships.
                 </p>
               </div>
 
@@ -176,8 +176,11 @@ const ExpenseLanding = () => {
           </div>
         </div>
       </main>
-      <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+
+ <div className="py-24 bg-white/30 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-6 sm:px-10">
+          <div className="text-center mb-20">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-6">
               <span className="bg-gradient-to-r from-[#4F46E5] to-[#6366F1] text-transparent bg-clip-text">
                 Powerful Features
               </span>
@@ -188,24 +191,32 @@ const ExpenseLanding = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
             {features.map((feature, index) => (
               <div 
                 key={index}
-                className="bg-white/50 backdrop-blur-sm rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow"
+                className="group flex flex-col items-center text-center"
               >
-                <div className="bg-[#4F46E5]/10 w-12 h-12 rounded-lg flex items-center justify-center mb-4 text-[#4F46E5]">
+                <div className="bg-gradient-to-br from-[#4F46E5] to-[#6366F1] w-16 h-16 rounded-2xl flex items-center justify-center mb-6 text-white shadow-lg shadow-indigo-500/20 transform transition-transform duration-300 group-hover:scale-110">
                   {feature.icon}
                 </div>
-                <h3 className="text-xl font-semibold mb-3 text-gray-900">
+                <h3 className="text-xl font-semibold mb-4 text-gray-900">
                   {feature.title}
                 </h3>
-                <p className="text-gray-600">
+                <p className="text-gray-600 leading-relaxed max-w-sm">
                   {feature.description}
                 </p>
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Decorative elements */}
+        <div className="mt-20 flex justify-center">
+          <div className="h-1 w-20 bg-gradient-to-r from-[#4F46E5] to-[#6366F1] rounded-full opacity-50" />
+        </div>
+      </div>
+
     </div>
   );
 };

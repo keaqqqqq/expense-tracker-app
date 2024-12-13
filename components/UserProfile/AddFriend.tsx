@@ -39,7 +39,7 @@ const AddFriend: React.FC = () => {
             
             setShowToast(true); 
             setTimeout(() => {
-                router.push('/');
+                router.push('/home');
             }, 2000); 
         } catch (error) {
             console.error("Error saving member list:", error);
@@ -76,7 +76,7 @@ const AddFriend: React.FC = () => {
                 <Button 
                     clickHandler={() => setFriendEmails([''])} 
                     variant='cancel'
-                    redirectPath='/'
+                    redirectPath='/home'
                 >
                     Skip           
                 </Button>

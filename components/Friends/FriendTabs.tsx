@@ -20,18 +20,18 @@ const FriendTabs = ({
   youOweCount = 0
 }: FriendTabsProps) => {
   return (
-    <div className="w-full flex flex-col items-center mt-6">
+    <div className="w-full flex flex-col items-center mt-4">
       <Tabs defaultValue="all" className="w-full max-w-12xl">
-        <div className="flex justify-center mb-6">
-          <TabsList className="grid w-full max-w-[600px] grid-cols-3 gap-1 sm:gap-2 p-1 sm:p-2 bg-zinc-100 dark:bg-zinc-800 rounded-xl h-15">
+        <div className="flex justify-center mb-4">
+          <TabsList className="grid w-full max-w-[500px] grid-cols-3 gap-1 p-1 bg-zinc-100/80 dark:bg-zinc-800/80 rounded-lg h-10">
             <TabsTrigger 
               value="all" 
-              className="data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 rounded-lg transition-all duration-200 px-2 sm:px-4 py-2"
+              className="data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 data-[state=active]:shadow-sm rounded-md transition-all duration-200 px-3 py-1.5 h-8"
             >
-              <span className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+              <span className="flex items-center gap-1.5 text-sm font-medium">
                 All
                 {allCount > 0 && (
-                  <span className="text-xs sm:text-xs bg-zinc-200 dark:bg-zinc-600 px-1 sm:px-2 py-0 sm:py-1 rounded-full min-w-[1.25rem] sm:min-w-[1.5rem] text-center">
+                  <span className="text-xs bg-zinc-200/80 dark:bg-zinc-600/80 px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
                     {allCount}
                   </span>
                 )}
@@ -39,12 +39,12 @@ const FriendTabs = ({
             </TabsTrigger>
             <TabsTrigger 
               value="owes-you" 
-              className="data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 rounded-lg transition-all duration-200 px-2 sm:px-4 py-2"
+              className="data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 data-[state=active]:shadow-sm rounded-md transition-all duration-200 px-3 py-1.5 h-8"
             >
-              <span className="flex flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-                <span className="whitespace-nowrap text-center">Owes you</span>
+              <span className="flex items-center gap-1.5 text-sm font-medium">
+                <span className="whitespace-nowrap">Owes you</span>
                 {owesYouCount > 0 && (
-                  <span className="text-xs sm:text-xs bg-zinc-200 dark:bg-zinc-600 px-1.5 sm:px-2 py-0 sm:py-1 rounded-full min-w-[1.25rem] sm:min-w-[1.5rem] text-center">
+                  <span className="text-xs bg-zinc-200/80 dark:bg-zinc-600/80 px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
                     {owesYouCount}
                   </span>
                 )}
@@ -52,12 +52,12 @@ const FriendTabs = ({
             </TabsTrigger>
             <TabsTrigger 
               value="you-owe" 
-              className="data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 rounded-lg transition-all duration-200 px-2 sm:px-4 py-2"
+              className="data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 data-[state=active]:shadow-sm rounded-md transition-all duration-200 px-3 py-1.5 h-8"
             >
-              <span className="flex flex-row items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-                <span className="whitespace-nowrap text-center">You owe</span>
+              <span className="flex items-center gap-1.5 text-sm font-medium">
+                <span className="whitespace-nowrap">You owe</span>
                 {youOweCount > 0 && (
-                  <span className="text-xs sm:text-xs bg-zinc-200 dark:bg-zinc-600 px-1.5 sm:px-2 py-0 sm:py-1 rounded-full min-w-[1.25rem] sm:min-w-[1.5rem] text-center">
+                  <span className="text-xs bg-zinc-200/80 dark:bg-zinc-600/80 px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
                     {youOweCount}
                   </span>
                 )}
@@ -66,16 +66,16 @@ const FriendTabs = ({
           </TabsList>
         </div>
 
-        <div className="border rounded-lg bg-zinc-50/50 dark:bg-zinc-900/50 p-4">
-          <TabsContent value="all" className="mt-0">
+        <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-900 shadow-sm">
+          <TabsContent value="all" className="m-0 p-4">
             {allContent}
           </TabsContent>
 
-          <TabsContent value="owes-you" className="mt-0">
+          <TabsContent value="owes-you" className="m-0 p-4">
             {owesYouContent}
           </TabsContent>
 
-          <TabsContent value="you-owe" className="mt-0">
+          <TabsContent value="you-owe" className="m-0 p-4">
             {youOweContent}
           </TabsContent>
         </div>
