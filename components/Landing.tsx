@@ -50,8 +50,8 @@ const ExpenseLanding = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F8F7FF] to-[#F0EFFF] flex flex-col">
-      <nav className="w-full px-6 sm:px-10 py-6">
+<div className="min-h-screen bg-gradient-to-br from-[#F8F7FF] to-[#F0EFFF] flex flex-col overflow-x-hidden">
+  <nav className="w-full px-6 sm:px-10 py-6">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-[#4F46E5] rounded-lg flex items-center justify-center relative overflow-hidden">
@@ -97,83 +97,79 @@ const ExpenseLanding = () => {
 
       <main className="flex-grow flex px-6 sm:px-10 py-8 sm:py-12">
         <div className="max-w-7xl w-full mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-            {/* Left Column - Text Content */}
-            <div className="relative flex flex-col justify-between h-auto lg:h-[420px] order-2 lg:order-1">
-              <div>
-                <div className="absolute -top-6 -left-6 w-20 h-20 bg-blue-500 opacity-5 rounded-full blur-xl" />
-                <div className="absolute -bottom-6 -right-6 w-20 h-20 bg-purple-500 opacity-5 rounded-full blur-xl" />
-                
-                <h1 className="text-4xl sm:text-5xl font-bold mb-5 [line-height:1.3] sm:[line-height:1.3]">
-                  <div>
-                    Effortless Expense{' '}
-                    <span className="bg-gradient-to-r from-[#4F46E5] to-[#6366F1] text-transparent bg-clip-text">
-                      Tracking with{' '}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] text-transparent bg-clip-text">
-                      Friends
-                    </span>
-                    {' '}and{' '}
-                    <span className="bg-gradient-to-r from-[#8B5CF6] to-[#9333EA] text-transparent bg-clip-text">
-                      Groups
-                    </span>
-                  </div>
-                </h1>
-                
-                <p className="text-base sm:text-lg text-gray-600 leading-relaxed">
-                  Say goodbye to awkward money conversations and complex spreadsheets. Our smart platform transforms group expenses into a seamless social experience, making financial harmony the new normal in your relationships.
-                </p>
-              </div>
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-center">
+   {/* Left Column - Text Content */}
+<div className="relative flex flex-col justify-between h-auto lg:h-[420px] order-2 lg:order-1 lg:col-span-2 lg:ml-10">
+  <div>
+    <div className="absolute -top-6 -left-6 w-20 h-20 bg-blue-500 opacity-5 rounded-full blur-xl" />
+    <div className="absolute -bottom-6 -right-6 w-20 h-20 bg-purple-500 opacity-5 rounded-full blur-xl" />
+    
+    <h1 className="text-4xl sm:text-5xl font-bold mb-5 [line-height:1.3] sm:[line-height:1.3]">
+  <div>
+    Effortless Expense
+  </div>
+  <div>
+    <span className="bg-gradient-to-r from-[#4F46E5] to-[#6366F1] text-transparent bg-clip-text">
+      Tracking with
+    </span>
+  </div>
+  <div>
+    <span className="bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] text-transparent bg-clip-text">
+      Friends{' '}
+    </span>
+    and{' '}
+    <span className="bg-gradient-to-r from-[#8B5CF6] to-[#9333EA] text-transparent bg-clip-text">
+      Groups
+    </span>
+  </div>
+</h1>
+    
+    <p className="text-base sm:text-lg text-gray-600 leading-relaxed">
+      Say goodbye to awkward money conversations and complex spreadsheets. Our smart platform transforms group expenses into a seamless social experience, making financial harmony the new normal in your relationships.
+    </p>
+  </div>
 
-              <div className="flex flex-col sm:flex-row gap-4 mt-6 sm:mt-4">
-                <button 
-                  className="group px-6 py-3 bg-[#4F46E5] text-white rounded-lg text-base sm:text-lg font-medium relative overflow-hidden hover:shadow-xl transition-shadow w-full sm:w-auto"
-                  onMouseEnter={() => setIsHovered(true)}
-                  onMouseLeave={() => setIsHovered(false)}
-                >
-                  <span className="relative z-10">Start Tracking Now</span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#4F46E5] to-[#6366F1] opacity-0 group-hover:opacity-100 transition-opacity" />
-                  {isHovered && (
-                    <div className="absolute inset-0 bg-[url('/api/placeholder/10/10')] opacity-5" />
-                  )}
-                </button>
-                <button className="px-6 py-3 text-[#4F46E5] rounded-lg text-base sm:text-lg font-medium hover:bg-white/50 transition-colors w-full sm:w-auto">
-                  Watch Demo
-                </button>
-              </div>
-            </div>
+  <div className="flex flex-col sm:flex-row gap-4 mt-6 sm:mt-4">
+    <button 
+      className="group px-6 py-3 bg-[#4F46E5] text-white rounded-lg text-base sm:text-lg font-medium relative overflow-hidden hover:shadow-xl transition-shadow w-full sm:w-auto"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <span className="relative z-10">Start Tracking Now</span>
+      <div className="absolute inset-0 bg-gradient-to-r from-[#4F46E5] to-[#6366F1] opacity-0 group-hover:opacity-100 transition-opacity" />
+      {isHovered && (
+        <div className="absolute inset-0 bg-[url('/api/placeholder/10/10')] opacity-5" />
+      )}
+    </button>
+    <button className="px-6 py-3 text-[#4F46E5] rounded-lg text-base sm:text-lg font-medium hover:bg-white/50 transition-colors w-full sm:w-auto">
+      Watch Demo
+    </button>
+  </div>
+</div>
 
-            {/* Right Column - Video */}
-            <div className="relative flex items-center h-[300px] sm:h-[360px] lg:h-[420px] order-1 lg:order-2">
-              <div 
-                className="w-full h-full rounded-xl relative overflow-hidden bg-white shadow-2xl"
-                style={{
-                  border: `4px solid rgba(${borderColor.r}, ${borderColor.g}, ${borderColor.b}, 0.5)`,
-                  transition: 'border-color 0.3s ease'
-                }}
-              >
-                <div className="absolute inset-0">
-                  <div className="absolute top-0 left-0 right-0 h-8 sm:h-10 bg-gray-50 border-b border-gray-100 flex items-center px-4">
-                    <div className="flex gap-2">
-                      <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-red-400" />
-                      <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-yellow-400" />
-                      <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-green-400" />
-                    </div>
-                  </div>
-                  
-                  <div className="absolute top-10 sm:top-12 inset-x-4 bottom-4 bg-gray-50 rounded-lg">
-                    <div className="absolute top-4 left-4 right-4 h-24 sm:h-32 bg-gray-100 rounded-lg" />
-                    <div className="absolute bottom-4 left-4 right-4 h-16 sm:h-24 bg-gray-100 rounded-lg" />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="absolute -bottom-6 -right-6 w-24 sm:w-32 h-24 sm:h-32 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-2xl" />
-              <div className="absolute -top-6 -left-6 w-24 sm:w-32 h-24 sm:h-32 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full blur-2xl" />
-            </div>
-          </div>
+{/* Right Column - Video */}
+<div className="relative flex items-center justify-center order-1 lg:order-2 w-full lg:mx-8 lg:col-span-2">
+  <div 
+    className="rounded-xl overflow-hidden border-4 border-black"
+  >
+    <video 
+      className="w-[250px]"
+      autoPlay 
+      loop 
+      muted
+      playsInline
+      controls
+    >
+      <source src="/gif.webm" type="video/webm" />
+      Your browser does not support the video tag.
+    </video>
+  </div>
+  
+  {/* Keeping the gradient effects */}
+  <div className="absolute -bottom-6 -right-6 w-24 sm:w-32 h-24 sm:h-32 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-2xl" />
+  <div className="absolute -top-6 -left-6 w-24 sm:w-32 h-24 sm:h-32 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full blur-2xl" />
+</div>
+</div>
         </div>
       </main>
 
