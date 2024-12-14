@@ -9,49 +9,72 @@ const StatsPage = async () => {
     const uid = cookiesStore.get('currentUserUid')?.value;
     if (!uid) {
         redirect('/auth');
-      }
+    }
     const allData = await getTotalPaid(uid);
-    // let totalPaid = 0;
-    // transactionN.forEach(t=>totalPaid=totalPaid+t.amount);
+
     return (
-        <div className="space-y-4">
-            <div className="flex flex-row gap-4">
-                <div className="p-3 border rounded w-full">
-                    <div>Total Paid</div>
+        <div className="space-y-6 p-4">
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Total Paid */}
+                <div className="p-4 border rounded bg-white">
+                    <div className="font-medium">Total Paid</div>
                     <span className="text-gray-500 text-xs">Expense</span>
-                    <div className="text-xl text-green-500">RM {allData.totalPaid.toFixed(2)}</div>
+                    <div className="text-lg sm:text-xl text-green-500">
+                        RM {allData.totalPaid.toFixed(2)}
+                    </div>
                 </div>
-                <div className="p-3 border rounded w-full">
-                    <div>Total Split</div>
+
+                {/* Total Split */}
+                <div className="p-4 border rounded bg-white">
+                    <div className="font-medium">Total Split</div>
                     <span className="text-gray-500 text-xs">Expense</span>
-                    <div className="text-xl text-red-500">RM {allData.totalSplit.toFixed(2)}</div>
+                    <div className="text-lg sm:text-xl text-blue-500">
+                        RM {allData.totalSplit.toFixed(2)}
+                    </div>
                 </div>
-                <div className="p-3 border rounded w-full">
-                    <div>Total Transfer</div>
+
+                {/* Total Transfer */}
+                <div className="p-4 border rounded bg-white">
+                    <div className="font-medium">Total Transfer</div>
                     <span className="text-gray-500 text-xs">Transfer</span>
-                    <div className="text-xl text-green-500">RM {allData.totalTransfer.toFixed(2)}</div>
+                    <div className="text-lg sm:text-xl text-yellow-500">
+                        RM {allData.totalTransfer.toFixed(2)}
+                    </div>
                 </div>
-                <div className="p-3 border rounded w-full">
-                    <div>Total Received</div>
+
+                {/* Total Received */}
+                <div className="p-4 border rounded bg-white">
+                    <div className="font-medium">Total Received</div>
                     <span className="text-gray-500 text-xs">Transfer</span>
-                    <div className="text-xl text-red-500">RM {allData.totalTransfer.toFixed(2)}</div>
+                    <div className="text-lg sm:text-xl text-purple-500">
+                        RM {allData.totalTransfer.toFixed(2)}
+                    </div>
                 </div>
             </div>
-            
-            <div className="border w-full p-3 rounded h-[500px]">
-               <AreaChart chartData ={allData.chartData}/>
-            </div>
-            
-               {allData.categoryDonut.chartSeries.length>0 && 
-            <div className="grid grid-cols-2 gap-4">
-               <div className="border rounded p-3 h-[400px]">
-                    <DonutChart donutData={allData.categoryDonut}/>
-                </div>
-                <div className="border rounded p-3 h-[400px]">
-                    <DonutChart donutData={allData.groupDonut}/>
+
+            {/* Area Chart */}
+            <div className="w-full p-4 rounded bg-white">
+                <div className="h-[300px] sm:h-[400px] lg:h-[500px]">
+                    <AreaChart chartData={allData.chartData} />
                 </div>
             </div>
-                }
+
+            {/* Donut Charts */}
+            {allData.categoryDonut.chartSeries.length > 0 && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="bg-white rounded p-4">
+                        <div className="h-[300px] sm:h-[350px]">
+                            <DonutChart donutData={allData.categoryDonut} />
+                        </div>
+                    </div>
+                    <div className="bg-white rounded p-4">
+                        <div className="h-[300px] sm:h-[350px]">
+                            <DonutChart donutData={allData.groupDonut} />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

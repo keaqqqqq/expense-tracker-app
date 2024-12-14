@@ -29,7 +29,7 @@ const ManageExpense: React.FC<ManageExpenseProps> = ({
 
     const buttons: ManageButton[] = [
         {
-            label: 'Add expense',
+            label: 'New expense',
             onClick: () => setExpIsOpen(true),
             primary: true
         },
@@ -42,7 +42,7 @@ const ManageExpense: React.FC<ManageExpenseProps> = ({
 
     return (
         <div>
-            <div className={`${homeType ? '' : 'border rounded'} w-full`}>
+            <div className={`${homeType ? '' : 'border rounded'} w-full bg-white`}>
                 <div className="flex flex-row justify-between items-center font-semibold sm:p-2">
                     <h2 className="text-sm sm:text-base ml-1">Expenses</h2>
                     <div className="flex flex-row items-center">

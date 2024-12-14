@@ -23,7 +23,7 @@ const FriendTabs = ({
     <div className="w-full flex flex-col items-center mt-4">
       <Tabs defaultValue="all" className="w-full max-w-12xl">
         <div className="flex justify-center mb-4">
-          <TabsList className="grid w-full max-w-[500px] grid-cols-3 gap-1 p-1 bg-zinc-100/80 dark:bg-zinc-800/80 rounded-lg h-10">
+          <TabsList className="grid w-full max-w-[500px] grid-cols-3 gap-1 p-1 bg-zinc-200 dark:bg-zinc-800/80 rounded-lg h-10">
             <TabsTrigger 
               value="all" 
               className="data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700 data-[state=active]:shadow-sm rounded-md transition-all duration-200 px-3 py-1.5 h-8"
@@ -66,7 +66,7 @@ const FriendTabs = ({
           </TabsList>
         </div>
 
-        <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg bg-white dark:bg-zinc-900 shadow-sm">
+        <div className="">
           <TabsContent value="all" className="m-0 p-4">
             {allContent}
           </TabsContent>

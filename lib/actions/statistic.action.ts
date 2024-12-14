@@ -4,7 +4,7 @@ import { db } from "@/firebase/config";
 import { Expense } from "@/types/Expense";
 import { ChartDataCollection, DonutData } from "@/types/ChartData";
 import { Group } from "@/types/Group";
-
+import ExpenseCategories from "@/types/ExpenseCategories";
 export const fetchTransactionsByExpenseId = async (payer_id: string): Promise<Transaction[]> => {
     try {
         // Create a query against the transactions collection
@@ -142,7 +142,7 @@ const getMonthlyExpense = (expenses: Expense[], id: string) => {
                 data,
             },
         ],
-        color: '#FF4560',
+        color: '#10B981',
     };
 };
 
@@ -175,7 +175,7 @@ const getMonthlyTransfer = (transactions: Transaction[], id: string) => {
                 data,
             },
         ],
-        color: '#00E396',
+        color: '#F59E0B',
     };
 };
 
@@ -202,7 +202,7 @@ const getMonthlySplit = (expenses: Expense[], id: string) => {
                 data,
             },
         ],
-        color: '#008FFB',
+        color: '#3B82F6',
     };
 };
 
@@ -242,7 +242,13 @@ const getExpenseByCategory = (expenses: Expense[], id: string) => {
     const chartSeries = Object.values(categoryTotals).map(amount => Number(amount.toFixed(2)));
   
     // Prepare the chart labels (e.g., ["Food", "Transport", "Entertainment", "Bills", "Others"])
-    const chartLabels = Object.keys(categoryTotals);
+    const chartLabels = Object.keys(categoryTotals).map(category => {
+        // Find the matching category in ExpenseCategories
+        const matchedCategory = ExpenseCategories.find(cat => cat.value === category);
+        
+        // Return the label if found, otherwise return the original category
+        return matchedCategory ? matchedCategory.label : category;
+      });
   
     // Return the chart data
     return {

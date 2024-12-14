@@ -135,7 +135,7 @@ export default function ClientWrapper({
     };
 
     return (
-        <main className="flex h-screen w-full font-inter overflow-hidden">
+        <main className="flex h-screen w-full font-inter overflow-hidden bg-zinc-100">
             <Sidebar
                 currentUser={{
                     uid: userData?.uid || '',

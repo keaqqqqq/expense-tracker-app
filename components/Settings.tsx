@@ -23,9 +23,7 @@ interface UserData {
 }
 
 const ProfileSettings = ({ userData }: ProfileSettingsProps) => {
-  const { currentUser, setUserDataObj, updateUserProfile } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const [showEmailUpdate, setShowEmailUpdate] = useState(false);
+  const { currentUser, setUserDataObj, updateUserProfile } = useAuth();  const [showEmailUpdate, setShowEmailUpdate] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [emailUpdateError, setEmailUpdateError] = useState('');
   const [toast, setToast] = useState<ToastState>({
@@ -48,7 +46,6 @@ const ProfileSettings = ({ userData }: ProfileSettingsProps) => {
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files[0] || !currentUser) return;
-    setIsLoading(true);
 
     try {
       const file = e.target.files[0];
@@ -79,14 +76,11 @@ const ProfileSettings = ({ userData }: ProfileSettingsProps) => {
       }
       setToast({ show: true, message: errorMessage, type: 'error' });
       console.error('Error uploading photo:', error);
-    }finally{
-      setIsLoading(false);
     }
   };
 
   const handleRemovePhoto = async () => {
     if (!currentUser || !profile.image) return;
-    setIsLoading(true);
 
     try {
       try {
@@ -115,8 +109,6 @@ const ProfileSettings = ({ userData }: ProfileSettingsProps) => {
     } catch (error) {
       console.error('Error removing photo:', error);
       setToast({ show: true, message: 'Error removing photo', type: 'error' });
-    }finally{
-      setIsLoading(false);
     }
   };
 
@@ -141,9 +133,7 @@ const ProfileSettings = ({ userData }: ProfileSettingsProps) => {
         return;
       }
     }
-  
-    setIsLoading(true);
-    
+      
     try {
       await updateUserProfile({
         currentUser,
@@ -183,8 +173,6 @@ const ProfileSettings = ({ userData }: ProfileSettingsProps) => {
           message: errorMessage,
           type: 'error' 
         });
-      } finally {
-        setIsLoading(false);
       }
     };
   
@@ -207,7 +195,7 @@ const ProfileSettings = ({ userData }: ProfileSettingsProps) => {
           </div>
           <div className="w-full lg:w-2/3">
             <Card>
-              <CardContent className="p-4 lg:p-6">
+              <CardContent className="p-4 lg:p-6 bg-white border rounded">
                 {/* Photo section */}
                 <div className="mb-6">
                   <label className="block mb-2">Photo</label>
@@ -290,9 +278,9 @@ const ProfileSettings = ({ userData }: ProfileSettingsProps) => {
                   <button
                     className="w-full sm:w-auto px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
                     onClick={handleSave}
-                    disabled={isLoading || (showEmailUpdate && !currentPassword)}
+                    disabled={showEmailUpdate && !currentPassword}
                   >
-                    {isLoading ? 'Saving...' : 'Save'}
+                    Save
                   </button>
                 </div>
               </CardContent>
@@ -305,7 +293,6 @@ const ProfileSettings = ({ userData }: ProfileSettingsProps) => {
 
 const PasswordSettings = () => {
   const { currentUser, updateUserPassword } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
   const [passwords, setPasswords] = useState({
     current: '',
     new: '',
@@ -329,8 +316,6 @@ const PasswordSettings = () => {
       return;
     }
 
-    setIsLoading(true);
-
         try {
       await updateUserPassword(passwords.current, passwords.new);
       setToast({ show: true, message: 'Password updated successfully', type: 'success' });
@@ -340,8 +325,6 @@ const PasswordSettings = () => {
       console.error(error);
       setError('Failed to update password. Please check your current password.');
       setToast({ show: true, message: 'Error message', type: 'error' });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -363,7 +346,7 @@ const PasswordSettings = () => {
         </div>
         <div className="w-full lg:w-2/3">
           <Card>
-            <CardContent className="p-4 lg:p-6">
+            <CardContent className="bg-white border rounded p-4 lg:p-6">
               {error && (
                 <div className="mb-4 p-2 bg-red-100 text-red-600 rounded">
                   {error}
@@ -378,7 +361,6 @@ const PasswordSettings = () => {
                     className="w-full p-2 border rounded-md"
                     value={passwords.current}
                     onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
-                    disabled={isLoading}
                   />
                 </div>
 
@@ -389,7 +371,6 @@ const PasswordSettings = () => {
                     className="w-full p-2 border rounded-md"
                     value={passwords.new}
                     onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
-                    disabled={isLoading}
                   />
                 </div>
 
@@ -400,16 +381,14 @@ const PasswordSettings = () => {
                     className="w-full p-2 border rounded-md"
                     value={passwords.confirm}
                     onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
-                    disabled={isLoading}
                   />
                 </div>
 
                 <button
                   onClick={handlePasswordChange}
                   className="w-full sm:w-auto px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
-                  disabled={isLoading}
                 >
-                  {isLoading ? 'Saving...' : 'Save'}
+                  Save
                 </button>
               </div>
             </CardContent>
@@ -424,7 +403,6 @@ const PasswordSettings = () => {
 const DeleteAccount = () => {
   const { currentUser, logout } = useAuth();
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<ToastState>({
     show: false,
     message: '',
@@ -434,7 +412,6 @@ const DeleteAccount = () => {
     if (!currentUser) return;
     
     if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      setIsLoading(true);
       try {
         // Delete user data from Firestore
         await deleteDoc(doc(db, 'Users', currentUser.uid));
@@ -455,8 +432,6 @@ const DeleteAccount = () => {
       } catch (error) {
         console.error(error);
         setToast({ show: true, message: 'Error message', type: 'error' });
-      } finally {
-        setIsLoading(false);
       }
     }
   };
@@ -479,7 +454,7 @@ const DeleteAccount = () => {
         </div>
         <div className="w-full lg:w-2/3">
           <Card>
-            <CardContent className="p-4 lg:p-6">
+            <CardContent className="bg-white border rounded p-4 lg:p-6">
               <p className="mb-6">
                 Once your account is deleted, all of its resources and data will be permanently deleted. 
                 Before deleting your account, please download any data or information that you wish to retain.
@@ -487,9 +462,8 @@ const DeleteAccount = () => {
               <button
                 onClick={handleDelete}
                 className="w-full sm:w-auto px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
-                disabled={isLoading}
               >
-                {isLoading ? 'Deleting...' : 'Delete Account'}
+                Delete account
               </button>
             </CardContent>
           </Card>
@@ -499,8 +473,12 @@ const DeleteAccount = () => {
   );
 };
 
-const Settings = () => {
-  const { currentUser, loading: authLoading, userDataObj } = useAuth();
+interface SettingsProps {
+  initialUserData: UserData;
+}
+
+const Settings = ({ initialUserData }: SettingsProps) => {
+  const { currentUser } = useAuth();
   const router = useRouter();
   const [toast, setToast] = useState<ToastState>({
     show: false,
@@ -508,30 +486,6 @@ const Settings = () => {
     type: 'success'
   });
 
-  const typedUserData: UserData | null = userDataObj ? {
-    id: currentUser?.uid,
-    name: userDataObj.name || '',
-    email: userDataObj.email || '',
-    image: userDataObj.image || null
-  } : null;
-
-  useEffect(() => {
-    if (authLoading) return;
-
-    if (!currentUser) {
-      router.push('/auth');
-      return;
-    }
-  }, [currentUser, router, authLoading, userDataObj]);
-
-  // Show loading state while auth state is being determined
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-600">Loading...</div>
-      </div>
-    );
-  }
 
   if (!currentUser) {
     return null;
@@ -548,12 +502,12 @@ const Settings = () => {
         />
       )}
       <div className="max-w-6xl mx-auto">
-        <div className="bg-white-50 px-8 py-2 border-solid border-gray-200 border-2 rounded-md">
+        <div className="bg-white px-8 py-2 border rounded">
           <h1 className="text-xl font-semibold">Settings</h1>
         </div>
         
         <div className="p-8">
-        <ProfileSettings userData={typedUserData} />
+        <ProfileSettings userData={initialUserData} />
         <PasswordSettings />
           <DeleteAccount />
         </div>

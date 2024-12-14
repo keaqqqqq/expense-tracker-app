@@ -22,19 +22,29 @@ const DonutChart: React.FC<DonutChartProp> = ({donutData}) => {
     title: {
       text: title,
       align: "center",
+      margin: 20, 
       style: {
-        fontSize: "20px",
+        fontSize: "18px",
         fontWeight: "bold",
         color: "#263238",
       },
+      
     },
     legend: {
       position: "bottom",
       horizontalAlign: "center",
+      markers: {
+        size: 8, 
+        strokeWidth: 0,
+      },
+      itemMargin: {
+        vertical: 10, 
+        horizontal: 10, 
+      },
     },
     tooltip: {
       y: {
-        formatter: (val: number) => `$${val}`,
+        formatter: (val: number) => `RM${val}`,
       },
     },
     plotOptions: {
@@ -63,7 +73,7 @@ const DonutChart: React.FC<DonutChartProp> = ({donutData}) => {
   // const chartSeries = [40, 20, 15, 10, 15]; // Percentage data for each category
 
   return (
-    <div className="w-full h-full flex items-center justify-center">
+    <div className="w-full h-full flex items-center justify-center bg-white">
       <ReactApexChart
         options={chartOptions}
         series={chartSeries}

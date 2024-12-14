@@ -37,24 +37,27 @@ const AreaChart: React.FC<{chartData:ChartDataCollection}> = ({chartData}) => {
         stops: [0, 100]
       }
     },
-    title: {
-      text: `${dataType.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())} Chart`,
-      align: 'center',
-      style: {
-        fontSize: '20px',
-        fontWeight: 'bold',
-        color: '#263238',
-      },
-    },
     xaxis: {
       categories: chartData[dataType].categories,
       title: {
         text: 'Months',
+        style: {
+          fontSize: '10px',
+          fontWeight: 600,
+        },
+        offsetX: 0,  
+        offsetY: -5   
       },
     },
     yaxis: {
       title: {
         text: dataType.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+        style: {
+          fontSize: '10px',
+          fontWeight: 600,
+        },
+        offsetX: 5,  
+        offsetY: 0   
       },
     },
     tooltip: {
@@ -67,19 +70,20 @@ const AreaChart: React.FC<{chartData:ChartDataCollection}> = ({chartData}) => {
   }), [dataType]);
 
   return (
-    <div className="w-full h-full flex flex-col">
+    <div className="w-full h-full flex flex-col bg-white">
       <div className="flex justify-between items-center p-4">
-        <h2 className="text-xl font-semibold text-gray-700">
+        <h2 className="text-lg font-semibold text-black">
           {dataType.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
         </h2>
         <select 
           value={dataType} 
           onChange={(e) => setDataType(e.target.value as keyof typeof chartData)}
-          className="border rounded p-2"
+          className="border rounded p-2 text-xs"
         >
           <option value="monthlyExpense">Monthly Expense</option>
-          <option value="monthlyTransfer">Monthly Transfer</option>
           <option value="monthlySplit">Monthly Split</option>
+          <option value="monthlyTransfer">Monthly Transfer</option>
+          
         </select>
       </div>
       <div className="flex-grow">

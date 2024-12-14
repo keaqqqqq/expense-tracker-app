@@ -146,7 +146,7 @@ const FriendList = ({ relationships, onAcceptRequest, balances }: FriendListProp
           return (
             <Card 
               key={relationship.id} 
-              className={`w-full border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors duration-200 bg-white dark:bg-zinc-800/50 ${
+              className={`bg-white w-full border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors duration-200 bg-white dark:bg-zinc-800/50 ${
                 relationship.related_group_id ? 'ring-1 ring-primary/20' : ''} cursor-pointer
               }`}
               onClick={() => handleCardClick(relationship)}

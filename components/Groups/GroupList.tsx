@@ -49,7 +49,7 @@ const GroupList: React.FC<GroupListProps> = ({ groups, userEmail }) => {
         <Card 
           key={group.id}
           className={`transition-all duration-200 hover:shadow-md cursor-pointer 
-            active:scale-[0.99] hover:bg-gray-50`}
+            active:scale-[0.99] hover:bg-gray-50 bg-white`}
           onClick={() => handleGroupClick(group.id)}
         >
           <CardContent className="p-2">
