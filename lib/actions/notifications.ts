@@ -91,8 +91,8 @@ export async function getUserFCMToken(userId: string) {
 
 export async function sendNotification(userToken: string, type: NotificationType, data: NotificationData) {
     try {
-        const baseUrl = 'http://localhost:3000'
-        // const baseUrl = 'https://keaqqqqq.com';
+        // const baseUrl = 'http://localhost:3000'
+        const baseUrl = 'https://keaqqqqq.com';
 
                 const requestBody = {
                     token: userToken,
