@@ -48,7 +48,7 @@ const StatsPage = async () => {
                     <div className="font-medium">Total Received</div>
                     <span className="text-gray-500 text-xs">Transfer</span>
                     <div className="text-lg sm:text-xl text-purple-500">
-                        RM {allData.totalTransfer.toFixed(2)}
+                        RM {allData.totalReceived.toFixed(2)}
                     </div>
                 </div>
             </div>

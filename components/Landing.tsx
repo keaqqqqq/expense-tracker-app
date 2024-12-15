@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation'; 
 import { Sparkles, Menu, Receipt, Bell, Users, CreditCard } from 'lucide-react';
-
+import CreateExpenseForm from './ManageExpense/CreateExpensesForm';
 const ExpenseLanding = () => {
   const [borderColor, setBorderColor] = useState({ r: 100, g: 100, b: 255 });
   const [isHovered, setIsHovered] = useState(false);
@@ -98,36 +98,36 @@ const ExpenseLanding = () => {
       <main className="flex-grow flex px-6 sm:px-10 py-8 sm:py-12">
         <div className="max-w-7xl w-full mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-center">
-   {/* Left Column - Text Content */}
-<div className="relative flex flex-col justify-between h-auto lg:h-[420px] order-2 lg:order-1 lg:col-span-2 lg:ml-10">
-  <div>
-    <div className="absolute -top-6 -left-6 w-20 h-20 bg-blue-500 opacity-5 rounded-full blur-xl" />
-    <div className="absolute -bottom-6 -right-6 w-20 h-20 bg-purple-500 opacity-5 rounded-full blur-xl" />
-    
-    <h1 className="text-4xl sm:text-5xl font-bold mb-5 [line-height:1.3] sm:[line-height:1.3]">
-  <div>
-    Effortless Expense
-  </div>
-  <div>
-    <span className="bg-gradient-to-r from-[#4F46E5] to-[#6366F1] text-transparent bg-clip-text">
-      Tracking with
-    </span>
-  </div>
-  <div>
-    <span className="bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] text-transparent bg-clip-text">
-      Friends{' '}
-    </span>
-    and{' '}
-    <span className="bg-gradient-to-r from-[#8B5CF6] to-[#9333EA] text-transparent bg-clip-text">
-      Groups
-    </span>
-  </div>
-</h1>
-    
-    <p className="text-base sm:text-lg text-gray-600 leading-relaxed">
-      Say goodbye to awkward money conversations and complex spreadsheets. Our smart platform transforms group expenses into a seamless social experience, making financial harmony the new normal in your relationships.
-    </p>
-  </div>
+            {/* Left Column - Text Content */}
+          <div className="relative flex flex-col justify-between h-auto lg:h-[420px] order-2 lg:order-1 lg:col-span-2 lg:ml-10">
+            <div>
+              <div className="absolute -top-6 -left-6 w-20 h-20 bg-blue-500 opacity-5 rounded-full blur-xl" />
+              <div className="absolute -bottom-6 -right-6 w-20 h-20 bg-purple-500 opacity-5 rounded-full blur-xl" />
+              
+              <h1 className="text-4xl sm:text-5xl font-bold mb-5 [line-height:1.3] sm:[line-height:1.3]">
+            <div>
+              Effortless Expense
+            </div>
+            <div>
+              <span className="bg-gradient-to-r from-[#4F46E5] to-[#6366F1] text-transparent bg-clip-text">
+                Tracking with
+              </span>
+            </div>
+            <div>
+              <span className="bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] text-transparent bg-clip-text">
+                Friends{' '}
+              </span>
+              and{' '}
+              <span className="bg-gradient-to-r from-[#8B5CF6] to-[#9333EA] text-transparent bg-clip-text">
+                Groups
+              </span>
+            </div>
+          </h1>
+        
+        <p className="text-base sm:text-lg text-gray-600 leading-relaxed">
+          Say goodbye to awkward money conversations and complex spreadsheets. Our smart platform transforms group expenses into a seamless social experience, making financial harmony the new normal in your relationships.
+        </p>
+      </div>
 
   <div className="flex flex-col sm:flex-row gap-4 mt-6 sm:mt-4">
     <button 
@@ -172,6 +172,65 @@ const ExpenseLanding = () => {
 </div>
         </div>
       </main>
+
+      <section className="py-24 bg-white/50">
+        <div className="max-w-7xl mx-auto px-6 sm:px-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Left side - Video */}
+            <div className="relative flex justify-center lg:justify-start">
+              <div className="rounded-xl overflow-hidden border-4 border-black relative">
+                <video 
+                  className="w-full max-w-[400px]"
+                  autoPlay 
+                  loop 
+                  muted
+                  playsInline
+                  controls
+                >
+                  <source src="/gif.webm" type="video/webm" />
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+              {/* Decorative gradients */}
+              <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-2xl" />
+              <div className="absolute -top-6 -left-6 w-24 h-24 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full blur-2xl" />
+            </div>
+
+            {/* Right side - Text */}
+            <div className="flex flex-col space-y-6">
+              <h2 className="text-3xl sm:text-4xl font-bold">
+                <span className="bg-gradient-to-r from-[#4F46E5] to-[#6366F1] text-transparent bg-clip-text">
+                  Simplify Your
+                </span>{' '}
+                Group Expenses
+              </h2>
+              <p className="text-gray-600 text-lg leading-relaxed">
+                Watch how easily you can split bills, track expenses, and settle debts with your friends and groups. Our intuitive interface makes managing shared expenses a breeze, whether you're splitting rent with roommates or planning a group vacation.
+              </p>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-full bg-[#4F46E5]/10 flex items-center justify-center">
+                    <Receipt className="w-5 h-5 text-[#4F46E5]" />
+                  </div>
+                  <p className="text-gray-700">Quick expense entry with smart categorization</p>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-full bg-[#4F46E5]/10 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-[#4F46E5]" />
+                  </div>
+                  <p className="text-gray-700">Effortless group creation and management</p>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-full bg-[#4F46E5]/10 flex items-center justify-center">
+                    <CreditCard className="w-5 h-5 text-[#4F46E5]" />
+                  </div>
+                  <p className="text-gray-700">Instant settlement suggestions and tracking</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
  <div className="py-24 bg-white/30 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6 sm:px-10">
