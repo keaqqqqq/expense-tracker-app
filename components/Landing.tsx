@@ -205,7 +205,7 @@ const ExpenseLanding = () => {
                 Group Expenses
               </h2>
               <p className="text-gray-600 text-lg leading-relaxed">
-                Watch how easily you can split bills, track expenses, and settle debts with your friends and groups. Our intuitive interface makes managing shared expenses a breeze, whether you're splitting rent with roommates or planning a group vacation.
+                Watch how easily you can split bills, track expenses, and settle debts with your friends and groups. Our intuitive interface makes managing shared expenses a breeze, whether you&apos;re splitting rent with roommates or planning a group vacation.
               </p>
               <div className="space-y-4">
                 <div className="flex items-center space-x-3">
