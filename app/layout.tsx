@@ -6,7 +6,7 @@ import { TransactionProvider } from "@/context/TransactionContext";
 import { ClientProviders } from "./client-providers";
 
 export const metadata: Metadata = {
-  title: 'Expense Tracker',
+  title: 'ExpenseHive',
   description: 'Track and split expenses with friends',
   manifest: '/manifest.json',
   themeColor: '#000000',
@@ -57,7 +57,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <meta name='application-name' content='Expense Tracker' />
+        <meta name='application-name' content='ExpenseHive' />
         <meta name='format-detection' content='telephone=no' />
         <meta name='mobile-web-app-capable' content='yes' />
         <meta name='msapplication-TileColor' content='#000000' />
