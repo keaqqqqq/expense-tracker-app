@@ -4,10 +4,9 @@ import React, { useEffect, useState, useRef, RefObject } from 'react';
 import { useRouter } from 'next/navigation'; 
 import { Sparkles, Menu, Receipt, Bell, Users, BarChart, Monitor} from 'lucide-react';
 
-const fadeInUp = "opacity-0 translate-y-24 scale-95 transition-all duration-1000 ease-out"; // Increased movement, added scale
+const fadeInUp = "opacity-0 translate-y-24 scale-95 transition-all duration-1000 ease-out"; 
 const visible = "opacity-100 translate-y-0 scale-100";
 
-// Then update the useIntersectionObserver hook for better timing
 const useIntersectionObserver = (options = {}): [RefObject<HTMLDivElement>, boolean] => {
   const elementRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -15,12 +14,11 @@ const useIntersectionObserver = (options = {}): [RefObject<HTMLDivElement>, bool
   useEffect(() => {
     const observer = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) {
-        // Add a larger delay for more dramatic effect
         setTimeout(() => {
           setIsVisible(true);
-        }, 200); // Increased delay for more noticeable entrance
+        }, 200); 
       }
-    }, { threshold: 0.1, ...options }); // Lower threshold to trigger earlier
+    }, { threshold: 0.1, ...options }); 
 
     if (elementRef.current) {
       observer.observe(elementRef.current);
@@ -43,7 +41,6 @@ const ExpenseLanding = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
 
-  // Refs for different sections
   const [heroRef, heroVisible] = useIntersectionObserver({ threshold: 0.1 });
   const [demoRef, demoVisible] = useIntersectionObserver({ threshold: 0.1 });
   const [featuresRef, featuresVisible] = useIntersectionObserver({ threshold: 0.1 });
@@ -138,7 +135,7 @@ const ExpenseLanding = () => {
       {/* Hero Section */}
       <main 
         ref={heroRef} 
-        className={`flex-grow flex px-6 sm:px-10 py-8 sm:py-12 ${fadeInUp} ${heroVisible ? visible : ''}`}
+        className={`flex-grow flex px-6 sm:px-10 py-5 2xl:py-20  ${fadeInUp} ${heroVisible ? visible : ''}`}
       >
         <div className="max-w-7xl w-full mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-center">
