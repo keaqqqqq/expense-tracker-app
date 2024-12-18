@@ -135,7 +135,7 @@ const ExpenseLanding = () => {
       {/* Hero Section */}
       <main 
         ref={heroRef} 
-        className={`flex-grow flex px-6 sm:px-10 py-5 2xl:py-20  ${fadeInUp} ${heroVisible ? visible : ''}`}
+        className={`flex-grow flex px-6 sm:px-10 pb-8 2xl:py-20  ${fadeInUp} ${heroVisible ? visible : ''}`}
       >
         <div className="max-w-7xl w-full mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-center">

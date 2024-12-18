@@ -865,7 +865,7 @@ const ExpenseList: React.FC<{ currentUserId: string; showAll?: boolean; allExpen
           </div>
         </div>
         <div className="space-y-4">
-          <div className="bg-white rounded-lg shadow w-full max-w-7xl">
+          <div className="bg-white rounded-lg shadow w-full max-w-10xl">
             <div className="flex flex-col items-center justify-center p-8 text-center">
               <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mb-4">
                 <Receipt className="w-6 h-6 text-blue-500" />
