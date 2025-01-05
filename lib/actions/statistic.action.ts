@@ -11,7 +11,6 @@ export const fetchTransactionsByExpenseId = async (payer_id: string): Promise<Tr
         const q = query(
             collection(db, 'Transactions'),
             where('payer_id', '==', payer_id),
-            // where('type', '==', "direct-payment"),
         );
 
 
@@ -179,6 +178,39 @@ const getMonthlyTransfer = (transactions: Transaction[], id: string) => {
     };
 };
 
+const getMonthlyReceived = (transactions: Transaction[], id: string) => {
+    // Generate the categories for the last 7 months
+    const categories = generateMonthlyCategories(7);
+
+    // Initialize data array with zeros for the last 7 months
+    const data = new Array(7).fill(0);
+
+    // Process each transaction to calculate the monthly transfer
+    transactions.forEach((transaction) => {
+        const monthsAgo = calculateMonthsAgo(transaction.created_at);
+
+        if (
+            monthsAgo >= 0 &&
+            monthsAgo < 7 &&
+            transaction.receiver_id === id &&
+            transaction.expense_id === 'direct-payment'
+        ) {
+            data[6 - monthsAgo] += transaction.amount;
+        }
+    });
+
+    return {
+        categories,
+        series: [
+            {
+                name: 'Received',
+                data,
+            },
+        ],
+        color: '#A855F7',
+    };
+};
+
 const getMonthlySplit = (expenses: Expense[], id: string) => {
     const categories = generateMonthlyCategories(7);
     const data = new Array(7).fill(0);
@@ -208,7 +240,7 @@ const getMonthlySplit = (expenses: Expense[], id: string) => {
 
 const getChartData = (transaction: Transaction[], id: string, expenses: Expense[]) => {
     return {
-
+        monthlyReceived: getMonthlyReceived(transaction, id),
         monthlyExpense: getMonthlyExpense(expenses, id),
         monthlyTransfer: getMonthlyTransfer(transaction, id),
         monthlySplit: getMonthlySplit(expenses, id)

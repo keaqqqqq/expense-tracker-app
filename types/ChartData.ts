@@ -13,6 +13,7 @@ export interface ChartDataCollection {
     monthlyExpense: ChartData;
     monthlyTransfer: ChartData;
     monthlySplit: ChartData;
+    monthlyReceived: ChartData;
 }
 
 export interface DonutData {

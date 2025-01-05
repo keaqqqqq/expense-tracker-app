@@ -160,7 +160,7 @@ const WeightSplit: React.FC = () => {
             <div className="border bg-gray-100 rounded p-1 text-center">
                 <div>Specify how the expense should be split based on weights (e.g., time-based or family-size splitting).</div>
                 <div><b className="font-bold">Total weight:</b> {totalWeight}</div>
-                <div><b className="font-bold">Total expense:</b> {totalExpense} RM</div>
+                <div><b className="font-bold">Total expense:</b> RM {totalExpense}</div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 my-2">
                 {renderFriends}

@@ -83,6 +83,7 @@ const AreaChart: React.FC<{chartData:ChartDataCollection}> = ({chartData}) => {
           <option value="monthlyExpense">Monthly Expense</option>
           <option value="monthlySplit">Monthly Split</option>
           <option value="monthlyTransfer">Monthly Transfer</option>
+          <option value="monthlyReceived">Monthly Received</option>
           
         </select>
       </div>
