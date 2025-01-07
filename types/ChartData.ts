@@ -21,6 +21,4 @@ export interface DonutData {
     chartLabels: string[]; // Array of category labels
     title: string;
   }
-
-  
   
