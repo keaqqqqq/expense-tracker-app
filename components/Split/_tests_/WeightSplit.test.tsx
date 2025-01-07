@@ -59,7 +59,7 @@ describe('WeightSplit Component', () => {
     
     const summaryDiv = screen.getByText(/Specify how the expense should be split/).parentElement;
     expect(summaryDiv).toHaveTextContent('Total weight: 0');
-    expect(summaryDiv).toHaveTextContent('Total expense: 100 RM');
+    expect(summaryDiv).toHaveTextContent('Total expense: RM 100');
   });
 
   it('updates amounts when weights change', async () => {
