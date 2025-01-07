@@ -18,7 +18,7 @@ jobs:
       
       - name: Login to GitHub Container Registry
         run: |
-          echo "${{ secrets.PACKAGES_TOKEN }}" | podman login ghcr.io -u ${{ github.actor }} --password-stdin
+          echo "${{ secrets.PACKAGES_TOKEN_CHUA }}" | podman login ghcr.io -u ${{ github.actor }} --password-stdin
       
       - name: Build Podman image
         run: |
