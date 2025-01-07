@@ -518,7 +518,7 @@ const ExpenseItem: React.FC<ExpenseItemProps> = ({ groupedTransactions, onEdit, 
 
                                 <span className="text-xs text-gray-600">
                                   RM {isMultipleLent ?
-                                    samePayerTransactions.reduce((sum, t) => sum + t.amount, 0) :
+                                    samePayerTransactions.reduce((sum, t) => sum + t.amount, 0).toFixed(2) :
                                     transaction.amount.toFixed(2)}
                                 </span>
                               </div>
