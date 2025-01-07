@@ -193,7 +193,7 @@ const Sidebar: React.FC<SideBarProps> = ({
                                     <li>
                                         <Link
                                             href="/home"
-                                            className={`block py-2 px-4 font-semibold text-gray-800 text-sm sm:text-md mb-2 ${pathname === '/' ? 'bg-gray-100 text-indigo-600' : ''}`}
+                                            className={`block py-2 px-4 font-semibold text-gray-800 hover:bg-gray-100 text-sm sm:text-md mb-2 ${pathname === '/home' ? 'bg-gray-100 text-indigo-600' : ''}`}
                                             onClick={() => isMobile && onClose()}
                                         >
                                             🏠 Home
