@@ -175,8 +175,8 @@ const handleSettle = async (e: React.MouseEvent) => {
                   {directBalance !== 0 && (
                     <div className="flex justify-between">
                       <span>1:1 Balance</span>
-                      <span>RM {formattedDirectAmount}</span>
-                    </div>
+                      <span>RM {Math.abs(Number(formattedDirectAmount)).toFixed(2)}</span>
+                      </div>
                   )}
                   {groupBalances.map((group, index) => (
                     group.balance !== 0 && (

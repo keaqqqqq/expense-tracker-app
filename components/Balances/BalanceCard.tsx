@@ -104,7 +104,7 @@ export function BalanceCard({
                   )}
               </div>
 
-              {onSettle && unsettledBalance > 0 || directPaymentBalance > 0 && (
+              {(onSettle && (unsettledBalance > 0 || directPaymentBalance > 0)) && (
                   <Button 
                       variant="outline" 
                       size="sm"

@@ -212,17 +212,20 @@ const handleSettleFriend = async (friendId: string): Promise<SettlementBalance[]
   }
 
   const updatedFriendBalances = friendBalances.map(fb => {
-      if (fb.friendId === friendId) {
-        console.log('Updating balance for friend:', friendId);
-        return {
-          ...fb,
-          totalBalance: 0,
-          directBalance: 0,
-          groupBalance: 0
-        };
-      }
-      return fb;
-    });
+    if (fb.friendId === friendId) {
+      return {
+        ...fb,
+        totalBalance: 0,
+        directBalance: 0,
+        groupBalance: 0,
+        groups: fb.groups.map(group => ({
+          ...group,
+          netBalance: 0
+        }))
+      };
+    }
+    return fb;
+  });
 
     updateBalances(updatedFriendBalances);
 
