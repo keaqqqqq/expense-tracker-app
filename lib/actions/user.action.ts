@@ -134,7 +134,7 @@ export const saveFriendship = async (requesterId: string, addresseeEmail: string
       const requesterImage = requesterDoc.data()?.image;
       const addresseeToken = await getUserFCMToken(addresseeId);
 
-      if (addresseeToken) {
+      if (addresseeToken) { 
         try {
           const notificationType = `FRIEND_REQUEST_${requesterId}` as NotificationType;
 
