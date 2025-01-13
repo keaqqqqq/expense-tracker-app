@@ -1,8 +1,7 @@
-// 'use server'
-// src/api/expenses.ts
+
 import { db } from '@/firebase/config';
 import { Transaction } from '@/types/Transaction';
-// import { Tr } from '@/types/Expense';
+
 
 import { collection, addDoc, getDocs, doc, updateDoc, getDoc, query, where } from 'firebase/firestore';
 

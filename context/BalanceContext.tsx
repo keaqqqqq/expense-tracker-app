@@ -10,7 +10,7 @@ import { db } from '../firebase/config';
 import { doc, onSnapshot, collection, getDoc } from 'firebase/firestore';
 import Toast from '@/components/Toast';
 import { Balance, GroupBalance, FriendGroupBalance } from '@/types/Balance';
-import { createTransactionApi, fetchTransactions } from '@/api/transaction';
+import { createTransactionApi, fetchTransactions } from '@/lib/actions/transaction';
 import { Transaction } from '@/types/Transaction';
 import { getUserFCMToken } from '@/lib/actions/notifications';
 import { sendNotification } from '@/lib/actions/notifications';

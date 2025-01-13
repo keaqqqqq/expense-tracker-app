@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { useAuth } from '@/context/AuthContext';
 import { Expense } from '@/types/Expense';
 import { SplitFriend } from '@/types/SplitFriend';
-import { createExpenseAPI, editExpenseAPI, deleteExpenseAPI, fetchExpensesAPI } from '@/api/expenses';
+import { createExpenseAPI, editExpenseAPI, deleteExpenseAPI, fetchExpensesAPI } from '@/lib/actions/expenses';
 import { fetchUserData, getGroups, loadFriends } from '@/lib/actions/user.action';
 import { Group } from '@/types/Group';
 import { useTransaction } from './TransactionContext';

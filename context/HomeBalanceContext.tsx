@@ -1,7 +1,7 @@
 'use client'
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { FriendBalance, SettlementBalance } from "@/types/Balance";
-import { createTransactionApi, fetchTransactions } from '@/api/transaction';
+import { createTransactionApi, fetchTransactions } from '@/lib/actions/transaction';
 import { Transaction } from '@/types/Transaction';
 import Cookies from 'js-cookie';
 import { getUserFCMToken } from '@/lib/actions/notifications';
@@ -218,7 +218,11 @@ const handleSettleFriend = async (friendId: string): Promise<SettlementBalance[]
           ...fb,
           totalBalance: 0,
           directBalance: 0,
-          groupBalance: 0
+          groupBalance: 0,
+          groups: fb.groups.map(group=>({
+            ...group,
+            netBalance: 0
+          }))
         };
       }
       return fb;
