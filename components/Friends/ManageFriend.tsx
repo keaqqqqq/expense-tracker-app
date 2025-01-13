@@ -2,9 +2,9 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { removeFriend } from '@/lib/actions/user.action';
 import Toast from '../Toast';
 import { useRouter } from 'next/navigation';
+import { removeFriend } from '@/lib/actions/friend.action';
 interface ManageFriendProps {
   friendId: string;
   friendName: string;

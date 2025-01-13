@@ -1,12 +1,12 @@
 'use client'
 import React, { createContext, useContext, useState } from 'react';
 import type { ExpenseContextType, ExpenseProviderProps, GroupedTransactions } from '@/types/ExpenseList';
-import { fetchTransactions, fetchGroupTransactions, fetchUserData } from '@/lib/actions/user.action';
+import {  fetchUserData } from '@/lib/actions/user.action';
 import { useAuth } from './AuthContext';
 import type { UserData } from '@/types/User';
-import { fetchAllTransactions } from '@/lib/actions/user.action';
 import { serializeFirebaseData } from '@/lib/utils';
 import { Transaction } from '@/types/Transaction';
+import { fetchTransactions, fetchAllTransactions, fetchGroupTransactions } from '@/lib/actions/expense-list';
 interface ExtendedExpenseContextType extends ExpenseContextType {
   refreshTransactions: (friendId: string) => Promise<void>;
   refreshGroupTransactions: (groupId: string) => Promise<void>; 

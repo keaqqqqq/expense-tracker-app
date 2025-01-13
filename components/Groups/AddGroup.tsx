@@ -6,7 +6,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Search, UserCircle, Plane, Home, Heart, PartyPopper, Briefcase, MoreHorizontal } from 'lucide-react';
 import { Group, GroupMember, GroupType } from '@/types/Group';
 import { Friend } from '@/types/Friend';
-import { saveGroup, updateGroup, getOrCreateGroupInviteLink } from '@/lib/actions/user.action';
+import { saveGroup, updateGroup, getOrCreateGroupInviteLink } from '@/lib/actions/group.action';
 import Image from 'next/image';
 import Toast from '../Toast';
 interface TypeOption {

@@ -3,14 +3,11 @@ import React from 'react';
 import { redirect } from 'next/navigation';
 import { cookies } from "next/headers";
 import { ExpenseProvider } from '@/context/ExpenseListContext';
-import { 
-    fetchAllTransactions,
-    fetchUserData,
-    getFriendships,
-    getGroups 
-} from '@/lib/actions/user.action';
+import { fetchAllTransactions } from '@/lib/actions/expense-list';
+import { getFriendships } from '@/lib/actions/friend.action';
+import { getGroups } from '@/lib/actions/group.action';
 import { serializeFirebaseData } from '@/lib/utils';
-
+import { fetchUserData } from '@/lib/actions/user.action';
 const ExpensePage = async () => {
     const cookieStore = cookies();
     const uid = cookieStore.get('currentUserUid')?.value;

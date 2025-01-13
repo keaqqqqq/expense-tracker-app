@@ -5,11 +5,10 @@ import { collection, query, where, onSnapshot, getDoc, doc, getDocs, QuerySnapsh
 import { db } from '@/firebase/config';
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/Topbar";
-import { getGroups } from '@/lib/actions/user.action';
 import { Friend } from '@/types/Friend';
 import { Group } from '@/types/Group';
 import { UserData } from '@/types/User';
-
+import { getGroups } from '@/lib/actions/group.action';
 interface ClientWrapperProps {
     children: React.ReactNode;
     userData: {

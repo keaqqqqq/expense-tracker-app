@@ -5,9 +5,8 @@ import { useState, useEffect } from 'react';
 import ManageHeader from '../ManageHeader';
 import GroupList from '@/components/Groups/GroupList';
 import { Group } from '@/types/Group';
-import { getGroups } from '@/lib/actions/user.action';
 import Toast from '@/components/Toast';
-
+import { getGroups } from '@/lib/actions/group.action';
 interface GroupsContainerProps {
   currentUserId: string;
   name?: string;

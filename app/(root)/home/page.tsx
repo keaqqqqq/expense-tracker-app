@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from 'next/navigation';
-import { fetchAllFriendBalances } from '@/lib/actions/user.action';
+import { fetchAllFriendBalances } from '@/lib/actions/balance';
 import HomeHeader from "@/components/HomePage/HomeHeader";
 import { BalanceSummary } from "@/components/HomePage/BalanceSummary";
 import { BalanceProvider } from "@/context/HomeBalanceContext";

@@ -1,8 +1,8 @@
 'use server'
-// src/api/expenses.ts
+
 import { db } from '@/firebase/config';
 import { Expense } from '@/types/Expense';
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
 
 // Define the collection reference
 const expensesCollection = collection(db, 'Expenses');
@@ -47,4 +47,20 @@ export const editExpenseAPI = async (expense: (Expense & {id:string})): Promise<
 export const deleteExpenseAPI = async (id: string): Promise<void> => {
   const expenseRef = doc(db, 'Expenses', id);
   await deleteDoc(expenseRef); // Call Firestore to delete the document
+};
+
+
+export const fetchExpenseData = async (expenseId: string): Promise<Expense | undefined> => {
+  try {
+    const expenseDoc = doc(db, 'Expenses', expenseId);
+    const expenseSnapshot = await getDoc(expenseDoc);
+
+    if (!expenseSnapshot.exists()) return undefined;
+
+    const rawData = expenseSnapshot.data();
+    return {...rawData, id: expenseId} as Expense;
+  } catch (error) {
+    console.error('Error fetching expense:', error);
+    return undefined;
+  }
 };
