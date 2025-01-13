@@ -3,9 +3,9 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import Toast from '../Toast';
-import { getOrCreateGroupInviteLink } from '@/lib/actions/user.action';
 import { Group } from '@/types/Group';
 import { Friend } from '@/types/Friend';
+import { getOrCreateGroupInviteLink } from '@/lib/actions/group.action';
 interface ManageGroupProps {
   groupId: string;
   groupName: string;

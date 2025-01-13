@@ -1,7 +1,7 @@
 'use client'
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { FriendBalance, SettlementBalance } from "@/types/Balance";
-import { createTransactionApi, fetchTransactions } from '@/api/transaction';
+import { createTransactionApi } from '@/lib/actions/transaction';
 import { Transaction } from '@/types/Transaction';
 import Cookies from 'js-cookie';
 import { getUserFCMToken } from '@/lib/actions/notifications';
@@ -9,6 +9,7 @@ import { sendNotification } from '@/lib/actions/notifications';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import Toast from '@/components/Toast';
+import { fetchTransactions } from '@/lib/actions/transaction';
 interface HomeBalanceContextType {
   friendBalances: FriendBalance[];
   setFriendBalances: (balances: FriendBalance[]) => void;

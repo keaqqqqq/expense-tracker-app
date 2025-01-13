@@ -3,12 +3,13 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { useAuth } from '@/context/AuthContext';
 import { Expense } from '@/types/Expense';
 import { SplitFriend } from '@/types/SplitFriend';
-import { createExpenseAPI, editExpenseAPI, deleteExpenseAPI, fetchExpensesAPI } from '@/api/expenses';
-import { fetchUserData, getGroups, loadFriends } from '@/lib/actions/user.action';
+import { createExpenseAPI, editExpenseAPI, deleteExpenseAPI, fetchExpensesAPI } from '@/lib/actions/expenses';
+import { fetchUserData } from '@/lib/actions/user.action';
 import { Group } from '@/types/Group';
 import { useTransaction } from './TransactionContext';
 import { useExpenseList } from './ExpenseListContext';
-
+import { getGroups } from '@/lib/actions/group.action';
+import { loadFriends } from '@/lib/actions/friend.action';
 // Define the context state type
 interface ExpenseContextType {
     expense: Expense;

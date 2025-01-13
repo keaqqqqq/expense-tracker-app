@@ -1,11 +1,12 @@
-// 'use server'
-// src/api/expenses.ts
+'use server'
 import { db } from '@/firebase/config';
+import { Expense } from '@/types/Expense';
+import { GroupedTransactions } from '@/types/ExpenseList';
 import { Transaction } from '@/types/Transaction';
 // import { Tr } from '@/types/Expense';
 
-import { collection, addDoc, getDocs, doc, updateDoc, getDoc, query, where } from 'firebase/firestore';
-
+import { collection, addDoc, getDocs, doc, updateDoc, getDoc, query, where, orderBy } from 'firebase/firestore';
+import { fetchExpenseData } from './expenses';
 // Define the collection reference
 const transactionsCollection = collection(db, 'Transactions');
 
@@ -24,13 +25,13 @@ export const fetchTransactions = async (userId: string, friendId: string):Promis
           ...doc.data() as Transaction,
           id: doc.id,
       }));
-      console.log(transactions);
       return transactions;
     } catch (error) {
       console.error("Error fetching transactions: ", error);
       throw error;
     }
   };
+  
 export const createTransactionApi = async (newTransaction: Omit<Transaction, 'id'>) => {
     // Perform the logic to create a transaction (e.g., add to Firebase, update state)
     console.log('Creating new transaction:', newTransaction);
@@ -218,3 +219,4 @@ const updateGroupBalance = async (payerId: string, receiverId: string, groupId: 
         throw error;
     }
 };
+

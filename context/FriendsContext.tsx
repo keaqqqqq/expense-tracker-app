@@ -1,11 +1,11 @@
 'use client';
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { getFriendships } from "@/lib/actions/user.action";
 import { EnrichedRelationship } from '@/components/Friends/FriendList';
 import { useAuth } from '@/context/AuthContext';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { enrichRelationships } from '@/lib/relationship-utils';
+import { getFriendships } from '@/lib/actions/friend.action';
 interface FriendsContextType {
   enrichedRelationships: EnrichedRelationship[];
   refreshFriends: () => Promise<void>;
