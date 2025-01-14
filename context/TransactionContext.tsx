@@ -7,6 +7,7 @@ import { db } from '@/firebase/config';
 import { getUserFCMToken } from '@/lib/actions/notifications';
 import { sendNotification } from '@/lib/actions/notifications';
 import { NotificationTypes } from '@/lib/actions/notifications';
+import { calculateTotalPoint, expensesCreatedIncrement, refreshExpensePayerLeaderboard, refreshSettlePayerLeaderboard, settledRatio } from '@/lib/actions/user.action';
 interface TransactionContextType {
     transaction: Transaction | null;
     deleteTransactionsByExpense: (expenseId: string) => void;
@@ -54,6 +55,16 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
             await updateUserBalance(newTransaction.payer_id, newTransaction.receiver_id, newTransaction.amount);
         }
         setTransaction(null);
+
+        if(newTransaction.payer_id && newTransaction.type == "expense"){
+            refreshExpensePayerLeaderboard(newTransaction.payer_id);
+        }
+
+        if(newTransaction.payer_id && newTransaction.type == "settle"){
+            refreshSettlePayerLeaderboard(newTransaction.payer_id);
+
+        }
+    
     }
 
     const checkFriend = async (uid: string, receiverId: string): Promise<void> => {
