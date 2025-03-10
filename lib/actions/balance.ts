@@ -10,7 +10,6 @@ import { getFriendships, Relationship } from "./friend.action";
 
 export async function fetchUserBalances(userId: string) {
   try {
-    // 1. Get balances from all users as in your original code
     const userRef = doc(db, 'Users', userId);
     const userSnap = await getDoc(userRef);
 
@@ -23,15 +22,14 @@ export async function fetchUserBalances(userId: string) {
     
     const balances: Balance[] = [];
 
-    // Get balances where current user is mentioned in other users' balances
-    usersSnap.forEach((doc) => {
+    usersSnap.forEach((doc) => { // get current user's balance from other users/friends
       const userData = doc.data();
       if (userData.balances && Array.isArray(userData.balances)) {
         const userBalance = userData.balances.find(
           (b: Balance) => b.id === userId
         );
         
-        if (userBalance) {
+        if (userBalance) { // push the balance to balances array 
           balances.push({
             id: doc.id,
             balance: -userBalance.balance 
@@ -40,31 +38,28 @@ export async function fetchUserBalances(userId: string) {
       }
     });
 
-    // Add current user's balances
     const currentUserData = userSnap.data();
     if (currentUserData.balances && Array.isArray(currentUserData.balances)) {
       currentUserData.balances.forEach((balance: Balance) => {
-        const existingBalanceIndex = balances.findIndex(b => b.id === balance.id);
+        const existingBalanceIndex = balances.findIndex(b => b.id === balance.id); // ensure current user's balance from other users/friends is same as the balance in user's document
         
-        if (existingBalanceIndex === -1) {
+        if (existingBalanceIndex === -1) { // if the balance is not found, then the balance is pushed into balances array
           balances.push(balance);
         }
       });
     }
 
-    // 2. Get transactions for settled/unsettled calculations
-    const transactionsRef = collection(db, 'Transactions');
+    const transactionsRef = collection(db, 'Transactions'); // get all transactions from the current user
     const [payerSnap, receiverSnap] = await Promise.all([
       getDocs(query(transactionsRef, where('payer_id', '==', userId))),
       getDocs(query(transactionsRef, where('receiver_id', '==', userId)))
     ]);
 
     const transactions = [
-      ...payerSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })),
+      ...payerSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })), 
       ...receiverSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
     ] as Transaction[];
 
-    // 3. Combine balance data with user info and transaction calculations
     const enrichedBalances = await Promise.all(
       balances.map(async (balance) => {
         const friendDoc = await getDoc(doc(db, 'Users', balance.id));

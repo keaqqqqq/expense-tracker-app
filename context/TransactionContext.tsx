@@ -7,7 +7,7 @@ import { db } from '@/firebase/config';
 import { getUserFCMToken } from '@/lib/actions/notifications';
 import { sendNotification } from '@/lib/actions/notifications';
 import { NotificationTypes } from '@/lib/actions/notifications';
-import { calculateTotalPoint, expensesCreatedIncrement, refreshExpensePayerLeaderboard, refreshSettlePayerLeaderboard, settledRatio } from '@/lib/actions/user.action';
+import { calculateTotalPoint, expensesCreatedIncrement, refreshExpensePayerLeaderboard, refreshSettlePayerLeaderboard } from '@/lib/actions/user.action';
 interface TransactionContextType {
     transaction: Transaction | null;
     deleteTransactionsByExpense: (expenseId: string) => void;

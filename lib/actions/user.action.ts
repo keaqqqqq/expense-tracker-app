@@ -1,35 +1,6 @@
 'use server'
 import { doc, setDoc, getDoc, collection, query, where, updateDoc, getDocs, or, and} from 'firebase/firestore';
 import { db } from '@/firebase/config';
-import { User } from 'firebase/auth';
-export const updateUserProfile = async (
-  currentUser: User | null,
-  name: string,
-  image: string | null
-) => {
-  if (!currentUser) throw new Error("User not authenticated");
-
-  const userData = {
-    name,
-    image,
-    email: currentUser.email,
-  };
-  await setDoc(doc(db, 'Users', currentUser.uid), userData);
-};
-
-export const handleImageChange = (
-  e: React.ChangeEvent<HTMLInputElement>,
-  setImage: React.Dispatch<React.SetStateAction<string | null>>
-) => {
-  const file = e.target.files?.[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImage(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-  }
-};
 
 export const fetchUserData = async (uid: string) => {
   const userDoc = doc(db, 'Users', uid);
@@ -42,7 +13,7 @@ export const fetchUserData = async (uid: string) => {
   }
 };
 
-export const settledRatio = async (uid: string) => {
+const settledRatio = async (uid: string) => {
   try{
     const settledTransactions = collection(db, 'Transactions');
     const settledQuery = query(

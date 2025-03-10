@@ -49,9 +49,9 @@ export const handleImageChange = async (
     setImageFile(file);
 
     const reader = new FileReader();
+    reader.readAsDataURL(file); 
     reader.onloadend = () => {
       setImage(reader.result as string);
     };
-    reader.readAsDataURL(file);
   }
 };
