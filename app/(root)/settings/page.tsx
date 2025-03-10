@@ -22,6 +22,7 @@ async function SettingsPage() {
 
     return <Settings initialUserData={initialUserData} />;
   } catch (error) {
+    console.log(error);
     return null;
   }
 }

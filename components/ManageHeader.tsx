@@ -16,7 +16,7 @@ interface ManageHeaderProps {
     homeType: boolean;
 }
 
-const ManageHeader: React.FC<ManageHeaderProps> = ({ title, buttons, homeType }) => {
+const ManageHeader: React.FC<ManageHeaderProps> = ({ title, buttons }) => {
     return (
         <div className={`border rounded w-full bg-white`}>
             <div className='flex flex-row justify-between items-center font-semibold sm:p-2'>

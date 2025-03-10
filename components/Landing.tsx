@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef, RefObject } from 'react';
 import { useRouter } from 'next/navigation'; 
-import { Sparkles, Menu, Receipt, Bell, Users, BarChart, Monitor} from 'lucide-react';
+import { Menu, Bell, Users, BarChart, Monitor} from 'lucide-react';
 
 const fadeInUp = "opacity-0 translate-y-24 scale-95 transition-all duration-1000 ease-out"; 
 const visible = "opacity-100 translate-y-0 scale-100";

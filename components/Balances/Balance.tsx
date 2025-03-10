@@ -68,10 +68,6 @@ export default function Balances({
   const canShowFriendBalance = type === 'friend' && friendData && friendBalance;
   const canShowGroupBalance = type === 'group' && groupData && groupId;
   const hasGroupBalancesToShow = friendGroupBalances && friendGroupBalances.length > 0;
-  const getFormattedDate = (): string => {
-    const date = new Date();
-    return date.toISOString().slice(0, 10);
-  };
   
 const hasFriendBalancesToShow = 
 Number(friendBalance?.netBalance || 0) !== 0 || 

@@ -1,5 +1,5 @@
 'use server'
-import { doc, setDoc, getDoc, collection, query, where, updateDoc, getDocs, or, and} from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, updateDoc, getDocs, or, and} from 'firebase/firestore';
 import { db } from '@/firebase/config';
 
 export const fetchUserData = async (uid: string) => {
@@ -55,7 +55,7 @@ export const expensesCreatedIncrement = async (uid: string)=> {
   const userData = userSnapshot.data();
   
   // Default expensesCreated to 0 if undefined, then increment
-  let expensesCreated = userData?.expensesCreated ?? 0;
+  const expensesCreated = userData?.expensesCreated ?? 0;
   await updateDoc(userDoc, {
     expensesCreated: expensesCreated + 10
   })
@@ -68,7 +68,7 @@ export const expensesCreatedDefault = async (uid: string)=> {
   const userData = userSnapshot.data();
   
   // Default expensesCreated to 0 if undefined, then increment
-  let expensesCreated = userData?.expensesCreated ?? 0;
+  const expensesCreated = userData?.expensesCreated ?? 0;
   await updateDoc(userDoc, {
     expensesCreated: expensesCreated
   })

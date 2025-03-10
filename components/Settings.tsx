@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -479,7 +479,6 @@ interface SettingsProps {
 
 const Settings = ({ initialUserData }: SettingsProps) => {
   const { currentUser } = useAuth();
-  const router = useRouter();
   const [toast, setToast] = useState<ToastState>({
     show: false,
     message: '',

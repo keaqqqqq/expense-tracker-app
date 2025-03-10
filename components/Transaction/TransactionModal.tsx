@@ -19,7 +19,7 @@ interface TransactionModalProps {
   groupId?: string;   
 }
 
-const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal, fromPage, friendId, groupId }) => {
+const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal, fromPage }) => {
   const { createTransaction, transaction, editTransaction } = useTransaction();
   const { friendList, expenses, groupList } = useExpense();
   const [payer, setPayer] = useState<Omit<SplitFriend, 'amount'> | undefined>();
@@ -98,6 +98,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal,
   }
 } catch (error) {
   showErrorToast('Failed to create transaction. Please try again.');
+  console.log(error);
 }
 };
 
@@ -140,6 +141,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, closeModal,
       closeModal();
   }} catch (error) {
     showErrorToast('Failed to create transaction. Please try again.');
+    console.log(error);
   }
   };
 

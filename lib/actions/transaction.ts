@@ -1,13 +1,9 @@
 'use server'
 import { db } from '@/firebase/config';
-import { Expense } from '@/types/Expense';
-import { GroupedTransactions } from '@/types/ExpenseList';
 import { Transaction } from '@/types/Transaction';
 // import { Tr } from '@/types/Expense';
 
-import { collection, addDoc, getDocs, doc, updateDoc, getDoc, query, where, orderBy } from 'firebase/firestore';
-import { fetchExpenseData } from './expenses';
-// Define the collection reference
+import { collection, addDoc, getDocs, doc, updateDoc, getDoc, query, where } from 'firebase/firestore';// Define the collection reference
 const transactionsCollection = collection(db, 'Transactions');
 
 export const fetchTransactions = async (userId: string, friendId: string):Promise<Transaction[]> => {
