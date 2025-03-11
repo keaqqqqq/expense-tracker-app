@@ -1,12 +1,12 @@
 import GroupsContainer from '@/components/Groups/GroupsContainer'
-import { loadFriends, getGroups } from '@/lib/actions/user.action';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { UserData } from '@/types/User';
 import { fetchUserData } from '@/lib/actions/user.action';
 import { Friend } from '@/types/Friend';
 import { Group } from '@/types/Group';
-
+import { loadFriends } from '@/lib/actions/friend.action';
+import { getGroups } from '@/lib/actions/group.action';
 export default async function Groups() {
   const cookieStore = cookies();
   const uid = cookieStore.get('currentUserUid')?.value;

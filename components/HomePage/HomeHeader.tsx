@@ -3,8 +3,8 @@ import { useBalance } from '@/context/HomeBalanceContext';
 import React, { useState } from 'react';
 import ManageHeader from '../ManageHeader';
 import ExpenseModal from '../ManageExpense/ExpenseModal';
-import { refreshBalances } from '@/lib/actions/user.action';
 import TransactionModal from '../Transaction/TransactionModal';
+import { refreshBalances } from '@/lib/actions/balance';
 const HomeHeader = () => {
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);

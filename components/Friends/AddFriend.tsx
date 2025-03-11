@@ -1,10 +1,9 @@
 'use client';
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext'; 
-import { saveFriendship } from '@/lib/actions/user.action';
 import Toast from '../Toast';
 import Button from '../UserProfile/Button';
-
+import { saveFriendship } from '@/lib/actions/friend.action';
 interface AddFriendModalProps {
     isOpen: boolean;
     closeModal: () => void;

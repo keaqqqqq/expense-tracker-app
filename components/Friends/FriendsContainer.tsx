@@ -4,11 +4,11 @@ import ManageHeader from '../ManageHeader';
 import AddFriend from './AddFriend';
 import FriendList from './FriendList';
 import FriendTabs from './FriendTabs';
-import { acceptFriendship } from "@/lib/actions/user.action";
 import React, { useState, useCallback, useMemo } from 'react';
 import { useFriends } from '@/context/FriendsContext';
-import { fetchAllFriendBalances } from '@/lib/actions/user.action';
 import { EnrichedRelationship } from './FriendList';
+import { acceptFriendship } from '@/lib/actions/friend.action';
+import { fetchAllFriendBalances } from '@/lib/actions/balance';
 interface FriendsContainerProps {
   initialBalances: Array<{
     friendId: string;

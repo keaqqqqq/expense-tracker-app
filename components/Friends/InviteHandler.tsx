@@ -1,8 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { validateInvitation } from '@/lib/actions/user.action';
-import { validateGroupInvite } from '@/lib/actions/user.action';
+import { validateInvitation } from '@/lib/actions/friend.action';
+import { validateGroupInvite } from '@/lib/actions/group.action';
 interface InviteHandlerProps {
   token?: string;
 }

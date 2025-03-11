@@ -1,10 +1,10 @@
 'use client';
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext'; 
-import { saveFriendship } from '@/lib/actions/user.action';
 import { useRouter } from 'next/navigation';
 import Toast from '../Toast';
 import Button from './Button';
+import { saveFriendship } from '@/lib/actions/friend.action';
 const AddFriend: React.FC = () => {
     const router = useRouter();
     const { currentUser } = useAuth(); 

@@ -1,14 +1,15 @@
 import React from 'react';
-import { getGroupDetails, fetchGroupTransactions, fetchUserData } from '@/lib/actions/user.action';
+import { fetchUserData } from '@/lib/actions/user.action';
 import { serializeFirebaseData } from '@/lib/utils';
 import type { GroupedTransactions } from '@/types/ExpenseList';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { getFriendships } from '@/lib/actions/user.action';
-import { fetchGroupBalances } from '@/lib/actions/user.action';
-import { getOrCreateGroupInviteLink } from '@/lib/actions/user.action';
 import { Transaction } from '@/types/Transaction';
 import GroupDetailsClient from './GroupDetailsClient';
+import { getGroupDetails, getOrCreateGroupInviteLink } from '@/lib/actions/group.action';
+import { fetchGroupTransactions } from '@/lib/actions/expense-list';
+import { getFriendships } from '@/lib/actions/friend.action';
+import { fetchGroupBalances } from '@/lib/actions/balance';
 interface GroupDetailsPageProps {
   params: {
     id: string;

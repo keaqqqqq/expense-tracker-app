@@ -1,16 +1,11 @@
 'use client'
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { 
-  fetchUserBalances, 
-  fetchGroupBalances, 
-  fetchFriendGroupBalances,
-  settleBalance 
-} from '@/lib/actions/user.action';
+import { fetchUserBalances, fetchGroupBalances, fetchFriendGroupBalances } from '@/lib/actions/balance';
 import { db } from '../firebase/config';
 import { doc, onSnapshot, collection, getDoc } from 'firebase/firestore';
 import Toast from '@/components/Toast';
 import { Balance, GroupBalance, FriendGroupBalance } from '@/types/Balance';
-import { createTransactionApi, fetchTransactions } from '@/api/transaction';
+import { createTransactionApi, fetchTransactions } from '@/lib/actions/transaction';
 import { Transaction } from '@/types/Transaction';
 import { getUserFCMToken } from '@/lib/actions/notifications';
 import { sendNotification } from '@/lib/actions/notifications';

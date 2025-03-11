@@ -4,15 +4,13 @@ import ExpenseList from '@/components/ExpenseList';
 import { serializeFirebaseData } from '@/lib/utils';
 import type { GroupedTransactions } from '@/types/ExpenseList';
 import { ExpenseProvider } from '@/context/ExpenseListContext';
-import { fetchTransactions } from '@/lib/actions/user.action';
 import { cookies } from "next/headers";
 import { redirect } from 'next/navigation';
 import BackButton from '@/components/BackButton';
 import { User} from 'lucide-react';
 import ManageFriend from '@/components/Friends/ManageFriend';
 import { Relationship } from '@/types/Friend';
-import { getFriendships } from '@/lib/actions/user.action';
-import { fetchUserBalances, fetchFriendGroupBalances } from '@/lib/actions/user.action';
+import { fetchUserBalances, fetchFriendGroupBalances } from '@/lib/actions/balance';
 import { BalancesProvider } from '@/context/BalanceContext';
 import Balances from '@/components/Balances/Balance';
 import ExpenseCard from '@/components/ExpenseCard';
@@ -20,6 +18,8 @@ import { Transaction } from '@/types/Transaction';
 import { Balance } from '@/types/Balance';
 import { FriendGroupBalance } from '@/types/Balance';
 import { Friend } from '@/types/Friend';
+import { fetchTransactions } from '@/lib/actions/expense-list';
+import { getFriendships } from '@/lib/actions/friend.action';
 interface Props {
   params: {
     id: string;
