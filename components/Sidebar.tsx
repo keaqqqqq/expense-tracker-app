@@ -235,6 +235,15 @@ const Sidebar: React.FC<SideBarProps> = ({
                                             📊 Statistics
                                         </Link>
                                     </li>
+                                    <li>
+                                         <Link
+                                             href="/leaderboard"
+                                             className={`block py-2 px-4 font-semibold text-gray-800 hover:bg-gray-100 text-sm sm:text-md mb-2 ${pathname === '/leaderboard' ? 'bg-gray-100 text-indigo-600' : ''} `}
+                                             onClick={() => isMobile && onClose()}
+                                         >
+                                             🏆 Leaderboard
+                                         </Link>
+                                     </li>
                                 </ul>
                             </nav>
 
